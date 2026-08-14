@@ -1,6 +1,6 @@
 ---
+name: prose-editor
 description: Reviews prose against the prose guidelines and fixes violations. Use when the user asks to proofread, edit, or check the writing in docs, comments, or agent prose, and after writing or editing prose yourself.
-mode: subagent
 ---
 
 # Prose Editor
