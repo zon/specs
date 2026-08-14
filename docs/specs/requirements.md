@@ -1,6 +1,6 @@
 # Writing Requirements
 
-An [item](glossary.md#item) is one iteration's worth of work. Items describe **what should happen** and may define high-level interfaces, but should not include low-level implementation detail.
+A [requirement](glossary.md#requirement) in a [project](project.md) is one iteration's worth of work. Requirements describe **what should happen** and may define high-level interfaces, but should not include low-level implementation detail.
 
 ## Good vs Bad Examples
 
@@ -19,13 +19,12 @@ An [item](glossary.md#item) is one iteration's worth of work. Items describe **w
 
 - Write from the user, client, or developer perspective — user interfaces, network interfaces, and high-level APIs
 - Be specific about expected behavior
-- Break complex work into multiple items — one item is one iteration, so an item that needs three separate rounds of work should be three items
-- Give each item a `slug`, `id`, or `name` so commit messages name the work rather than just its index
+- Break complex work into multiple entries — one entry is one iteration, so work that needs three separate rounds should be three entries
 
-**Do not include** work the runner handles automatically. Most runners run the test suite and fix failures on their own, so entries like "all existing tests pass" or "no regressions" are redundant. Check what your runner does before adding an item for it.
+**Do not include** work the runner handles automatically. Most runners run the test suite and fix failures on their own, so entries like "all existing tests pass" or "no regressions" are redundant. Check what your runner does before adding an entry for it.
 
 ## Where Implementation Detail Belongs
 
-The prohibition above is about the item text, not about the project. Implementation shapes do belong in a project — in the `code` and `tests` fields, sourced from the feature's [orchestration document](orchestration.md) rather than invented. See [Project Format](project.md#code-and-tests).
+Implementation shapes belong in an [orchestration document](orchestration.md), and module placement in an [architecture document](architecture.md).
 
-The distinction is authorship. An item's prose states the outcome, and its `code` entries relay a shape someone already designed. What must not happen is an agent making architecture decisions inside an item because the item told it to "implement middleware".
+The distinction is authorship. A requirement states the outcome; the orchestration holds a shape someone already designed. What must not happen is an agent making architecture decisions because a requirement told it to "implement middleware".

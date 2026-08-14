@@ -28,7 +28,7 @@ Before writing any tests, read [docs/specs/testing.md](docs/specs/testing.md).
 
 ## What's Inside
 
-**Formats** — [spec](docs/specs/spec.md), [orchestration](docs/specs/orchestration.md), [architecture](docs/specs/architecture.md), [project](docs/specs/project.md). Four documents that build on each other: what the system must do, the shape of the logic that does it, where that logic lives, and the work split into one item per iteration.
+**Formats** — [spec](docs/specs/spec.md), [orchestration](docs/specs/orchestration.md), [architecture](docs/specs/architecture.md), [project](docs/specs/project.md). The first three build on each other: what the system must do, the shape of the logic that does it, and where that logic lives. A project is a plain list of requirements, one per iteration.
 
 **Standards** — [writing code](docs/specs/code.md), [testing](docs/specs/testing.md), [writing requirements](docs/specs/requirements.md), [agent prompts](docs/specs/prompts.md), [glossary](docs/specs/glossary.md).
 
@@ -47,9 +47,9 @@ Before writing any tests, read [docs/specs/testing.md](docs/specs/testing.md).
 
 ## Runners
 
-Nothing here executes a project. A project is a file with an array of work items; running it is a runner's job. [ralph](https://github.com/zon/ralph) is one — it picks one item per iteration, drives a coding agent through it, and records completion in the branch's commit log.
+Nothing here executes a project. A project is a file listing requirements; running it is a runner's job. [ralph](https://github.com/zon/ralph) is one — it picks one requirement per iteration, drives a coding agent through it, and records completion in the branch's commit log.
 
-The formats stay runner-neutral: no item carries completion state, and the conventional project shape nests its items under `requirements` so a runner's item query is `.requirements`.
+The formats stay runner-neutral: a project is a plain top-level list, and how it is executed is the runner's business.
 
 ## Recipes
 

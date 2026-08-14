@@ -85,6 +85,6 @@ modules:
 
 ## How the Architecture Is Used
 
-The architecture document is the module map. It is read before any code is written ([Writing Code](code.md)), it decides where an orchestration's helpers live ([Orchestration Format](orchestration.md#module-structure)), and its `category` and `signatures` fields determine what form a project's `code` and `tests` entries must take ([Project Format](project.md#code-and-tests)).
+The architecture document is the module map. It is read before any code is written ([Writing Code](code.md)), it decides where an orchestration's helpers live ([Orchestration Format](orchestration.md#module-structure)), and its `category` and `signatures` fields determine what form the code and tests for a module may take ([Writing Code](code.md), [Testing](testing.md)).
 
 Keeping it accurate matters more than keeping it complete. A module whose description no longer matches what it does is worse than a module that is missing.

@@ -1,6 +1,6 @@
 # Glossary
 
-Terms used throughout these documents. A runner that executes projects will have its own vocabulary for the mechanics of doing so — how an item array is resolved, how completion is recorded — and that belongs in the runner's documentation, not here.
+Terms used throughout these documents. A runner that executes projects will have its own vocabulary for the mechanics of doing so — how a requirement is selected, how completion is recorded — and that belongs in the runner's documentation, not here.
 
 ## Component
 
@@ -12,19 +12,15 @@ A coherent slice of user-facing or system-facing behavior — something a user c
 
 ## Requirement
 
-A single behavior the system must have, stated as observable behavior rather than implementation. Requirements live in a [spec](spec.md) and use RFC 2119 keywords (SHALL, MUST, SHOULD, MAY) to signal strength.
+A single behavior the system must have, stated as observable behavior rather than implementation. Requirements live in a [spec](spec.md), where they use RFC 2119 keywords (SHALL, MUST, SHOULD, MAY) to signal strength, and in a [project](project.md), where each one is the unit of a single iteration.
 
 ## Scenario
 
-A concrete, testable example of a requirement in action, written in Given/When/Then form. Scenarios are copied verbatim from a spec into a [project](project.md) so the implementing agent sees them without reading the spec.
+A concrete, testable example of a requirement in action, written in Given/When/Then form. Scenarios live in a spec.
 
 ## Project
 
-A YAML or JSON file containing an array of work items, drafted from a spec, an architecture, and an orchestration. See [Project Format](project.md).
-
-## Item
-
-One element of a project's array, and the unit of one iteration. An item must be self-contained: the agent implementing it sees the item and the project file, not the source documents it was drawn from.
+A YAML or JSON file holding a list of requirements for a coding agent to work through, one per iteration. See [Project Format](project.md).
 
 ## Deep Module
 

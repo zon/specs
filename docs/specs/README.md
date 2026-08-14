@@ -29,7 +29,7 @@ Specs, orchestrations, and per-feature architecture are co-located under `/specs
 - `orchestration.md` — idealized domain logic ([Orchestration Format](orchestration.md))
 - `architecture.yaml` (optional) — **future** modules introduced by this feature ([Architecture Format](architecture.md))
 
-Project files live at `/projects/<slug>.yaml` and define units of work for a coding agent to execute, drawing on the specs, orchestrations, and architecture above ([Project Format](project.md)).
+Project files live at `/projects/<slug>.yaml` and list the requirements a coding agent works through, one per iteration ([Project Format](project.md)).
 
 See [Component](glossary.md#component) and [Feature](glossary.md#feature) in the glossary.
 
@@ -40,7 +40,7 @@ See [Component](glossary.md#component) and [Feature](glossary.md#feature) in the
 | [Spec](spec.md) | Behavior contracts — structured requirements and scenarios |
 | [Orchestration](orchestration.md) | Idealized domain logic as an implementation contract |
 | [Architecture](architecture.md) | The deep modules of an application, in YAML |
-| [Project](project.md) | Units of work for a coding agent |
+| [Project](project.md) | A list of requirements for a coding agent to work through |
 
 ## Standards
 
@@ -60,11 +60,12 @@ See [Component](glossary.md#component) and [Feature](glossary.md#feature) in the
 
 ## Order of Authorship
 
-The four formats build on each other. For a new feature:
+Three of the formats build on each other. For a new feature:
 
 1. **Spec** — what the system must do, as observable behavior.
 2. **Architecture** — which modules the feature needs, and what each is for.
 3. **Orchestration** — the shape of the domain logic, with modules assigned.
-4. **Project** — the work, split into one unit per iteration, sourced from the three above.
 
-Each step is optional in principle, but a project drafted without an orchestration has to invent implementation shapes, and an orchestration drafted without an architecture has nowhere to put its helpers. Skipping a step moves the decision, it does not remove it.
+Each step is optional in principle, but an orchestration drafted without an architecture has nowhere to put its helpers, and a spec handed to an agent without either leaves it to invent implementation shapes. Skipping a step moves the decision, it does not remove it.
+
+A [project](project.md) stands apart from that chain. It lists requirements a runner works through one at a time, whatever their source.
