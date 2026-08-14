@@ -20,7 +20,7 @@ Create a well-formed spec file in `./specs/features/` based on the user's descri
 
 3. **Determine the file path.** Check the existing `specs/features/` structure to match its convention as described in [docs/specs/README.md](docs/specs/README.md).
 
-4. **Choose the rigor level** as described in [docs/specs/spec.md](docs/specs/spec.md) (default to Lite).
+4. **Choose the level** as described in [docs/specs/spec.md](docs/specs/spec.md) (default to Lite).
 
 5. **Draft the spec** following the format and guidelines in [docs/specs/spec.md](docs/specs/spec.md).
 
