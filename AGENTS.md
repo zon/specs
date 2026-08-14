@@ -2,6 +2,10 @@
 
 This repository holds the spec formats and standards that get installed into other projects. Everything in it is documentation — there is no build and no source code.
 
+## Prose
+
+Read [prose guidelines](docs/specs/prose.md) before writing any kind of prose. This includes docs, code comments, git descriptions, or agent communication.
+
 ## Editing Docs
 
 Documents live in [docs/specs/](docs/specs/README.md) and are installed to `docs/specs/` in the target repository. The path is identical in both places, which is what makes relative links work everywhere.
