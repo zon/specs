@@ -75,7 +75,7 @@ Unit tests for real external dependencies must be small, focused, and cheap — 
 
 ### Module boundaries
 
-Orchestration modules define interfaces and compose behavior — they must not contain real dependency implementations. Only implementation modules may contain real dependency implementations and mocks. See [Writing Code](code.md).
+Only implementation modules may hold real dependency implementations and mocks. See [Writing Code](code.md).
 
 | Module type | May contain |
 |---|---|

@@ -16,12 +16,10 @@ Every piece of code belongs in a specific module. Before writing, ask:
 
 ## Categories
 
-Each module declares a `category`, and the category's `description` and `signatures` in `specs/architecture.yaml` are the authoritative statement of what may live there. The rules below cover the common categories; for any category a project defines beyond these, derive the constraints from its own `description` and `signatures`.
+Each module declares a `category`, and the category's `description` and `signatures` in `specs/architecture.yaml` are the authoritative statement of what may live there. The glossary defines the common categories — [pure](glossary.md#pure-module), [orchestration](glossary.md#orchestration-module), [implementation](glossary.md#implementation-module). The rules below say what to do when code does not fit the category it landed in. For any category a project defines beyond these, derive the constraints from its own `description` and `signatures`.
 
 ### Pure Modules
 
-- Contain only value objects and pure functions — no I/O, no external calls, no mutation of shared state.
-- Test with unit tests only; no mocks or integration setup are needed or permitted.
 - If a pure module accumulates side-effectful code, move that code into an implementation module.
 
 ### Orchestration Modules
@@ -29,7 +27,6 @@ Each module declares a `category`, and the category's `description` and `signatu
 Modules marked `orchestration: true` in `specs/architecture.yaml` are orchestration modules.
 
 - Do not add code to an orchestration module that an orchestration file does not ask for. If an orchestration file does not call it, it does not belong there.
-- Do not add implementation details — no string construction, no format literals, no I/O, no external calls, no helper utilities.
 - If an orchestration module is accumulating logic that is not pure coordination, move that logic into an implementation module.
 
 ### Implementation Modules

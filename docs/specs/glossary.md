@@ -42,7 +42,7 @@ Each implementation module covers a single deep concern — one cohesive area of
 
 ## Orchestration Module
 
-A module that contains only domain logic for coordinating other modules. Orchestration modules define workflows, manage execution sequences, enforce business rules, and delegate to implementation modules. They describe "what" should happen and "when" without containing the low-level details of "how" operations are performed.
+A module that contains only domain logic for coordinating other modules. Orchestration modules define workflows, sequence steps, enforce business rules, and delegate to implementation modules. They say what should happen and when, never how: no string construction, no format literals, no I/O, no external calls, no helper utilities.
 
 A small app typically contains a single orchestration module. As it grows, the orchestration module should be split along deep concern boundaries — each resulting module coordinates one deep concern.
 
