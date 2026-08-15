@@ -1,26 +1,26 @@
 ---
 name: review-module
-description: Reviews a module against the architecture standards for its category, reports gaps, and creates a project to code the recommendations. Use when the user wants to audit a module, bring it up to standard, or understand what it's missing.
+description: Reviews a module against the architecture and testing standards, reports gaps, and creates a project to code the recommendations. Use when the user wants to audit a module, bring it up to standard, or understand what it's missing.
 ---
 
 # Review Module
 
-Audit a module against the architecture and testing standards for its declared category, report what is compliant and what is missing, then create a project to carry out the recommendations.
+Audit a module against the architecture and testing standards, report what is compliant and what is missing, then create a project to carry out the recommendations.
 
 ## Steps
 
 1. **Identify the module path.** Use the argument passed to the skill if provided (e.g. `internal/argo`). If none, ask the user which module to review.
 
-2. **Read the architecture registry** at `specs/architecture.yaml` to find the module's entry. Note its `category` and its declared `description`. If the module has no entry, say so and ask the user whether to add one — an unregistered module has no standard to review against.
+2. **Read the architecture registry** at `specs/architecture.yaml` to find the module's entry. Note whether it is marked `orchestration: true` and its declared `description`. If the module has no entry, say so and ask the user whether to add one — an unregistered module has no standard to review against.
 
 3. **Read the standards docs:**
-   - [docs/specs/code.md](docs/specs/code.md) — module placement rules and category constraints.
+   - [docs/specs/code.md](docs/specs/code.md) — module placement rules and component-type constraints.
    - [docs/specs/testing.md](docs/specs/testing.md) — testing patterns, mock rules, and what must never be called in tests.
    - The repository's own `AGENTS.md` or `CLAUDE.md` for project-specific rules that override or extend the above.
 
 4. **Read all files in the module directory.** Understand what the module currently contains: structs, interfaces, free functions, test files, mock files.
 
-5. **Check against category standards.** Use the category's `description` and `signatures` fields from `specs/architecture.yaml` as the primary definition of what belongs in that category. Then apply whatever rules [docs/specs/code.md](docs/specs/code.md) and [docs/specs/testing.md](docs/specs/testing.md) specify for that category, deriving them from the files rather than assuming a fixed set.
+5. **Check against the component-type standard.** Use the module's `orchestration` flag and `description` from `specs/architecture.yaml` as the primary definition of what belongs in it. Then apply whatever rules [docs/specs/code.md](docs/specs/code.md) and [docs/specs/testing.md](docs/specs/testing.md) specify for that type of component, deriving them from the files rather than assuming a fixed set.
 
 6. **Compile the findings** into three sections:
 

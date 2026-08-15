@@ -1,37 +1,24 @@
 ---
 name: write-architecture
-description: Creates or edits the architecture document at specs/architecture.yaml. Use when the user wants to outline the deep modules of an application, document current architecture, or plan future modules.
+description: Creates or edits the architecture document at specs/architecture.yaml, recording the components that already exist in the codebase. Use when the user wants to document the current architecture.
 ---
 
 # Write Architecture
 
-Create or update an architecture document. Architecture files live in two places:
-
-- **`./specs/architecture.yaml`** — current modules of the application.
-- **`./specs/features/<component>/<feature>/architecture.yaml`** (optional) — future modules introduced by a specific feature.
+Write the architecture document at **`specs/architecture.yaml`** after the code, recording the components that exist — not as a plan for code to come.
 
 ## Steps
 
 1. **Read the architecture format docs** at [docs/specs/architecture.md](docs/specs/architecture.md).
 
-2. **Determine the target file:**
-   - If documenting **current** architecture, use `./specs/architecture.yaml`.
-   - If planning **future** modules for a specific feature, use `./specs/features/<component>/<feature>/architecture.yaml`. Ask the user for the component and feature names if unclear.
+2. **Read the existing architecture document** at the target path if one exists, so edits preserve unrelated components.
 
-3. **Read the existing architecture document** at the target path if one exists, so edits preserve unrelated modules and reuse its existing categories.
+3. **Clarify the scope.** If the user's request is vague, ask clarifying questions before proceeding.
 
-4. **Clarify the scope.** If the user's request is vague, ask clarifying questions before proceeding.
+4. **Survey the codebase.** Find the components the application is built from — source code modules, scripts, runtimes, assets, and config. For each candidate component, confirm its path and responsibilities, and whether it coordinates other modules (`orchestration: true`) or handles low-level detail.
 
-5. **Read the spec and orchestration** when architecting a feature (`specs/features/<component>/<feature>/spec.md` and `orchestration.md`) to identify what modules are needed and how responsibilities divide between them.
+5. **Draft the architecture** following the format in step 1.
 
-6. **Check helper namespaces.** Examine both the `## Orchestration > ### Helpers` and `## Tests > ### Helpers` sections. Each namespace (e.g. `orders.*`, `target.*`, `source.*`) implies a module home. Add a module entry for any namespace that lives outside the modules already listed.
+6. **Write the file** to the target path.
 
-7. **Flag shared input types.** When a caller module (e.g. an entry module) and an orchestration module both appear, identify any type that both sides need and ensure it has a clear module home. Add a module entry for any type that would otherwise be claimed by both sides.
-
-8. **Survey the codebase** when documenting current architecture to confirm module paths and responsibilities.
-
-9. **Draft the architecture** following the format in [docs/specs/architecture.md](docs/specs/architecture.md).
-
-10. **Write the file** to the target path.
-
-11. **Report** the file path and a one-line summary of the modules covered.
+7. **Report** the file path and a one-line summary of the components covered.

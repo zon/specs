@@ -2,7 +2,7 @@
 
 Document formats and standards for spec-driven development with AI coding agents, plus the skills that author them.
 
-This repository holds the opinions: what a spec looks like, how modules are categorized, how a project splits work into iterations, what belongs in a test. Projects install it rather than depend on it, so a project gets a copy it can read, edit, and diff.
+This repository holds the opinions: what a spec looks like, how an application is broken into components, how a project splits work into iterations, what belongs in a test. Projects install it rather than depend on it, so a project gets a copy it can read, edit, and diff.
 
 ## Install
 

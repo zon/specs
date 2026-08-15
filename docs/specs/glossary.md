@@ -4,7 +4,7 @@ Terms used throughout these documents. A runner that executes projects will have
 
 ## Component
 
-A top-level deployment or ownership boundary — a distinct service, app, or library that could be developed and deployed independently. Good component names reflect runtime identity (`api`, `worker`, `frontend`), not internal organization.
+A collection of resources — scripts, runtimes, assets, config, or source code modules — the project is built from. Components are listed in [`specs/architecture.yaml`](architecture.md), each with a path, a description, and whether it is an orchestration module.
 
 ## Feature
 
@@ -41,7 +41,3 @@ Each implementation module covers a single deep concern — one cohesive area of
 A module that contains only domain logic for coordinating other modules. Orchestration modules define workflows, sequence steps, enforce business rules, and delegate to implementation modules. They say what should happen and when, never how: no string construction, no format literals, no I/O, no external calls, no helper utilities.
 
 A small app typically contains a single orchestration module. As it grows, the orchestration module should be split along deep concern boundaries — each resulting module coordinates one deep concern.
-
-## Category
-
-The classification a module is assigned in [`specs/architecture.yaml`](architecture.md), declaring what kinds of code resource belong in it. `entry`, `orchestration`, `implementation`, and `pure` are the common baseline; projects add their own where they have a distinct kind of module.

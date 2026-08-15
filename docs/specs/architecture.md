@@ -1,90 +1,42 @@
 # Architecture Format
 
-The architecture format is used to outline the [deep modules](glossary.md#deep-module) of an application in YAML.
+The architecture format lists, in YAML, the components a project is built from.
 
 ## Location
 
-Architecture documents live in two places:
-
-- **`/specs/architecture.yaml`** — describes the **current** modules of the application as a whole.
-- **`/specs/features/<component>/<feature>/architecture.yaml`** (optional) — describes **future** modules introduced or changed by a specific feature. Omit when the feature does not introduce new modules.
+The architecture document lives at **`/specs/architecture.yaml`** and describes the **current** components of the application.
 
 ## Format
 
-Architecture documents use YAML format with the following structure:
+The architecture document is a YAML list. Each component is a collection of resources, as defined in the [glossary](glossary.md#component) — source code, scripts, runtimes, assets, or config. Each entry has the following fields:
 
-### Top-level fields
-
-- **categories** (required, list): Declares the module categories used throughout this architecture document. Each category object has the following fields:
-
-  - **slug** (required, string): Short identifier used as the value of `category` on each module. Must be unique within the document.
-  - **description** (required, string): One sentence describing what this category of module is for.
-  - **orchestration** (optional, boolean): Whether modules in this category are [orchestration modules](glossary.md#orchestration-module) rather than [implementation modules](glossary.md#implementation-module). Defaults to `false` if omitted.
-  - **signatures** (required, list of strings): The types of code resources that should be found in modules of this category (e.g. exported functions, interfaces, struct types, CLI wrappers).
-
-- **modules** (required, list): The modules that make up the architecture. Each module has the following fields:
-
-  - **path** (required, string): The file path or directory path where the module is located or should be implemented. Relative to the repo root.
-  - **description** (required, string): A single short sentence stating the module's purpose and role. Do not include method names, route lists, interface names, or error types — details like these churn every time the module grows. A good description should survive multiple features being added without needing an edit.
-  - **category** (required, string): The slug of the category this module belongs to.
-
-The category set is per-project. The four in the example below are the common baseline; add categories when a project has a distinct kind of module that none of them describe (process lifecycle, in-process pipeline, generated code), rather than stretching an existing category's description to cover it.
+- **path** (required, string): The file path or directory path where the component lives. Relative to the repo root.
+- **description** (required, string): A single short sentence stating the component's purpose and role. Do not include method names, route lists, interface names, or error types — details like these churn every time the component grows. A good description should survive multiple features being added without needing an edit.
+- **orchestration** (optional, boolean): Whether the component is an [orchestration module](glossary.md#orchestration-module) rather than an [implementation module](glossary.md#implementation-module). Defaults to `false` if omitted.
 
 ## Example
 
 ```yaml
-categories:
-  - slug: entry
-    description: Main package that wires real dependencies and starts the application.
-    signatures:
-      - main function
-      - dependency wiring
+- path: cmd/myapp
+  description: Wires real dependencies into the application and starts the server.
+  orchestration: true
 
-  - slug: orchestration
-    description: Domain logic modules that define and coordinate core business processes.
-    orchestration: true
-    signatures:
-      - domain logic
-      - domain logic integration tests
+- path: internal/orders
+  description: Orchestrates order placement, fulfillment, and cancellation workflows.
+  orchestration: true
 
-  - slug: implementation
-    description: Real dependency implementations and mocks that back the domain interfaces.
-    signatures:
-      - real dependency implementations
-      - mocks
-      - unit tests
+- path: internal/postgres
+  description: PostgreSQL-backed implementations of the domain repository interfaces.
 
-  - slug: pure
-    description: Stateless modules containing only value objects and pure functions with no side effects.
-    signatures:
-      - value objects
-      - pure functions
-      - unit tests
+- path: internal/httpapi
+  description: HTTP handlers that translate requests into domain calls and format responses.
 
-modules:
-  - path: cmd/myapp
-    description: Wires real dependencies into the application and starts the server.
-    category: entry
-
-  - path: internal/orders
-    description: Orchestrates order placement, fulfillment, and cancellation workflows.
-    category: orchestration
-
-  - path: internal/inventory
-    description: Manages stock levels, reservations, and availability checks.
-    category: orchestration
-
-  - path: internal/postgres
-    description: PostgreSQL-backed implementations of the domain repository interfaces.
-    category: implementation
-
-  - path: internal/httpapi
-    description: HTTP handlers that translate requests into domain calls and format responses.
-    category: implementation
+- path: deploy/containers
+  description: Container images and runtime configuration for deploying the application.
 ```
 
 ## How the Architecture Is Used
 
-The architecture document is the module map. It is read before any code is written ([Writing Code](code.md)), it decides where an orchestration's helpers live ([Orchestration Format](orchestration.md#module-structure)), and its `category` and `signatures` fields determine what form the code and tests for a module may take ([Writing Code](code.md), [Testing](testing.md)).
+The architecture document is the component map. It records what exists, so write it after the code and update it as the code changes. Before writing code, read it to find where the code belongs ([Writing Code](code.md)).
 
-Keeping it accurate matters more than keeping it complete. A module whose description no longer matches what it does is worse than a module that is missing.
+Keeping it accurate matters more than keeping it complete. A component whose description no longer matches what it does is worse than a component that is missing.
