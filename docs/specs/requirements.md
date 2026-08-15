@@ -22,9 +22,3 @@ A [requirement](glossary.md#requirement) in a [project](project.md) is one itera
 - Break complex work into multiple entries — one entry is one iteration, so work that needs three separate rounds should be three entries
 
 **Do not include** work the runner handles automatically. Most runners run the test suite and fix failures on their own, so entries like "all existing tests pass" or "no regressions" are redundant. Check what your runner does before adding an entry for it.
-
-## Where Implementation Detail Belongs
-
-Implementation shapes belong in an [orchestration document](orchestration.md), and module placement in an [architecture document](architecture.md).
-
-The distinction is authorship. A requirement states the outcome; the orchestration holds a shape someone already designed. What must not happen is an agent making architecture decisions because a requirement told it to "implement middleware".
