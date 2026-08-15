@@ -2,17 +2,21 @@
 
 Terms used throughout these documents. A runner that executes projects will have its own vocabulary for the mechanics of doing so — how a requirement is selected, how completion is recorded — and that belongs in the runner's documentation, not here.
 
+## App
+
+A runnable the project ships — a server, worker, or CLI that the project runs. Apps can group [specs](specs.md) by the runtime that serves them.
+
 ## Component
 
 A collection of resources — scripts, runtimes, assets, config, or source code modules — the project is built from. Components are listed in [`specs/architecture.yaml`](architecture-outline.md), each with a path, a description, and whether it is an orchestration module.
 
 ## Feature
 
-A coherent slice of user-facing or system-facing behavior — something a user can do, or something the system does on their behalf. Good feature names describe what the system does (`auth`, `payments`, `notifications`), not how it does it (`jwt-handler`, `stripe-client`). If a feature grows too large to read comfortably, split it by sub-feature rather than by implementation detail.
+A coherent slice of user-facing or system-facing behavior — something a user can do, or something the system does on their behalf. Good feature names describe what the system does (`auth`, `payments`, `notifications`), not how it does it (`jwt-handler`, `stripe-client`). If a feature grows too large to read comfortably, split it by sub-feature rather than by implementation detail. Features are what a [spec](specs.md) path ends in.
 
 ## Requirement
 
-A single behavior the system must have, stated as observable behavior rather than implementation. Requirements live in a [spec](spec.md), where they use RFC 2119 keywords (SHALL, MUST, SHOULD, MAY) to signal strength, and in a [project](project.md), where each one is the unit of a single iteration.
+A single behavior the system must have, stated as observable behavior rather than implementation. Requirements live in a [spec](specs.md), where they use RFC 2119 keywords (SHALL, MUST, SHOULD, MAY) to signal strength, and in a [project](project.md), where each one is the unit of a single iteration.
 
 ## Scenario
 

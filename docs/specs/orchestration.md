@@ -81,5 +81,5 @@ Fixture builders for input types (e.g. a struct passed into the orchestration by
 
 ## What Orchestrations Are Not
 
-- **Not a spec.** Orchestrations do not define behavioral guarantees. Put those in a [spec](spec.md).
+- **Not a spec.** Orchestrations do not define behavioral guarantees. Put those in a [spec](specs.md).
 - **Not a branching tree.** Orchestrations should be exhaustive but designed to minimize paths. If an orchestration has many branches, that is a signal to simplify the design, not to add more cases.

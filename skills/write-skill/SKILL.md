@@ -19,7 +19,7 @@ Write a skill that a coding agent can invoke by name in any repository that inst
 
    - **Reference documentation rather than repeating it.** Link to the doc and let the agent read it when needed. A skill that restates a format goes stale the moment the format changes.
    - **Reference documents at their installed path.** Documents in this repository live at `docs/specs/<file>.md` and install to the same path in the target repository, so a relative markdown link resolves in both places. Use markdown links, never bare paths or code spans.
-   - **Target-repository paths need no link.** Paths like `./specs/features/...` or `specs/architecture.yaml` resolve wherever the skill runs.
+   - **Target-repository paths need no link.** Paths like `./specs/<path>.md` or `specs/architecture.yaml` resolve wherever the skill runs.
    - **Keep the frontmatter to the [spec's six fields](https://agentskills.io/specification)** — `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`. Other runners ignore runner-specific fields, so use them only when a skill targets one runner.
 
 5. **Report** the skill path, the situations that trigger it, and a one-line summary.

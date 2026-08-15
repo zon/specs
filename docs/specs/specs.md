@@ -4,7 +4,24 @@ The spec format describes system behavior with structured requirements and scena
 
 ## File Location
 
-See [Directory Structure](README.md#directory-structure) for where spec files live.
+Specs live at `/specs/<path>.md`. The last segment of the path names the spec, a [feature](glossary.md#feature); the segments before it group the spec by [app](glossary.md#app), [component](glossary.md#component), or [feature](glossary.md#feature), in that order:
+
+```
+/specs/
+└── <app>/<component>/<feature>.md
+```
+
+Groups are optional and repeatable, so a path may chain several components or several features:
+
+```
+/specs/auth.md                      # a feature
+/specs/web/auth.md                  # app → feature
+/specs/orders/checkout.md           # component → feature
+/specs/web/orders/checkout.md       # app → component → feature
+/specs/orders/billing/payments.md   # two components → feature
+```
+
+Within those rules, group by what fits the repo best.
 
 ## Structure
 

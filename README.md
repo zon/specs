@@ -21,7 +21,7 @@ Before writing any code, read [docs/specs/architecture.md](docs/specs/architectu
 
 ## What's Inside
 
-**Formats** — [spec](docs/specs/spec.md), [architecture](docs/specs/architecture-outline.md), [project](docs/specs/project.md). A spec defines what the system must do; the architecture records where the code lives; a project is a plain list of requirements, one per iteration.
+**Formats** — [spec](docs/specs/specs.md), [architecture](docs/specs/architecture-outline.md), [project](docs/specs/project.md). A spec defines what the system must do; the architecture records where the code lives; a project is a plain list of requirements, one per iteration.
 
 **Standards** — [orchestration](docs/specs/orchestration.md), [architecture guidelines](docs/specs/architecture.md), [writing requirements](docs/specs/requirements.md), [agent prompts](docs/specs/prompts.md), [glossary](docs/specs/glossary.md).
 
@@ -29,7 +29,7 @@ Before writing any code, read [docs/specs/architecture.md](docs/specs/architectu
 
 | Skill | Writes |
 |---|---|
-| `write-spec` | `specs/features/<component>/<feature>/spec.md` |
+| `write-spec` | `specs/<path>.md` |
 | `write-architecture` | `specs/architecture.yaml` |
 | `write-project` | `projects/<slug>.yaml` |
 | `review-module` | a findings report, and a project to fix the gaps |
