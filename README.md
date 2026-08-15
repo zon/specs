@@ -1,4 +1,4 @@
-# Specs
+# zpecs
 
 Document formats and standards for spec-driven development with AI coding agents, plus the skills that author them.
 
