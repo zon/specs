@@ -45,6 +45,10 @@ Before writing any tests, read [docs/specs/testing.md](docs/specs/testing.md).
 
 **Prompts** — [outline](docs/specs/outline.md) generates a whole `/specs` tree from an existing codebase.
 
+## CLI
+
+[The CLI](docs/cli/README.md) renders this repository's skill and agent definitions into a project's `.claude` or `.opencode` directory.
+
 ## Runners
 
 Nothing here executes a project. A project is a file listing requirements; running it is a runner's job. [ralph](https://github.com/zon/ralph) is one — it picks one requirement per iteration, drives a coding agent through it, and records completion in the branch's commit log.
