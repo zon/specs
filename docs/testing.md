@@ -75,7 +75,7 @@ Unit tests for real external dependencies must be small, focused, and cheap — 
 
 ### Module boundaries
 
-Only implementation modules may hold real dependency implementations and mocks. See [Writing Code](code.md).
+Only implementation modules may hold real dependency implementations and mocks. See [Architecture Guidelines](architecture.md).
 
 | Module type | May contain |
 |---|---|

@@ -8,6 +8,7 @@ How to write and organize prose.
 * Don't repeat concepts
 * Prefer the top 1000 most common words
 * Use active voice
+* Don't argue against old text; omit it
 
 ## Organization
 

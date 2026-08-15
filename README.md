@@ -2,7 +2,7 @@
 
 Document formats and standards for spec-driven development with AI coding agents, plus the skills that author them.
 
-This repository holds the opinions: what a spec looks like, how an application is broken into components, how a project splits work into iterations, what belongs in a test. Projects install it rather than depend on it, so a project gets a copy it can read, edit, and diff.
+Projects install it rather than depend on it, so a project gets a copy it can read, edit, and diff.
 
 ## Install
 
@@ -16,23 +16,21 @@ zpecs update --target opencode
 Copy the standards docs into the target's `docs/specs/`, then point the target's `AGENTS.md` at them:
 
 ```markdown
-Before writing any code, read [docs/specs/code.md](docs/specs/code.md).
-Before writing any tests, read [docs/specs/testing.md](docs/specs/testing.md).
+Before writing any code, read [docs/specs/architecture.md](docs/specs/architecture.md).
 ```
 
 ## What's Inside
 
-**Formats** — [spec](docs/specs/spec.md), [orchestration](docs/specs/orchestration.md), [architecture](docs/specs/architecture.md), [project](docs/specs/project.md). The first three build on each other: what the system must do, the shape of the logic that does it, and where that logic lives. A project is a plain list of requirements, one per iteration.
+**Formats** — [spec](docs/specs/spec.md), [architecture](docs/specs/architecture-outline.md), [project](docs/specs/project.md). A spec defines what the system must do; the architecture records where the code lives; a project is a plain list of requirements, one per iteration.
 
-**Standards** — [writing code](docs/specs/code.md), [testing](docs/specs/testing.md), [writing requirements](docs/specs/requirements.md), [agent prompts](docs/specs/prompts.md), [glossary](docs/specs/glossary.md).
+**Standards** — [orchestration](docs/specs/orchestration.md), [architecture guidelines](docs/specs/architecture.md), [writing requirements](docs/specs/requirements.md), [agent prompts](docs/specs/prompts.md), [glossary](docs/specs/glossary.md).
 
-**Skills** — eight skills an agent invokes by name:
+**Skills** — seven skills an agent invokes by name:
 
 | Skill | Writes |
 |---|---|
 | `write-spec` | `specs/features/<component>/<feature>/spec.md` |
 | `write-architecture` | `specs/architecture.yaml` |
-| `write-orchestration` | `specs/features/<component>/<feature>/orchestration.md` |
 | `write-project` | `projects/<slug>.yaml` |
 | `review-module` | a findings report, and a project to fix the gaps |
 | `prose-editor` | fixes for violations in docs, comments, or agent prose |

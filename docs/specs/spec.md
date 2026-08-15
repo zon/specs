@@ -64,10 +64,10 @@ Avoid in specs:
 - Internal class/function names
 - Library or framework choices
 - Step-by-step implementation details
-- Detailed execution plans — those belong in an [orchestration](orchestration.md) or a [project](project.md)
+- Detailed execution plans — those belong in a [project](project.md)
 
 Quick test:
-- If implementation can change without changing externally visible behavior, it likely does not belong in the spec.
+- If implementation can change without changing externally visible behavior, that detail likely does not belong in the spec.
 
 ## Keep It Light
 

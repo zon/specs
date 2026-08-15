@@ -9,7 +9,7 @@ Write the architecture document at **`specs/architecture.yaml`** after the code,
 
 ## Steps
 
-1. **Read the architecture format docs** at [docs/specs/architecture.md](docs/specs/architecture.md).
+1. **Read the architecture format docs** at [docs/specs/architecture-outline.md](docs/specs/architecture-outline.md).
 
 2. **Read the existing architecture document** at the target path if one exists, so edits preserve unrelated components.
 

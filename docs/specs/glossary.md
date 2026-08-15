@@ -4,7 +4,7 @@ Terms used throughout these documents. A runner that executes projects will have
 
 ## Component
 
-A collection of resources — scripts, runtimes, assets, config, or source code modules — the project is built from. Components are listed in [`specs/architecture.yaml`](architecture.md), each with a path, a description, and whether it is an orchestration module.
+A collection of resources — scripts, runtimes, assets, config, or source code modules — the project is built from. Components are listed in [`specs/architecture.yaml`](architecture-outline.md), each with a path, a description, and whether it is an orchestration module.
 
 ## Feature
 
