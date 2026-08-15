@@ -28,7 +28,7 @@ skills/<name>/SKILL.md
 agents/<name>.md
 ```
 
-Skills follow the [Agent Skills spec](https://agentskills.io/specification); agents follow the [Agent Format](formats/agent.md).
+Skills follow the [Agent Skills spec](https://agentskills.io/specification); agents follow the [Agent Format](agent-format.md).
 
 ## Source
 
@@ -41,13 +41,12 @@ The commands must run inside a git repository, locate the repo root, and write t
 - `claude` — `.claude/skills/<name>/SKILL.md` and `.claude/agents/<name>.md`
 - `opencode` — `.opencode/skills/<name>/SKILL.md` and `.opencode/agents/<name>.md`
 
-It creates missing directories and replaces the definitions it wrote last time, so definitions removed from the source stop appearing and other files stay untouched.
+It creates missing directories and replaces the files it wrote before, leaving other files alone. Definitions the source no longer lists stop appearing.
 
 ## Rendering
 
-Both targets use the same frontmatter fields, but not identically:
+Both targets read the same frontmatter fields but map them differently:
 
 - claude agents use `name`
 - opencode agents use `mode: subagent` and drop `name`
-
-The renderer maps each definition to the target's fields.
+- the `tools` list maps to `tools` in claude agents, and to deny rules for every other tool in opencode agents
