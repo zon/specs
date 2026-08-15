@@ -24,11 +24,11 @@ All three take the same flags:
 Definitions are the neutral source of truth. They live in the GitHub repository:
 
 ```
-skills/<name>.md
+skills/<name>/SKILL.md
 agents/<name>.md
 ```
 
-See the [Skill Format](formats/skill.md) and [Agent Format](formats/agent.md).
+Skills follow the [Agent Skills spec](https://agentskills.io/specification); agents follow the [Agent Format](formats/agent.md).
 
 ## Source
 

@@ -1,6 +1,6 @@
 # Agent Instructions
 
-This repository holds the spec formats and standards that get installed into other projects. Everything in it is documentation — there is no build and no source code.
+This repository holds the spec formats and standards that projects install. Everything in it is documentation — there is no build and no source code.
 
 ## Prose
 
@@ -10,7 +10,7 @@ After writing or editing prose, invoke the `prose-editor` subagent to review it.
 
 ## Editing Docs
 
-Documents live in [docs/specs/](docs/specs/README.md) and are installed to `docs/specs/` in the target repository. The path is identical in both places, which is what makes relative links work everywhere.
+Documents live in [docs/specs/](docs/specs/README.md) and install to `docs/specs/` in the target repository. The path is identical in both places, which is what makes relative links work everywhere.
 
 - **Link between documents with plain relative links.** From inside `docs/specs/`, that is a bare filename: `[Architecture Format](architecture.md)`.
 - **Never rewrite a link to an absolute URL.** Install is a file copy; there is no link rewriting step, and a raw GitHub URL would pin the target to whatever this repo looked like at install time.
@@ -18,9 +18,9 @@ Documents live in [docs/specs/](docs/specs/README.md) and are installed to `docs
 
 ## Editing Skills
 
-Skills live in `.claude/skills/spec-<name>/SKILL.md`. Use the `spec-write-skill` skill, or follow the same rules by hand:
+Author skills in the central `skills/<name>/SKILL.md` directory. Use the `write-skill` skill, or follow the same rules by hand:
 
-- The frontmatter `name` must match the directory name, and the directory must keep the `spec-` prefix — `just install` only copies and prunes prefixed skills.
+- The frontmatter `name` must match the directory name. Skills that `just install` ships keep the `spec-` prefix, because the installer only copies and prunes prefixed skills.
 - Reference documents with markdown links at their installed path: `[docs/specs/code.md](docs/specs/code.md)`. Never a bare path, never a code span.
 - Reference documentation rather than restating it. A skill that repeats a format goes stale when the format changes.
 

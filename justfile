@@ -74,7 +74,7 @@ check:
     #!/usr/bin/env bash
     set -euo pipefail
     status=0
-    for file in {{docs_dir}}/*.md {{skills_dir}}/{{skill_prefix}}*/SKILL.md; do
+    for file in {{docs_dir}}/*.md {{skills_dir}}/{{skill_prefix}}*/SKILL.md skills/*/SKILL.md; do
         while read -r link; do
             case "$link" in
                 http*|"#"*|"") continue ;;
