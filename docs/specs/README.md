@@ -2,7 +2,7 @@
 
 The document formats and standards for spec-driven development with AI coding agents.
 
-Everything in this directory is installed into a project by `just install <dir>`, which copies it to `docs/specs/` in the target. The paths are the same in both places, so every link below resolves identically wherever it is read.
+Everything in this directory is installed into a project at `docs/specs/` in the target. The paths are the same in both places, so every link below resolves identically wherever it is read.
 
 ## Directory Structure
 

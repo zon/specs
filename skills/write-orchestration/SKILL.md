@@ -1,5 +1,5 @@
 ---
-name: spec-write-orchestration
+name: write-orchestration
 description: Creates an orchestration document in /specs. Use when the user wants to write an orchestration, design the domain logic shape for a feature, or produce an idealized implementation template alongside a spec.
 ---
 
@@ -21,7 +21,7 @@ Create a well-formed orchestration file in `./specs/features/` based on the user
 
 4. **Determine the language** by reading the relevant source files for the feature area.
 
-5. **Check the architecture.** Read `specs/architecture.yaml` and, if it exists, the feature's `specs/features/<component>/<feature>/architecture.yaml` to identify which **implementation modules** should be injected as clients into the orchestration. The orchestration itself must live in a **dedicated orchestration module** — if none exists for this feature area, create one. Do not place the orchestration in an existing implementation module. See [docs/specs/code.md](docs/specs/code.md).
+5. **Check the architecture.** Read `specs/architecture.yaml` and, if it exists, the feature's `specs/features/<component>/<feature>/architecture.yaml` to identify which **implementation modules** to inject as clients into the orchestration. The orchestration itself must live in a **dedicated orchestration module** — if none exists for this feature area, create one. See [docs/specs/code.md](docs/specs/code.md).
 
 6. **Draft the orchestration and tests** following the format and guidelines in [docs/specs/orchestration.md](docs/specs/orchestration.md). For each input type in the orchestration signature, identify which module owns the type and place its fixture builder there, not in the orchestration module.
 

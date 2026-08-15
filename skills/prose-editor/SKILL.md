@@ -1,5 +1,5 @@
 ---
-name: spec-prose-editor
+name: prose-editor
 description: Reviews prose against the prose guidelines and fixes violations. Use when the user asks to proofread, edit, or check the writing in docs, comments, or agent prose.
 ---
 

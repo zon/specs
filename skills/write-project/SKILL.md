@@ -1,5 +1,5 @@
 ---
-name: spec-write-project
+name: write-project
 description: Creates and validates a project file listing the requirements a coding agent works through, one per iteration.
 ---
 
@@ -23,6 +23,6 @@ A project is a YAML or JSON file holding a top-level list of requirements. Each 
 
 4. **Write the file** at `./projects/<slug>.yaml` as a top-level list of strings, following the format in [docs/specs/project.md](docs/specs/project.md). The base name is the slug a runner uses as the branch name.
 
-5. **Validate.** Confirm the file parses as a list holding at least one non-empty entry. Empty entries — null, `false`, `0`, blank strings — are typically dropped during resolution, so never leave a placeholder in the list. If the project's runner provides a validation command, use it — for the `ralph` runner that is `ralph validate ./projects/<slug>.yaml`.
+5. **Validate.** Confirm the file parses as a list holding at least one non-empty entry. Empty entries — null, `false`, `0`, blank strings — are typically dropped during resolution, so never leave a placeholder in the list. If the project's runner provides a validation command, use it.
 
 6. **Report** the file path and a one-line summary of what the project covers.

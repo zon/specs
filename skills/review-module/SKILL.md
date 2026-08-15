@@ -1,5 +1,5 @@
 ---
-name: spec-review-module
+name: review-module
 description: Reviews a module against the architecture standards for its category, reports gaps, and creates a project to code the recommendations. Use when the user wants to audit a module, bring it up to standard, or understand what it's missing.
 ---
 
@@ -11,7 +11,7 @@ Audit a module against the architecture and testing standards for its declared c
 
 1. **Identify the module path.** Use the argument passed to the skill if provided (e.g. `internal/argo`). If none, ask the user which module to review.
 
-2. **Read the architecture registry** at `specs/architecture.yaml` to find the module's entry. Note its `category` and its declared `description`. If the module has no entry, say so and ask the user whether to add one — reviewing an unregistered module has no standard to review it against.
+2. **Read the architecture registry** at `specs/architecture.yaml` to find the module's entry. Note its `category` and its declared `description`. If the module has no entry, say so and ask the user whether to add one — an unregistered module has no standard to review against.
 
 3. **Read the standards docs:**
    - [docs/specs/code.md](docs/specs/code.md) — module placement rules and category constraints.
@@ -20,7 +20,7 @@ Audit a module against the architecture and testing standards for its declared c
 
 4. **Read all files in the module directory.** Understand what the module currently contains: structs, interfaces, free functions, test files, mock files.
 
-5. **Check against category standards.** Use the category's `description` and `signatures` fields from `specs/architecture.yaml` as the primary definition of what belongs in that category. Then apply whatever rules [docs/specs/code.md](docs/specs/code.md) and [docs/specs/testing.md](docs/specs/testing.md) specify for that category — read those files and derive the criteria from them rather than assuming any fixed set of rules.
+5. **Check against category standards.** Use the category's `description` and `signatures` fields from `specs/architecture.yaml` as the primary definition of what belongs in that category. Then apply whatever rules [docs/specs/code.md](docs/specs/code.md) and [docs/specs/testing.md](docs/specs/testing.md) specify for that category, deriving them from the files rather than assuming a fixed set.
 
 6. **Compile the findings** into three sections:
 
@@ -32,6 +32,6 @@ Audit a module against the architecture and testing standards for its declared c
 
 7. **Report the findings** to the user. If the module is fully compliant, say so clearly and stop — no project is needed.
 
-8. **If gaps exist, create a project to code the recommendations.** Invoke the `spec-write-project` skill, handing it the module path and the **Recommendations** list from step 6 as the work to be done. Let that skill draft, write, and validate the project file according to its own steps.
+8. **If gaps exist, create a project to code the recommendations.** Invoke the `write-project` skill, handing it the module path and the **Recommendations** list from step 6 as the work to be done. Let that skill draft, write, and validate the project file according to its own steps.
 
 9. **Report the project file path** alongside the findings, so the user can hand it to a coding agent to execute.

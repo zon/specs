@@ -20,7 +20,7 @@ Documents live in [docs/specs/](docs/specs/README.md) and install to `docs/specs
 
 Author skills in the central `skills/<name>/SKILL.md` directory. Use the `write-skill` skill, or follow the same rules by hand:
 
-- The frontmatter `name` must match the directory name. Skills that `just install` ships keep the `spec-` prefix, because the installer only copies and prunes prefixed skills.
+- The frontmatter `name` must match the directory name.
 - Reference documents with markdown links at their installed path: `[docs/specs/code.md](docs/specs/code.md)`. Never a bare path, never a code span.
 - Reference documentation rather than restating it. A skill that repeats a format goes stale when the format changes.
 

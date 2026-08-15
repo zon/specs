@@ -1,5 +1,5 @@
 ---
-name: spec-write-architecture
+name: write-architecture
 description: Creates or edits the architecture document at specs/architecture.yaml. Use when the user wants to outline the deep modules of an application, document current architecture, or plan future modules.
 ---
 

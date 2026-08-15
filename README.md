@@ -6,20 +6,14 @@ This repository holds the opinions: what a spec looks like, how modules are cate
 
 ## Install
 
+Run the [CLI](docs/cli/README.md) inside the target repository to render the skill and agent definitions into its `.claude` or `.opencode` directory:
+
 ```bash
-just install ../myproject
+zpecs update --target claude
+zpecs update --target opencode
 ```
 
-That copies:
-
-```
-docs/specs/*.md              ->  <dir>/docs/specs/*.md
-.claude/skills/spec-*/       ->  <dir>/.claude/skills/spec-*/
-```
-
-The docs land at the same path they occupy here, so every link inside them resolves identically in both repositories — nothing is rewritten on the way in. Installing again replaces both trees and prunes any `spec-` skill this repository no longer publishes. Skills without the `spec-` prefix stay untouched.
-
-Then point the target's `AGENTS.md` at the standards:
+Copy the standards docs into the target's `docs/specs/`, then point the target's `AGENTS.md` at them:
 
 ```markdown
 Before writing any code, read [docs/specs/code.md](docs/specs/code.md).
@@ -32,22 +26,20 @@ Before writing any tests, read [docs/specs/testing.md](docs/specs/testing.md).
 
 **Standards** — [writing code](docs/specs/code.md), [testing](docs/specs/testing.md), [writing requirements](docs/specs/requirements.md), [agent prompts](docs/specs/prompts.md), [glossary](docs/specs/glossary.md).
 
-**Skills** — six skills an agent invokes by name:
+**Skills** — eight skills an agent invokes by name:
 
 | Skill | Writes |
 |---|---|
-| `spec-write-spec` | `specs/features/<component>/<feature>/spec.md` |
-| `spec-write-architecture` | `specs/architecture.yaml` |
-| `spec-write-orchestration` | `specs/features/<component>/<feature>/orchestration.md` |
-| `spec-write-project` | `projects/<slug>.yaml` |
+| `write-spec` | `specs/features/<component>/<feature>/spec.md` |
+| `write-architecture` | `specs/architecture.yaml` |
+| `write-orchestration` | `specs/features/<component>/<feature>/orchestration.md` |
+| `write-project` | `projects/<slug>.yaml` |
+| `review-module` | a findings report, and a project to fix the gaps |
+| `prose-editor` | fixes for violations in docs, comments, or agent prose |
 | `write-skill` | `skills/<name>/SKILL.md` |
-| `spec-review-module` | a findings report, and a project to fix the gaps |
+| `write-agent` | `agents/<name>.md` |
 
 **Prompts** — [outline](docs/specs/outline.md) generates a whole `/specs` tree from an existing codebase.
-
-## CLI
-
-[The CLI](docs/cli/README.md) installs skill and agent definitions into a project.
 
 ## Runners
 
@@ -58,9 +50,7 @@ The formats stay runner-neutral.
 ## Recipes
 
 ```bash
-just install <dir>   # copy docs and skills into another repo
-just list            # show what install would copy
-just check           # verify every relative markdown link resolves
+just check   # verify every relative markdown link resolves
 ```
 
 ## License
