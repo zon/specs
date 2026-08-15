@@ -39,8 +39,6 @@ Before writing any tests, read [docs/specs/testing.md](docs/specs/testing.md).
 | `write-skill` | `skills/<name>/SKILL.md` |
 | `write-agent` | `agents/<name>.md` |
 
-**Prompts** — [outline](docs/specs/outline.md) generates a whole `/specs` tree from an existing codebase.
-
 ## Runners
 
 Nothing here executes a project; running it is a runner's job. [ralph](https://github.com/zon/ralph) is one — it picks one requirement per iteration, drives a coding agent through it, and records completion in the branch's commit log.

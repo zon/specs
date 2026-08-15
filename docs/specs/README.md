@@ -52,12 +52,6 @@ See [Component](glossary.md#component) and [Feature](glossary.md#feature) in the
 | [Agent Prompts](prompts.md) | How to structure a single-task prompt |
 | [Glossary](glossary.md) | Terms used throughout these documents |
 
-## Prompts
-
-| Document | Purpose |
-|---|---|
-| [Outline](outline.md) | Analyze an existing repo and generate a `/specs` tree for it |
-
 ## Order of Authorship
 
 Three of the formats build on each other. For a new feature:
