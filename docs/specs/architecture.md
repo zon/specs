@@ -14,7 +14,7 @@ Every piece of code belongs in a specific component. Before writing, ask:
 
 ## Component Types
 
-Each component is either an [implementation module](glossary.md#implementation-module) or, when marked `orchestration: true` in `specs/architecture.yaml`, an [orchestration module](glossary.md#orchestration-module). A component that is not code — scripts, runtimes, assets, or config — is neither.
+Each component is either an [implementation module](glossary.md#implementation-module) or, when `specs/architecture.yaml` sets `orchestration: true`, an [orchestration module](glossary.md#orchestration-module). A component with no code is neither.
 
 ### Orchestration Modules
 

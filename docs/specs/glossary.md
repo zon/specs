@@ -8,7 +8,7 @@ A runnable the project ships — a server, worker, or CLI. Apps can group [specs
 
 ## Component
 
-A collection of resources — scripts, runtimes, assets, config, or source code modules — that build the project. See [Architecture Format](architecture-outline.md).
+A collection of resources in the repo that build the project. See [Architecture Format](architecture-outline.md).
 
 ## Feature
 

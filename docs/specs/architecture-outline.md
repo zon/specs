@@ -8,7 +8,7 @@ The architecture document lives at **`/specs/architecture.yaml`** and describes 
 
 ## Format
 
-The architecture document is a YAML list. Each component is a collection of resources, as defined in the [glossary](glossary.md#component) — source code, scripts, runtimes, assets, or config. Each entry has the following fields:
+The architecture document is a YAML list. A component is a collection of resources that serve one concern: source code, scripts, runtimes, assets, or config. Each entry has the following fields:
 
 - **path** (required, string): The file path or directory path where the component lives. Relative to the repo root.
 - **description** (required, string): A single short sentence stating the component's purpose and role. Do not include method names, route lists, interface names, or error types — details like these churn every time the component grows. A good description should survive multiple features being added without needing an edit.
