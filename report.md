@@ -1,11 +1,11 @@
-Render a claude agent keeping its name
+Render an opencode agent in subagent mode without its name
 
-A render module maps definitions to each target's format. For claude, an
-agent keeps its name and description in the frontmatter, with its body as
-the prompt. It reads the same frontmatter fields every target reads, so the
-name carries over from the definition unchanged.
+The render module now maps an agent definition to the opencode target.
+An opencode agent keeps its description and body, and uses
+mode: subagent instead of a name field. It reads the same frontmatter
+fields as the claude render, dropping only the name.
 
-Added tests cover the claude agent keeping its name and the rendered agent
-having the name, description, and body in order.
+Added tests cover the rendered agent using mode: subagent, the rendered
+agent having no name field, and the description and body in order.
 
-Ralph item 5 completed
+Ralph item 6 completed

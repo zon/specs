@@ -30,3 +30,34 @@ func TestClaudeAgentRendersNameDescriptionAndBody(t *testing.T) {
 		t.Fatalf("ClaudeAgent = %q, want %q", got, want)
 	}
 }
+
+func TestOpencodeAgentUsesSubagentMode(t *testing.T) {
+	fields := frontmatter.Fields{Name: "prose-editor"}
+
+	got := OpencodeAgent(fields, "Review prose.")
+
+	if !strings.Contains(got, "mode: subagent") {
+		t.Fatalf("OpencodeAgent rendered %q without mode: subagent", got)
+	}
+}
+
+func TestOpencodeAgentDropsName(t *testing.T) {
+	fields := frontmatter.Fields{Name: "prose-editor"}
+
+	got := OpencodeAgent(fields, "Review prose.")
+
+	if strings.Contains(got, "name:") {
+		t.Fatalf("OpencodeAgent rendered %q with a name field", got)
+	}
+}
+
+func TestOpencodeAgentRendersModeDescriptionAndBody(t *testing.T) {
+	fields := frontmatter.Fields{Description: "Reviews prose against the guidelines."}
+
+	got := OpencodeAgent(fields, "Review prose against the guidelines.")
+	want := "---\nmode: subagent\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
+
+	if got != want {
+		t.Fatalf("OpencodeAgent = %q, want %q", got, want)
+	}
+}
