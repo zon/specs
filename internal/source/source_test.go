@@ -93,3 +93,51 @@ func TestReadLocalErrorsOnMissingSource(t *testing.T) {
 		t.Fatal("expected an error for a missing source directory")
 	}
 }
+
+func TestReadSkillsFindsOnlySkills(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
+
+	defs, err := ReadSkills(dir)
+	if err != nil {
+		t.Fatalf("ReadSkills: %v", err)
+	}
+
+	if got := namesOfKind(defs, Skill); !reflect.DeepEqual(got, []string{"prose-editor"}) {
+		t.Fatalf("skills = %v, want [prose-editor]", got)
+	}
+	if got := namesOfKind(defs, Agent); len(got) != 0 {
+		t.Fatalf("ReadSkills returned agents %v", got)
+	}
+}
+
+func TestReadAgentsFindsOnlyAgents(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
+
+	defs, err := ReadAgents(dir)
+	if err != nil {
+		t.Fatalf("ReadAgents: %v", err)
+	}
+
+	if got := namesOfKind(defs, Agent); !reflect.DeepEqual(got, []string{"code-architect"}) {
+		t.Fatalf("agents = %v, want [code-architect]", got)
+	}
+	if got := namesOfKind(defs, Skill); len(got) != 0 {
+		t.Fatalf("ReadAgents returned skills %v", got)
+	}
+}
+
+func TestReadSkillsErrorsOnMissingSource(t *testing.T) {
+	if _, err := ReadSkills(filepath.Join(t.TempDir(), "missing")); err == nil {
+		t.Fatal("expected an error for a missing source directory")
+	}
+}
+
+func TestReadAgentsErrorsOnMissingSource(t *testing.T) {
+	if _, err := ReadAgents(filepath.Join(t.TempDir(), "missing")); err == nil {
+		t.Fatal("expected an error for a missing source directory")
+	}
+}

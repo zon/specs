@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Kind distinguishes a skill definition from an agent definition.
+// Kind marks a definition as a skill or an agent.
 type Kind int
 
 const (
@@ -23,10 +23,10 @@ type Definition struct {
 	Path string
 }
 
-// ReadLocal reads definitions from a local source. The source follows the
-// repository layout, so it ignores anything in other locations.
+// ReadLocal reads definitions from a local source that follows the
+// repository layout.
 func ReadLocal(dir string) ([]Definition, error) {
-	if _, err := os.Stat(dir); err != nil {
+	if err := checkDir(dir); err != nil {
 		return nil, err
 	}
 	defs, err := readSkills(dir)
@@ -38,6 +38,27 @@ func ReadLocal(dir string) ([]Definition, error) {
 		return nil, err
 	}
 	return append(defs, agents...), nil
+}
+
+// ReadSkills reads skill definitions from a local source.
+func ReadSkills(dir string) ([]Definition, error) {
+	if err := checkDir(dir); err != nil {
+		return nil, err
+	}
+	return readSkills(dir)
+}
+
+// ReadAgents reads agent definitions from a local source.
+func ReadAgents(dir string) ([]Definition, error) {
+	if err := checkDir(dir); err != nil {
+		return nil, err
+	}
+	return readAgents(dir)
+}
+
+func checkDir(dir string) error {
+	_, err := os.Stat(dir)
+	return err
 }
 
 func readSkills(dir string) ([]Definition, error) {

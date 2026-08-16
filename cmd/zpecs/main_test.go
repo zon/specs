@@ -326,3 +326,92 @@ func TestBinaryWritesToClaudeTarget(t *testing.T) {
 		t.Fatalf("claude agent not written: %v", err)
 	}
 }
+
+func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
+	cases := []struct {
+		name      string
+		scope     string
+		wantSkill bool
+		wantAgent bool
+	}{
+		{name: "update renders skills and agents", wantSkill: true, wantAgent: true},
+		{name: "update skills renders skills only", scope: "skills", wantSkill: true},
+		{name: "update agents renders agents only", scope: "agents", wantAgent: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			dir := t.TempDir()
+			writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+			writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
+
+			args := []string{"update"}
+			if tc.scope != "" {
+				args = append(args, tc.scope)
+			}
+			args = append(args, "--source", dir)
+			if err := run(args); err != nil {
+				t.Fatalf("run(%v): %v", args, err)
+			}
+
+			skillPath := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
+			agentPath := filepath.Join(".opencode", "agents", "code-architect.md")
+			if tc.wantSkill {
+				if _, err := os.Stat(skillPath); err != nil {
+					t.Fatalf("skill not rendered at %s: %v", skillPath, err)
+				}
+			} else if _, err := os.Stat(skillPath); err == nil {
+				t.Fatalf("skill rendered at %s but the command does not name it", skillPath)
+			}
+			if tc.wantAgent {
+				if _, err := os.Stat(agentPath); err != nil {
+					t.Fatalf("agent not rendered at %s: %v", agentPath, err)
+				}
+			} else if _, err := os.Stat(agentPath); err == nil {
+				t.Fatalf("agent rendered at %s but the command does not name it", agentPath)
+			}
+		})
+	}
+}
+
+func TestBinaryScopedUpdateWritesOnlyWhatItNames(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
+
+	for _, tc := range []struct {
+		scope string
+	}{
+		{scope: "skills"},
+		{scope: "agents"},
+	} {
+		t.Run(tc.scope, func(t *testing.T) {
+			work := t.TempDir()
+			cmd := exec.Command(binary, "update", tc.scope, "--source", dir)
+			cmd.Dir = work
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("zpecs update %s failed: %v\n%s", tc.scope, err, out)
+			}
+
+			skillPath := filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")
+			agentPath := filepath.Join(work, ".opencode", "agents", "code-architect.md")
+			if tc.scope == "skills" {
+				if _, err := os.Stat(skillPath); err != nil {
+					t.Fatalf("skill not written: %v", err)
+				}
+				if _, err := os.Stat(agentPath); err == nil {
+					t.Fatal("agent written by update skills")
+				}
+			} else {
+				if _, err := os.Stat(agentPath); err != nil {
+					t.Fatalf("agent not written: %v", err)
+				}
+				if _, err := os.Stat(skillPath); err == nil {
+					t.Fatal("skill written by update agents")
+				}
+			}
+		})
+	}
+}

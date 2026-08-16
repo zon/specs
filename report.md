@@ -1,14 +1,12 @@
-Write definitions into each target's directories
+Render only what each update command names
 
-The update command now places every definition, keyed by its source
-name, into the target's directories. A skill writes its own content to
-skills/<name>/SKILL.md. An agent writes its form to agents/<name>.md.
-Both sit under a .claude or .opencode root. The path never comes from
-the rendered fields. A new internal targetdir module resolves the paths
-and writes the files, creating the directories it needs.
+The update command reads definitions by scope. A full update reads
+skills and agents. Update skills reads skills only, and update agents
+reads agents only. The source module exposes a scoped read for each
+kind.
 
-Tests cover the four target paths, directory creation, both targets
-writing a skill and an agent, and a built-binary run against the claude
-target.
+Tests cover scoped reads finding only their kind, missing scopes
+erroring, in-process runs, and a built-binary run of the scoped
+commands against a real source.
 
-Ralph item 11 completed
+Ralph item 15 completed

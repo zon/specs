@@ -141,7 +141,7 @@ func update(args []string) error {
 		fmt.Printf("updating %s for %s\n", opts.scope, opts.target)
 		return nil
 	}
-	defs, err := source.ReadLocal(opts.source)
+	defs, err := readDefinitions(opts.scope, opts.source)
 	if err != nil {
 		return err
 	}
@@ -158,8 +158,19 @@ func update(args []string) error {
 	return nil
 }
 
-// rendered returns what a definition becomes at its target. A skill writes
-// itself, and an agent writes its rendered form.
+// readDefinitions reads the definitions a scope names from the source.
+func readDefinitions(s scope, sourceDir string) ([]source.Definition, error) {
+	switch s {
+	case scopeSkills:
+		return source.ReadSkills(sourceDir)
+	case scopeAgents:
+		return source.ReadAgents(sourceDir)
+	default:
+		return source.ReadLocal(sourceDir)
+	}
+}
+
+// rendered returns a skill unchanged or an agent built from its frontmatter.
 func rendered(d source.Definition, t target) (string, error) {
 	if d.Kind == source.Skill {
 		raw, err := os.ReadFile(d.Path)
