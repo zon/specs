@@ -23,6 +23,8 @@ Groups are optional and repeatable, so a path may chain several components or se
 
 Within those rules, group by what fits the repo best.
 
+Name features by what the system does (`auth`, `payments`, `notifications`), not how it does it (`jwt-handler`, `stripe-client`). If a feature grows too large to read comfortably, split it into sub-features rather than by implementation detail.
+
 ## Structure
 
 A spec contains requirements, and each requirement has scenarios:

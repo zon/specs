@@ -18,8 +18,10 @@ Each component is either an [implementation module](glossary.md#implementation-m
 
 ### Orchestration Modules
 
+- A small app typically has one.
 - Do not add code to an orchestration module unless its orchestration calls it.
 - If an orchestration module is accumulating logic that is not pure coordination, move that logic into an implementation module.
+- Split a growing orchestration module along deep concern boundaries.
 
 ### Implementation Modules
 

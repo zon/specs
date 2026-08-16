@@ -1,6 +1,6 @@
 # Glossary
 
-Terms used throughout these documents. A runner that executes projects will have its own vocabulary for the mechanics — how it selects a requirement, how it records completion — and that belongs in the runner's documentation, not here.
+Terms used throughout these documents.
 
 ## App
 
@@ -8,19 +8,19 @@ A runnable the project ships — a server, worker, or CLI. Apps can group [specs
 
 ## Component
 
-A collection of resources — scripts, runtimes, assets, config, or source code modules — that build the project. [`specs/architecture.yaml`](architecture-outline.md) lists each component with a path, a description, and whether it is an orchestration module.
+A collection of resources — scripts, runtimes, assets, config, or source code modules — that build the project. See [Architecture Format](architecture-outline.md).
 
 ## Feature
 
-A coherent slice of user-facing or system-facing behavior — something a user can do, or something the system does on their behalf. Good feature names describe what the system does (`auth`, `payments`, `notifications`), not how it does it (`jwt-handler`, `stripe-client`). If a feature grows too large to read comfortably, split it by sub-feature rather than by implementation detail. A [spec](specs.md) path ends in a feature.
+A coherent slice of user-facing or system-facing behavior — something a user can do, or something the system does on their behalf. A [spec](specs.md) path ends in a feature.
 
 ## Requirement
 
-A single behavior the system must have. State it as observable behavior, not implementation. Requirements live in a [spec](specs.md), where they use RFC 2119 keywords (SHALL, MUST, SHOULD, MAY) to signal strength, and in a [project](project.md), where each one is one iteration.
+A single behavior the system must have. Requirements live in a [spec](specs.md) or a [project](project.md).
 
 ## Scenario
 
-A concrete example of a requirement in action, in Given/When/Then form. Scenarios live in a spec.
+A concrete example of a requirement in action, in Given/When/Then form. Scenarios live in a [spec](specs.md).
 
 ## Project
 
@@ -36,8 +36,8 @@ A module that contains only value objects and pure functions — no I/O, no shar
 
 ## Implementation Module
 
-A module that does the low-level work — database queries, API calls, file I/O, data transformations. Each covers a single deep concern. See [Architecture Guidelines](architecture.md).
+A module that does the low-level work — database queries, API calls, file I/O, data transformations. See [Architecture Guidelines](architecture.md).
 
 ## Orchestration Module
 
-A module that coordinates other modules. A small app typically has one. Split it along deep concern boundaries as it grows. See [Orchestration Pattern](orchestration.md).
+A module that coordinates other modules. See [Orchestration Pattern](orchestration.md).
