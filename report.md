@@ -1,11 +1,14 @@
-Make the agent's body the rendered system prompt
+Write definitions into each target's directories
 
-The frontmatter reader returns the body after the closing frontmatter
-line along with the fields. The claude and opencode renders write that
-body as the prompt.
+The update command now places every definition, keyed by its source
+name, into the target's directories. A skill writes its own content to
+skills/<name>/SKILL.md. An agent writes its form to agents/<name>.md.
+Both sit under a .claude or .opencode root. The path never comes from
+the rendered fields. A new internal targetdir module resolves the paths
+and writes the files, creating the directories it needs.
 
-Added tests cover the body after the frontmatter, intact body lines, a
-whole-content body without frontmatter, an empty body, and the fields
-reading with the new return.
+Tests cover the four target paths, directory creation, both targets
+writing a skill and an agent, and a built-binary run against the claude
+target.
 
-Ralph item 9 completed
+Ralph item 11 completed

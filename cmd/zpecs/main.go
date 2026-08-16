@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/zon/specs/internal/frontmatter"
+	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/source"
+	"github.com/zon/specs/internal/targetdir"
 )
 
 const usage = `zpecs renders skills and agents for claude and opencode
@@ -144,12 +146,36 @@ func update(args []string) error {
 		return err
 	}
 	for _, d := range defs {
-		if _, err := frontmatter.Read(d.Path); err != nil {
-			return fmt.Errorf("reading %s: %w", d.Path, err)
+		content, err := rendered(d, opts.target)
+		if err != nil {
+			return err
+		}
+		if err := targetdir.Write(string(opts.target), d, content); err != nil {
+			return fmt.Errorf("writing %s: %w", targetdir.Path(string(opts.target), d), err)
 		}
 	}
 	fmt.Printf("updating %s for %s from %s (%d definitions)\n", opts.scope, opts.target, opts.source, len(defs))
 	return nil
+}
+
+// rendered returns what a definition becomes at its target. A skill writes
+// itself, and an agent writes its rendered form.
+func rendered(d source.Definition, t target) (string, error) {
+	if d.Kind == source.Skill {
+		raw, err := os.ReadFile(d.Path)
+		if err != nil {
+			return "", fmt.Errorf("reading %s: %w", d.Path, err)
+		}
+		return string(raw), nil
+	}
+	content, err := frontmatter.Read(d.Path)
+	if err != nil {
+		return "", fmt.Errorf("reading %s: %w", d.Path, err)
+	}
+	if t == targetClaude {
+		return render.ClaudeAgent(content.Fields, content.Body), nil
+	}
+	return render.OpencodeAgent(content.Fields, content.Body), nil
 }
 
 func scopeFromArgs(args []string) (scope, error) {

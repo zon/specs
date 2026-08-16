@@ -201,6 +201,7 @@ func writeSourceFile(t *testing.T, dir, rel, content string) {
 }
 
 func TestUpdateReadsSameFrontmatterForBothTargets(t *testing.T) {
+	t.Chdir(t.TempDir())
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
 name: prose-editor
@@ -221,5 +222,107 @@ Review prose.
 				t.Fatalf("update for %s: %v", trgt, err)
 			}
 		})
+	}
+}
+
+func TestUpdateWritesAgentUnderSourceNameForBothTargets(t *testing.T) {
+	t.Chdir(t.TempDir())
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
+name: renamed
+description: Reviews prose.
+---
+Review prose.
+`)
+
+	cases := []target{targetClaude, targetOpencode}
+	for _, trgt := range cases {
+		t.Run(string(trgt), func(t *testing.T) {
+			err := run([]string{"update", "--source", dir, "--target", string(trgt)})
+			if err != nil {
+				t.Fatalf("update for %s: %v", trgt, err)
+			}
+			path := filepath.Join("."+string(trgt), "agents", "prose-editor.md")
+			content, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("%s wrote nothing at %s: %v", trgt, path, err)
+			}
+			if trgt == targetClaude {
+				if !strings.Contains(string(content), "name: renamed") {
+					t.Fatalf("%s wrote %q without the rendered name field", trgt, content)
+				}
+			} else if strings.Contains(string(content), "name:") {
+				t.Fatalf("%s wrote %q with a name field", trgt, content)
+			}
+		})
+	}
+}
+
+func TestUpdateWritesSkillAndAgentToClaude(t *testing.T) {
+	t.Chdir(t.TempDir())
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
+name: prose-editor
+description: Reviews prose.
+---
+Review prose.
+`)
+
+	err := run([]string{"update", "--source", dir, "--target", "claude"})
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(".claude", "skills", "prose-editor", "SKILL.md")); err != nil {
+		t.Fatalf("claude skill not written: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".claude", "agents", "prose-editor.md")); err != nil {
+		t.Fatalf("claude agent not written: %v", err)
+	}
+}
+
+func TestUpdateWritesSkillAndAgentToOpencode(t *testing.T) {
+	t.Chdir(t.TempDir())
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
+name: prose-editor
+description: Reviews prose.
+---
+Review prose.
+`)
+
+	err := run([]string{"update", "--source", dir, "--target", "opencode"})
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")); err != nil {
+		t.Fatalf("opencode skill not written: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".opencode", "agents", "prose-editor.md")); err != nil {
+		t.Fatalf("opencode agent not written: %v", err)
+	}
+}
+
+func TestBinaryWritesToClaudeTarget(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
+
+	work := t.TempDir()
+	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
+	cmd.Dir = work
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("zpecs update failed: %v\n%s", err, out)
+	}
+
+	if _, err := os.Stat(filepath.Join(work, ".claude", "skills", "prose-editor", "SKILL.md")); err != nil {
+		t.Fatalf("claude skill not written: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(work, ".claude", "agents", "prose-editor.md")); err != nil {
+		t.Fatalf("claude agent not written: %v", err)
 	}
 }
