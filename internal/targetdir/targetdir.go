@@ -96,3 +96,48 @@ func SaveOwned(root, target string, owned map[string]bool) error {
 	}
 	return os.WriteFile(filepath.Join(dir, manifestName), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }
+
+// RemoveStale deletes for target under root the files owned records that
+// no definition in current writes, limited to the kinds kinds selects. It
+// drops the removed paths from owned and returns them.
+func RemoveStale(root, target string, owned map[string]bool, current []source.Definition, kinds ...source.Kind) ([]string, error) {
+	written := make(map[string]bool, len(current))
+	for _, d := range current {
+		written[RelPath(target, d)] = true
+	}
+	selected := make(map[source.Kind]bool, len(kinds))
+	for _, k := range kinds {
+		selected[k] = true
+	}
+	var removed []string
+	for rel := range owned {
+		if written[rel] {
+			continue
+		}
+		kind, ok := pathKind(target, rel)
+		if !ok || !selected[kind] {
+			continue
+		}
+		if err := os.Remove(filepath.Join(root, rel)); err != nil && !os.IsNotExist(err) {
+			return nil, err
+		}
+		delete(owned, rel)
+		removed = append(removed, rel)
+	}
+	return removed, nil
+}
+
+// pathKind returns the kind of a relative path under a target, reporting
+// false when the system would not write the path.
+func pathKind(target, rel string) (source.Kind, bool) {
+	dir := targetDir(target) + string(filepath.Separator)
+	switch {
+	case strings.HasPrefix(rel, dir+"skills"+string(filepath.Separator)) &&
+		strings.HasSuffix(rel, string(filepath.Separator)+"SKILL.md"):
+		return source.Skill, true
+	case strings.HasPrefix(rel, dir+"agents"+string(filepath.Separator)) &&
+		strings.HasSuffix(rel, ".md"):
+		return source.Agent, true
+	}
+	return 0, false
+}

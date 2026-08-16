@@ -587,3 +587,116 @@ func TestBinaryLeavesForeignFileAlone(t *testing.T) {
 		t.Fatalf("foreign file changed to %q", content)
 	}
 }
+
+func TestUpdateRemovesStaleSkill(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+
+	if err := run([]string{"update", "--source", dir}); err != nil {
+		t.Fatalf("first update: %v", err)
+	}
+	path := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("skill not written: %v", err)
+	}
+
+	if err := os.RemoveAll(filepath.Join(dir, "skills")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := run([]string{"update", "--source", dir}); err != nil {
+		t.Fatalf("second update: %v", err)
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("stale skill still present after the source stopped listing it")
+	}
+}
+
+func TestUpdateRemovesStaleAgent(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
+
+	if err := run([]string{"update", "--source", dir, "--target", "claude"}); err != nil {
+		t.Fatalf("first update: %v", err)
+	}
+	path := filepath.Join(".claude", "agents", "prose-editor.md")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("agent not written: %v", err)
+	}
+
+	if err := os.RemoveAll(filepath.Join(dir, "agents")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := run([]string{"update", "--source", dir, "--target", "claude"}); err != nil {
+		t.Fatalf("second update: %v", err)
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("stale agent still present after the source stopped listing it")
+	}
+}
+
+func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
+
+	if err := run([]string{"update", "--source", dir}); err != nil {
+		t.Fatalf("first update: %v", err)
+	}
+	skillPath := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
+	agentPath := filepath.Join(".opencode", "agents", "code-architect.md")
+	if _, err := os.Stat(skillPath); err != nil {
+		t.Fatalf("skill not written: %v", err)
+	}
+	if _, err := os.Stat(agentPath); err != nil {
+		t.Fatalf("agent not written: %v", err)
+	}
+
+	if err := os.RemoveAll(filepath.Join(dir, "skills")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := run([]string{"update", "skills", "--source", dir}); err != nil {
+		t.Fatalf("update skills: %v", err)
+	}
+	if _, err := os.Stat(skillPath); err == nil {
+		t.Fatal("stale skill still present")
+	}
+	if _, err := os.Stat(agentPath); err != nil {
+		t.Fatalf("agent removed by update skills: %v", err)
+	}
+}
+
+func TestBinaryRemovesStaleSkill(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+
+	work := gitRepo(t)
+	cmd := exec.Command(binary, "update", "--source", dir)
+	cmd.Dir = work
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("first update failed: %v\n%s", err, out)
+	}
+	path := filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("skill not written: %v", err)
+	}
+
+	if err := os.RemoveAll(filepath.Join(dir, "skills")); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd = exec.Command(binary, "update", "--source", dir)
+	cmd.Dir = work
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("second update failed: %v\n%s", err, out)
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("stale skill still present after the binary ran")
+	}
+}

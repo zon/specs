@@ -154,6 +154,9 @@ func update(args []string) error {
 	if err != nil {
 		return err
 	}
+	if _, err := targetdir.RemoveStale(root, string(opts.target), owned, defs, scopeKinds(opts.scope)...); err != nil {
+		return fmt.Errorf("removing stale definitions: %w", err)
+	}
 	for _, d := range defs {
 		content, err := rendered(d, opts.target)
 		if err != nil {
@@ -179,6 +182,18 @@ func readDefinitions(s scope, sourceDir string) ([]source.Definition, error) {
 		return source.ReadAgents(sourceDir)
 	default:
 		return source.ReadLocal(sourceDir)
+	}
+}
+
+// scopeKinds returns the definition kinds a scope selects.
+func scopeKinds(s scope) []source.Kind {
+	switch s {
+	case scopeSkills:
+		return []source.Kind{source.Skill}
+	case scopeAgents:
+		return []source.Kind{source.Agent}
+	default:
+		return []source.Kind{source.Skill, source.Agent}
 	}
 }
 

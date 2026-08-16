@@ -209,3 +209,113 @@ func TestWriteRecordedInOwned(t *testing.T) {
 		t.Fatalf("Write did not record %q as owned: %v", RelPath(Opencode, agent("prose-editor")), owned)
 	}
 }
+
+func TestRemoveStaleRemovesFileNoLongerWritten(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	if _, err := Write(root, Claude, skill("prose-editor"), "# prose-editor\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	removed, err := RemoveStale(root, Claude, owned, nil, source.Skill)
+	if err != nil {
+		t.Fatalf("RemoveStale: %v", err)
+	}
+	if len(removed) != 1 {
+		t.Fatalf("RemoveStale removed %v, want one path", removed)
+	}
+
+	if _, err := os.Stat(filepath.Join(root, ".claude", "skills", "prose-editor", "SKILL.md")); err == nil {
+		t.Fatal("stale skill still present")
+	}
+	if len(owned) != 0 {
+		t.Fatalf("owned = %v, want none", owned)
+	}
+}
+
+func TestRemoveStaleKeepsCurrentDefinition(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	if _, err := Write(root, Claude, agent("prose-editor"), "content\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	current := []source.Definition{agent("prose-editor")}
+
+	removed, err := RemoveStale(root, Claude, owned, current, source.Agent)
+	if err != nil {
+		t.Fatalf("RemoveStale: %v", err)
+	}
+	if len(removed) != 0 {
+		t.Fatalf("RemoveStale removed %v, want none", removed)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".claude", "agents", "prose-editor.md")); err != nil {
+		t.Fatalf("current agent removed: %v", err)
+	}
+}
+
+func TestRemoveStaleScopedLeavesOtherKinds(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	if _, err := Write(root, Claude, skill("prose-editor"), "# prose-editor\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if _, err := Write(root, Claude, agent("code-architect"), "content\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	removed, err := RemoveStale(root, Claude, owned, nil, source.Skill)
+	if err != nil {
+		t.Fatalf("RemoveStale: %v", err)
+	}
+	if len(removed) != 1 {
+		t.Fatalf("RemoveStale removed %v, want the skill only", removed)
+	}
+
+	if _, err := os.Stat(filepath.Join(root, ".claude", "agents", "code-architect.md")); err != nil {
+		t.Fatalf("agent removed by a skills-only run: %v", err)
+	}
+}
+
+func TestRemoveStaleAllKinds(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	if _, err := Write(root, Opencode, skill("prose-editor"), "# prose-editor\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if _, err := Write(root, Opencode, agent("code-architect"), "content\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	removed, err := RemoveStale(root, Opencode, owned, nil, source.Skill, source.Agent)
+	if err != nil {
+		t.Fatalf("RemoveStale: %v", err)
+	}
+	if len(removed) != 2 {
+		t.Fatalf("RemoveStale removed %v, want both paths", removed)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md")); err == nil {
+		t.Fatal("stale skill still present")
+	}
+	if _, err := os.Stat(filepath.Join(root, ".opencode", "agents", "code-architect.md")); err == nil {
+		t.Fatal("stale agent still present")
+	}
+	if len(owned) != 0 {
+		t.Fatalf("owned = %v, want none", owned)
+	}
+}
+
+func TestRemoveStaleHandlesMissingFile(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{RelPath(Claude, skill("prose-editor")): true}
+
+	removed, err := RemoveStale(root, Claude, owned, nil, source.Skill)
+	if err != nil {
+		t.Fatalf("RemoveStale: %v", err)
+	}
+	if len(removed) != 1 {
+		t.Fatalf("RemoveStale removed %v, want one path", removed)
+	}
+	if len(owned) != 0 {
+		t.Fatalf("owned = %v, want none", owned)
+	}
+}

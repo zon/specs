@@ -1,13 +1,12 @@
-Replace only the files the system wrote
+Remove stale definitions from the target
 
-The update command replaces only the files it wrote on a later run. A
-file in the target directory it did not write stays unchanged.
+The update command now removes rendered definitions the source no longer
+lists. A full run prunes owned skills and agents. Update skills prunes
+only skills, and update agents only agents. The targetdir module deletes
+each stale file and drops it from the manifest.
 
-The targetdir module keeps a per-target manifest of written paths. The
-update command reads it before a run and saves the updated list after.
+Tests cover a removed skill and a removed agent leaving the target, a
+scoped run leaving the other kind alone, and a built-binary run removing
+a stale skill.
 
-Tests cover a foreign file surviving a run, a second run replacing an
-owned file, the manifest round trip, separate manifests per target, and
-a built-binary run.
-
-Ralph item 13 completed
+Ralph item 14 completed
