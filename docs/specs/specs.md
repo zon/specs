@@ -4,7 +4,7 @@ The spec format describes system behavior with structured requirements and scena
 
 ## File Location
 
-Specs live at `/specs/<path>.md`. The last segment of the path names the spec, a [feature](glossary.md#feature). The segments before it group the spec by [app](glossary.md#app), [component](glossary.md#component), or [feature](glossary.md#feature), in that order:
+Specs live at `/specs/<path>.md`. A spec path ends in a [feature](glossary.md#feature). The segments before it group the spec by [app](glossary.md#app), [component](glossary.md#component), or [feature](glossary.md#feature), in that order:
 
 ```
 /specs/
@@ -27,7 +27,7 @@ Name features by what the system does (`auth`, `payments`, `notifications`), not
 
 ## Structure
 
-A spec contains requirements, and each requirement has scenarios:
+A spec has requirements, each with scenarios:
 
 ```markdown
 # Auth Specification
@@ -84,9 +84,6 @@ Avoid in specs:
 - Library or framework choices
 - Step-by-step implementation details
 - Detailed execution plans. Those belong in a [project](project.md)
-
-Quick test:
-- If implementation can change without changing externally visible behavior, that detail likely does not belong in the spec.
 
 ## Keep It Light
 

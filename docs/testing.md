@@ -6,17 +6,17 @@ Tests are split into two layers: unit and integration.
 - **Unit** — individual functions and packages in isolation
 - **Integration** — full request or execution paths end-to-end within the process
 
-Examples below are Go. The rules are language-independent. Substitute your language's idiomatic assertion library, subtest mechanism, and temp-directory helper.
+Examples below are Go.
 
 ## Conventions
 
 ### Assertions
 
-Use one assertion library across the whole suite, and use it for every assertion. In Go that is `github.com/stretchr/testify` (`assert` and `require`).
+Use one assertion library across the whole suite, and use it for every assertion: `github.com/stretchr/testify` (`assert` and `require`).
 
 ### Test structure
 
-Use table-driven tests with named subtests (`t.Run()` in Go). Use a managed temporary directory for any filesystem interaction (`t.TempDir()` in Go) so cleanup is automatic.
+Use table-driven tests with named subtests (`t.Run()`). Use a managed temporary directory for any filesystem interaction (`t.TempDir()`) so cleanup is automatic.
 
 ### Isolation
 
@@ -30,8 +30,6 @@ A real dependency must **never** be invoked in any test when it:
 - costs money per call
 - requires credentials the suite does not own
 - reaches the network for anything the test's correctness depends on
-
-Each project lists its own banned dependencies in its agent instructions. These must always be abstracted behind interfaces and replaced with mocks.
 
 External dependencies must be abstracted behind interfaces. Each interface has two implementations: a real one that calls the actual dependency, and a mock used in tests.
 
@@ -82,7 +80,7 @@ Only implementation modules may hold real dependency implementations and mocks. 
 | Orchestration | interfaces, orchestration functions, tests |
 | Implementation | real dependency implementations, mocks, tests |
 
-A module's mocks must be importable without pulling in test infrastructure, so other packages can stub the dependency. In Go that means a `_mock.go` file in the module itself, not a `_test.go` file. Use whatever your language's equivalent of a non-test source file is.
+A module's mocks must be importable without pulling in test infrastructure, so other packages can stub the dependency. Put them in a `_mock.go` file in the module itself, not a `_test.go` file.
 
 ### CLI command validation
 

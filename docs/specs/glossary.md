@@ -12,7 +12,7 @@ A collection of resources in the repo that build the project. See [Architecture 
 
 ## Feature
 
-A coherent slice of user-facing or system-facing behavior: something a user can do, or something the system does on their behalf. A [spec](specs.md) path ends in a feature.
+A coherent slice of user-facing or system-facing behavior: something a user can do, or something the system does for them.
 
 ## Requirement
 
