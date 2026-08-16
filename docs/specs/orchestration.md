@@ -2,15 +2,15 @@
 
 Orchestration is a pattern for structuring domain logic. An orchestration sequences steps, enforces domain conditions, and delegates the actual work to other modules. It says what should happen and when, never how.
 
-A coding agent writes the orchestration code while implementing a feature, then records which components coordinate others as orchestration modules in `specs/architecture.yaml`. Whether a feature needs orchestration is an architecture decision, made during planning and applied when the code is written.
+A coding agent writes the orchestration code while implementing a feature and records orchestration modules in `specs/architecture.yaml`. Decide during planning whether a feature needs orchestration, and apply that decision when writing the code.
 
 ## Writing Orchestrations
 
-Write orchestration code in the language the feature is implemented in:
+Write orchestration code in the feature's implementation language:
 
 - **Pass failures through.** Propagate failures from helpers directly using the language's idiomatic mechanism (returned errors, thrown exceptions, result types). Only introduce a named error value when it represents a distinct domain condition with no underlying cause (e.g. `CartError.Empty` is a state, not a failure).
 - **No debug code.** Remove all logger calls, debug statements, and diagnostic output.
-- **Use dependency injection for side effects.** Any helper that performs side effects (database writes, network calls, notifications) must be injected rather than called as a static function. The caller wires in real implementations. Tests substitute mocks.
+- **Delegate side effects.** Hand off database writes, network calls, and notifications to helpers rather than performing them in the orchestration body. How helpers are wired is the repo's policy.
 - **No infrastructure types.** Use domain nouns, not framework types like request contexts, HTTP writers, etc.
 - **Only write bodies that are pure orchestration.** Every line must be a domain condition, a named step call, or a return value. If writing the body would require literals, string construction, or format details, don't write it — just call the function by name.
 
@@ -18,7 +18,7 @@ Keep an orchestration short enough to read in one pass — typically under 20 li
 
 ## Testing Orchestrations
 
-Tests cover orchestration decisions only — that the right helpers were called under the right conditions. Every line in a test body should be a domain-language call: setup, invocation, or assertion. If an assertion requires a literal value, a file path, a URL, or any format detail, extract it into a named test helper. Each test covers one domain outcome: given this domain state, calling the orchestration produces this domain result.
+Tests cover orchestration decisions only — that the code calls the right helpers under the right conditions. Every line in a test body should be a domain-language call: setup, invocation, or assertion. If an assertion requires a literal value, a file path, a URL, or any format detail, extract it into a named test helper. Each test verifies one domain outcome: given this domain state, calling the orchestration produces this domain result.
 
 ## Example
 
@@ -53,7 +53,7 @@ class Checkout {
 test("successful checkout", () => {
     const user = users.any()
     const basket = cart.any().withItems(cart.anItem())
-    const svc = checkout.withMocks()
+    const svc = checkout.forTest()
     const order = svc.checkout(basket, user)
     expect(order).toMatchOrder(basket, user)
     expect(email.sent()).toContain(email.confirmation(order, user))
@@ -62,7 +62,7 @@ test("successful checkout", () => {
 test("payment declined", () => {
     const user = users.any()
     const basket = cart.any().withItems(cart.anItem())
-    const svc = checkout.withMocks({ payments: payments.thatDeclines() })
+    const svc = checkout.forTest({ payments: payments.thatDeclines() })
     svc.checkout(basket, user)
     expect(orders.created()).toBeEmpty()
     expect(email.sent()).toContain(email.declined(user))
@@ -73,7 +73,7 @@ test("payment declined", () => {
 
 The orchestration function lives in an [orchestration module](glossary.md#orchestration-module). Each helper lives in an [implementation module](glossary.md#implementation-module).
 
-Orchestration modules must not contain helper methods that perform or test implementation details. Test helpers — mock factories, HTTP client wiring, fixture builders, assertion utilities — belong in or beside the implementation modules they serve. The orchestration module's test file contains only test functions that exercise orchestration logic. It calls helpers imported from implementation modules, never defines them.
+Orchestration modules must not contain helper methods that perform or test implementation details. Test helpers — HTTP client wiring, fixture builders, assertion utilities — belong in or beside their implementation modules. The orchestration module's test file contains only test functions that exercise orchestration logic. It calls helpers imported from implementation modules, never defines them.
 
 Fixture builders for input types (e.g. a struct passed into the orchestration by the caller) belong with the module that owns the type, not the orchestration module. When drafting test helpers, identify every input type in the orchestration signature and place its fixture builder with that module.
 

@@ -8,7 +8,7 @@ A runnable the project ships — a server, worker, or CLI. Apps can group [specs
 
 ## Component
 
-A collection of resources — scripts, runtimes, assets, config, or source code modules — that build the project. Components are listed in [`specs/architecture.yaml`](architecture-outline.md), each with a path, a description, and whether it is an orchestration module.
+A collection of resources — scripts, runtimes, assets, config, or source code modules — that build the project. [`specs/architecture.yaml`](architecture-outline.md) lists each component with a path, a description, and whether it is an orchestration module.
 
 ## Feature
 
@@ -20,7 +20,7 @@ A single behavior the system must have. State it as observable behavior, not imp
 
 ## Scenario
 
-A concrete, testable example of a requirement in action, in Given/When/Then form. Scenarios live in a spec.
+A concrete example of a requirement in action, in Given/When/Then form. Scenarios live in a spec.
 
 ## Project
 
@@ -28,11 +28,11 @@ A YAML or JSON file holding a list of requirements for a coding agent to work th
 
 ## Deep Module
 
-A module with a simple interface over a complex implementation, hiding detail behind a minimal API.
+A module with a simple interface over a complex implementation.
 
 ## Pure Module
 
-A module that contains only value objects and pure functions — no I/O, no shared state, no external calls. Unit tests alone cover it, with no mocks or setup.
+A module that contains only value objects and pure functions — no I/O, no shared state, no external calls.
 
 ## Implementation Module
 
@@ -40,4 +40,4 @@ A module that does the low-level work — database queries, API calls, file I/O,
 
 ## Orchestration Module
 
-A module that coordinates other modules — it sequences steps, enforces rules, and delegates the work. A small app typically has one orchestration module. Split it along deep concern boundaries as it grows. See [Orchestration Pattern](orchestration.md).
+A module that coordinates other modules. A small app typically has one. Split it along deep concern boundaries as it grows. See [Orchestration Pattern](orchestration.md).
