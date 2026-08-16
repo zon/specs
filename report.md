@@ -1,10 +1,10 @@
-Read skill definitions from skills/<name>/SKILL.md
+Read agent definitions from agents/<name>.md
 
-The system reads a skill definition only from its canonical path under
-a source. The source reader lists each skill keyed by the directory
-name that holds its SKILL.md, and reports the path it read from.
+The system reads an agent definition only from its canonical path under
+a source. The source reader lists each agent keyed by the file name
+that holds it, and reports the path it read from.
 
-Added tests assert the reader finds a skill at the canonical path and
+Added tests assert the reader finds an agent at the canonical path and
 reports that path.
 
-Ralph item 2 completed
+Ralph item 3 completed

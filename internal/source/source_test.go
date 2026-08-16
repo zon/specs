@@ -80,6 +80,16 @@ func TestReadLocalFindsAgentAtAgentsNameMd(t *testing.T) {
 	if got := namesOfKind(defs, Agent); !reflect.DeepEqual(got, []string{"prose-editor"}) {
 		t.Fatalf("agents = %v, want [prose-editor]", got)
 	}
+
+	for _, d := range defs {
+		if d.Kind != Agent {
+			continue
+		}
+		want := filepath.Join(dir, "agents", "prose-editor.md")
+		if d.Path != want {
+			t.Fatalf("agent path = %s, want %s", d.Path, want)
+		}
+	}
 }
 
 func TestReadLocalDoesNotFindMisplacedAgent(t *testing.T) {
