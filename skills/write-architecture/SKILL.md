@@ -5,7 +5,7 @@ description: Creates or edits the architecture document at specs/architecture.ya
 
 # Write Architecture
 
-Write the architecture document at **`specs/architecture.yaml`**, recording the components that already exist — not as a plan for code to come.
+Write the architecture document at **`specs/architecture.yaml`**, recording the components that already exist, not as a plan for code to come.
 
 ## Steps
 

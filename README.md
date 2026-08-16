@@ -38,7 +38,7 @@ Before writing any code, read [docs/specs/architecture.md](docs/specs/architectu
 
 ## Runners
 
-Nothing here executes a project. Running it is a runner's job. [ralph](https://github.com/zon/ralph) is one — it picks one requirement per iteration, drives a coding agent through it, and records completion in the branch's commit log.
+Nothing here executes a project. Running it is a runner's job. [ralph](https://github.com/zon/ralph) is one. It picks one requirement per iteration, drives a coding agent through it, and records completion in the branch's commit log.
 
 The formats stay runner-neutral.
 

@@ -4,7 +4,7 @@ Terms used throughout these documents.
 
 ## App
 
-A runnable the project ships — a server, worker, or CLI. Apps can group [specs](specs.md) by the runtime that serves them.
+A runnable the project ships, like a server, worker, or CLI. Apps can group [specs](specs.md) by the runtime that serves them.
 
 ## Component
 
@@ -12,7 +12,7 @@ A collection of resources in the repo that build the project. See [Architecture 
 
 ## Feature
 
-A coherent slice of user-facing or system-facing behavior — something a user can do, or something the system does on their behalf. A [spec](specs.md) path ends in a feature.
+A coherent slice of user-facing or system-facing behavior: something a user can do, or something the system does on their behalf. A [spec](specs.md) path ends in a feature.
 
 ## Requirement
 
@@ -32,11 +32,11 @@ A module with a simple interface over a complex implementation.
 
 ## Pure Module
 
-A module that contains only value objects and pure functions — no I/O, no shared state, no external calls.
+A module that contains only value objects and pure functions: no I/O, no shared state, no external calls.
 
 ## Implementation Module
 
-A module that does the low-level work — database queries, API calls, file I/O, data transformations. See [Architecture Guidelines](architecture.md).
+A module that does the low-level work: database queries, API calls, file I/O, data transformations. See [Architecture Guidelines](architecture.md).
 
 ## Orchestration Module
 

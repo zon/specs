@@ -21,6 +21,6 @@ Create a well-formed project file based on the user's description of the work to
 
 4. **Write the file** at `./projects/<slug>.yaml` as a top-level list of strings, following the format in [docs/specs/project.md](docs/specs/project.md).
 
-5. **Validate.** Confirm the file parses as a list holding at least one non-empty entry. Empty entries — null, `false`, `0`, blank strings — are typically dropped during resolution, so never leave a placeholder in the list. If the project's runner provides a validation command, use it.
+5. **Validate.** Confirm the file parses as a list holding at least one non-empty entry. Empty entries, such as null, `false`, `0`, and blank strings, are typically dropped during resolution, so never leave a placeholder in the list. If the project's runner provides a validation command, use it.
 
 6. **Report** the file path and a one-line summary of what the project covers.

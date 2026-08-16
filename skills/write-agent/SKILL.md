@@ -13,12 +13,12 @@ Write an agent definition that a runner renders into a target project's `.claude
 
 2. **Ask for the task and output** if the user's request doesn't state them.
 
-3. **Read [docs/specs/prompts.md](docs/specs/prompts.md)** — the body becomes the system prompt, so use the same structure: role, task, context, numbered instructions, output.
+3. **Read [docs/specs/prompts.md](docs/specs/prompts.md).** The body becomes the system prompt, so use the same structure: role, task, context, numbered instructions, output.
 
 4. **Write the definition** to `agents/<name>.md`.
 
    - **Keep the name short and matching the file name.**
-   - **Write the description as a trigger**, naming the situations that call the agent — a runner matches an agent on its description, like a skill.
+   - **Write the description as a trigger**, naming the situations that call the agent. A runner matches an agent on its description, like a skill.
    - **List only the tools the agent needs**, or omit the list when the agent needs every tool.
    - **Write the body as the system prompt.** Assign the agent its role and give numbered instructions. Reference documents by path rather than restating their contents, so the definition does not go stale when a format changes.
 

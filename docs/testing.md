@@ -22,7 +22,7 @@ Use table-driven tests with named subtests (`t.Run()` in Go). Use a managed temp
 
 Unit tests may run code with real side effects. Integration tests must always use mocks.
 
-A real dependency may only be invoked in a unit test when it is safe, local, and cheap. Version control and local CLI tools qualify — but only against an isolated temporary directory, **never** against the real repository. Create the directory with the temp-directory helper and initialise a fresh repo inside it before the test runs.
+A real dependency may only be invoked in a unit test when it is safe, local, and cheap. Version control and local CLI tools qualify, but only against an isolated temporary directory, **never** against the real repository. Create the directory with the temp-directory helper and initialise a fresh repo inside it before the test runs.
 
 A real dependency must **never** be invoked in any test when it:
 
@@ -67,7 +67,7 @@ The real implementation calls the actual dependency. Tests pass a `*mockGit` ins
 
 ### Dependency unit tests
 
-Unit tests for real external dependencies must be small, focused, and cheap — they exist only to verify the lowest-level interface of the real implementation, not to exercise full workflows.
+Unit tests for real external dependencies must be small, focused, and cheap. They exist only to verify the lowest-level interface of the real implementation, not to exercise full workflows.
 
 - Test only the minimal surface needed to confirm the real dependency works (e.g. a single command round-trip).
 - Use the shortest possible inputs. For a metered dependency such as an AI CLI, hard-code the cheapest available model and a trivial prompt like `"say hi"`.

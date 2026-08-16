@@ -66,7 +66,7 @@ The system MUST expire sessions after 30 minutes of inactivity.
 |---------|---------|
 | `## Purpose` | High-level description of this spec's domain |
 | `### Requirement:` | A behavior the system must have, stated without implementation |
-| `#### Scenario:` | A concrete example of the requirement in action — testable, covering both the happy path and the edge cases |
+| `#### Scenario:` | A concrete example of the requirement in action: testable, covering both the happy path and the edge cases |
 | SHALL/MUST/SHOULD/MAY | RFC 2119 keywords: MUST and SHALL are absolute, SHOULD allows exceptions, MAY is optional |
 
 ## What a Spec Is (and Is Not)
@@ -83,7 +83,7 @@ Avoid in specs:
 - Internal class/function names
 - Library or framework choices
 - Step-by-step implementation details
-- Detailed execution plans — those belong in a [project](project.md)
+- Detailed execution plans. Those belong in a [project](project.md)
 
 Quick test:
 - If implementation can change without changing externally visible behavior, that detail likely does not belong in the spec.
