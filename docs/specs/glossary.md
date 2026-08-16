@@ -40,4 +40,4 @@ A module that does the low-level work — database queries, API calls, file I/O,
 
 ## Orchestration Module
 
-A module that coordinates other modules — it sequences steps, enforces rules, and delegates the work. It says what should happen and when, never how. A small app typically has one orchestration module. Split it along deep concern boundaries as it grows. See [Orchestration Pattern](orchestration.md).
+A module that coordinates other modules — it sequences steps, enforces rules, and delegates the work. A small app typically has one orchestration module. Split it along deep concern boundaries as it grows. See [Orchestration Pattern](orchestration.md).

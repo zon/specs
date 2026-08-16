@@ -1,6 +1,6 @@
 # Project Format
 
-A project is a YAML or JSON file holding a list of requirements. Each entry is one requirement — one unit of work, one iteration of a coding agent.
+A project is a YAML or JSON file holding a list of requirements. Each entry is one unit of work — one iteration of a coding agent.
 
 ## File Location
 
@@ -17,7 +17,7 @@ Project files live at `./projects/<slug>.yaml`, under the repo root. The base na
 
 ## Writing Requirements
 
-One entry is one iteration, so work that needs three rounds is three entries. The agent sees the selected requirement and the rest of the file, so write each entry to stand on its own. See [Writing Requirements](requirements.md).
+The agent sees the selected requirement and the rest of the file, so write each entry to stand on its own. See [Writing Requirements](requirements.md).
 
 ## Version Bumps
 

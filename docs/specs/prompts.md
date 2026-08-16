@@ -24,4 +24,4 @@ A well-structured prompt contains these sections in order:
 
 ## Prompts vs Skills
 
-A prompt is invoked once with its context inlined. A skill is installed into a repository and invoked by name, so it must locate its own context — which is why the skills in this repository reference documents by path and let the agent read them, rather than restating their contents. When a task is repeated across projects, write it as a skill; when it is a one-off with specific inputs, write it as a prompt.
+A prompt is invoked once with its context inlined. A skill is installed into a repository and invoked by name, so it must locate its own context — which is why the skills in this repository reference documents by path and let the agent read them, rather than restating their contents. When a task is repeated across projects, write it as a skill. When it is a one-off with specific inputs, write it as a prompt.

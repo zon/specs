@@ -4,7 +4,7 @@ The spec format describes system behavior with structured requirements and scena
 
 ## File Location
 
-Specs live at `/specs/<path>.md`. The last segment of the path names the spec, a [feature](glossary.md#feature); the segments before it group the spec by [app](glossary.md#app), [component](glossary.md#component), or [feature](glossary.md#feature), in that order:
+Specs live at `/specs/<path>.md`. The last segment of the path names the spec, a [feature](glossary.md#feature). The segments before it group the spec by [app](glossary.md#app), [component](glossary.md#component), or [feature](glossary.md#feature), in that order:
 
 ```
 /specs/

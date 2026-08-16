@@ -17,7 +17,7 @@ All three take the same flags:
 | Flag | Meaning |
 |---|---|---|
 | `--target` | Render for `opencode` (default) or `claude` |
-| `--source` | Path to a local directory to read from; omitted, reads from GitHub |
+| `--source` | Path to a local directory to read from. Omit it to read from GitHub |
 
 ## Definitions
 
@@ -28,7 +28,7 @@ skills/<name>/SKILL.md
 agents/<name>.md
 ```
 
-Skills follow the [Agent Skills spec](https://agentskills.io/specification); agents follow the [Agent Format](agent-format.md).
+Skills follow the [Agent Skills spec](https://agentskills.io/specification). Agents follow the [Agent Format](agent-format.md).
 
 ## Source
 

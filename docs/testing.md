@@ -6,7 +6,7 @@ Tests are split into two layers: unit and integration.
 - **Unit** — individual functions and packages in isolation
 - **Integration** — full request or execution paths end-to-end within the process
 
-Examples below are Go; the rules are language-independent. Substitute your language's idiomatic assertion library, subtest mechanism, and temp-directory helper.
+Examples below are Go. The rules are language-independent. Substitute your language's idiomatic assertion library, subtest mechanism, and temp-directory helper.
 
 ## Conventions
 
@@ -20,7 +20,7 @@ Use table-driven tests with named subtests (`t.Run()` in Go). Use a managed temp
 
 ### Isolation
 
-Unit tests may run code with real side effects; integration tests must always use mocks.
+Unit tests may run code with real side effects. Integration tests must always use mocks.
 
 A real dependency may only be invoked in a unit test when it is safe, local, and cheap. Version control and local CLI tools qualify — but only against an isolated temporary directory, **never** against the real repository. Create the directory with the temp-directory helper and initialise a fresh repo inside it before the test runs.
 
@@ -63,7 +63,7 @@ func (m *mockGit) Push(branch string) error {
 }
 ```
 
-The real implementation calls the actual dependency; tests pass a `*mockGit` instead.
+The real implementation calls the actual dependency. Tests pass a `*mockGit` instead.
 
 ### Dependency unit tests
 

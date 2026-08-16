@@ -2,7 +2,7 @@
 
 ## Before You Start
 
-Read `specs/architecture.yaml` before writing any code if it exists — it is the component map for the entire codebase. If it does not exist yet, the code you write is what the architecture will record; add it once written. See [Architecture Format](architecture-outline.md).
+Read `specs/architecture.yaml` before writing any code if it exists — it is the component map for the entire codebase. If it does not exist yet, the code you write is what the architecture will record. Add it once written. See [Architecture Format](architecture-outline.md).
 
 ## Component Placement
 
@@ -25,7 +25,7 @@ Each component is either an [implementation module](glossary.md#implementation-m
 
 - Keep each component focused on its declared concern. Do not extend a component's scope without updating `specs/architecture.yaml`.
 - Prefer deepening an existing component over creating a new one for the same concern.
-- Expose only what callers need; keep internal details unexported.
+- Expose only what callers need. Keep internal details unexported.
 - If a component meant to hold only pure functions accumulates side-effectful code, move that code into a different implementation module.
 
 ## Related

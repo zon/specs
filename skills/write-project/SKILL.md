@@ -7,8 +7,6 @@ description: Creates and validates a project file listing the requirements a cod
 
 Create a well-formed project file based on the user's description of the work to be done.
 
-A project is a YAML or JSON file holding a top-level list of requirements. Each entry is one unit of work, one iteration.
-
 ## Steps
 
 1. **Understand the work.** If the user's request is vague, ask clarifying questions:
@@ -21,7 +19,7 @@ A project is a YAML or JSON file holding a top-level list of requirements. Each 
 
 3. **Draft the requirements.** Write one entry per iteration, stating the outcome rather than the implementation, and split anything that needs more than one round of work into separate entries. Cover the edge cases and operational requirements the user's description implies, and add the version bump if one is needed.
 
-4. **Write the file** at `./projects/<slug>.yaml` as a top-level list of strings, following the format in [docs/specs/project.md](docs/specs/project.md). The base name is the slug a runner uses as the branch name.
+4. **Write the file** at `./projects/<slug>.yaml` as a top-level list of strings, following the format in [docs/specs/project.md](docs/specs/project.md).
 
 5. **Validate.** Confirm the file parses as a list holding at least one non-empty entry. Empty entries — null, `false`, `0`, blank strings — are typically dropped during resolution, so never leave a placeholder in the list. If the project's runner provides a validation command, use it.
 

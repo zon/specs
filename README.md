@@ -21,7 +21,7 @@ Before writing any code, read [docs/specs/architecture.md](docs/specs/architectu
 
 ## What's Inside
 
-**Formats** — [spec](docs/specs/specs.md), [architecture](docs/specs/architecture-outline.md), [project](docs/specs/project.md). A spec defines what the system must do; the architecture records where the code lives; a project is a plain list of requirements, one per iteration.
+**Formats** — [spec](docs/specs/specs.md), [architecture](docs/specs/architecture-outline.md), [project](docs/specs/project.md). A spec defines what the system must do. The architecture records where the code lives. A project is a plain list of requirements, one per iteration.
 
 **Standards** — [orchestration](docs/specs/orchestration.md), [architecture guidelines](docs/specs/architecture.md), [writing requirements](docs/specs/requirements.md), [agent prompts](docs/specs/prompts.md), [glossary](docs/specs/glossary.md).
 
@@ -39,7 +39,7 @@ Before writing any code, read [docs/specs/architecture.md](docs/specs/architectu
 
 ## Runners
 
-Nothing here executes a project; running it is a runner's job. [ralph](https://github.com/zon/ralph) is one — it picks one requirement per iteration, drives a coding agent through it, and records completion in the branch's commit log.
+Nothing here executes a project. Running it is a runner's job. [ralph](https://github.com/zon/ralph) is one — it picks one requirement per iteration, drives a coding agent through it, and records completion in the branch's commit log.
 
 The formats stay runner-neutral.
 

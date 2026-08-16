@@ -10,7 +10,7 @@ Write orchestration code in the language the feature is implemented in:
 
 - **Pass failures through.** Propagate failures from helpers directly using the language's idiomatic mechanism (returned errors, thrown exceptions, result types). Only introduce a named error value when it represents a distinct domain condition with no underlying cause (e.g. `CartError.Empty` is a state, not a failure).
 - **No debug code.** Remove all logger calls, debug statements, and diagnostic output.
-- **Use dependency injection for side effects.** Any helper that performs side effects (database writes, network calls, notifications) must be injected rather than called as a static function. The caller wires in real implementations; tests substitute mocks.
+- **Use dependency injection for side effects.** Any helper that performs side effects (database writes, network calls, notifications) must be injected rather than called as a static function. The caller wires in real implementations. Tests substitute mocks.
 - **No infrastructure types.** Use domain nouns, not framework types like request contexts, HTTP writers, etc.
 - **Only write bodies that are pure orchestration.** Every line must be a domain condition, a named step call, or a return value. If writing the body would require literals, string construction, or format details, don't write it — just call the function by name.
 
@@ -73,7 +73,7 @@ test("payment declined", () => {
 
 The orchestration function lives in an [orchestration module](glossary.md#orchestration-module). Each helper lives in an [implementation module](glossary.md#implementation-module).
 
-Orchestration modules must not contain helper methods that perform or test implementation details. Test helpers — mock factories, HTTP client wiring, fixture builders, assertion utilities — belong in or beside the implementation modules they serve. The orchestration module's test file contains only test functions that exercise orchestration logic; it calls helpers imported from implementation modules, never defines them.
+Orchestration modules must not contain helper methods that perform or test implementation details. Test helpers — mock factories, HTTP client wiring, fixture builders, assertion utilities — belong in or beside the implementation modules they serve. The orchestration module's test file contains only test functions that exercise orchestration logic. It calls helpers imported from implementation modules, never defines them.
 
 Fixture builders for input types (e.g. a struct passed into the orchestration by the caller) belong with the module that owns the type, not the orchestration module. When drafting test helpers, identify every input type in the orchestration signature and place its fixture builder with that module.
 

@@ -13,7 +13,7 @@ After writing or editing prose, invoke the `prose-editor` subagent to review it.
 Documents live in [docs/specs/](docs/specs/README.md) and install to `docs/specs/` in the target repository. The path is identical in both places, which is what makes relative links work everywhere.
 
 - **Link between documents with plain relative links.** From inside `docs/specs/`, that is a bare filename: `[Architecture Format](architecture-outline.md)`.
-- **Never rewrite a link to an absolute URL.** Install is a file copy; there is no link rewriting step, and a raw GitHub URL would pin the target to whatever this repo looked like at install time.
+- **Never rewrite a link to an absolute URL.** Install is a file copy. There is no link rewriting step, and a raw GitHub URL would pin the target to whatever this repo looked like at install time.
 - **Paths belonging to the target project stay unlinked.** `specs/architecture.yaml`, `specs/<path>.md`, and `projects/<slug>.yaml` are resolved wherever a skill runs, so write them as code spans.
 
 ## Editing Skills

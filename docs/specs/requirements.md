@@ -19,6 +19,6 @@ A [requirement](glossary.md#requirement) in a [project](project.md) is one itera
 
 - Write from the user, client, or developer perspective — user interfaces, network interfaces, and high-level APIs
 - Be specific about expected behavior
-- Break complex work into multiple entries — one entry is one iteration, so work that needs three separate rounds should be three entries
+- Break complex work into multiple entries — work that needs three rounds is three entries
 
 **Do not include** work the runner handles automatically. Most runners run the test suite and fix failures on their own, so entries like "all existing tests pass" or "no regressions" are redundant. Check what your runner does before adding an entry for it.
