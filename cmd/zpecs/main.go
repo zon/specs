@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/zon/specs/internal/source"
 )
 
 const usage = `zpecs renders skill and agent definitions for the claude and opencode targets
@@ -136,7 +138,11 @@ func update(args []string) error {
 		fmt.Printf("updating %s for %s\n", opts.scope, opts.target)
 		return nil
 	}
-	fmt.Printf("updating %s for %s from %s\n", opts.scope, opts.target, opts.source)
+	defs, err := source.ReadLocal(opts.source)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("updating %s for %s from %s (%d definitions)\n", opts.scope, opts.target, opts.source, len(defs))
 	return nil
 }
 

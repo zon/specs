@@ -1,12 +1,14 @@
-Accept --source and --target flags on the update command
+Read skill and agent definitions from a local source
 
-The update command accepts a --source flag for a local source directory and
-a --target flag naming the claude or opencode target (default: opencode).
-Flags take the "--flag value" and "--flag=value" forms and interleave with
-the scope word. Unknown flags, missing values, and unknown targets print
-usage to stderr and exit non-zero.
+A local source mirrors the repository layout, so the update command reads
+skill definitions from skills/<name>/SKILL.md and agent definitions from
+agents/<name>.md. The reader does not find a definition in any other
+location, and a missing source directory errors. A new internal/source
+module performs the read, and the update orchestration calls it when a
+--source flag names a directory.
 
-Tests cover target and option parsing, command recognition with flags at the
-run level, and built-binary runs that exercise both flags.
+Added tests cover a skill at the canonical path, a misplaced skill staying
+unfound, the same for agents, a missing source directory erroring, and a
+built-binary run against a source.
 
-Ralph item 18 completed
+Ralph item 1 completed

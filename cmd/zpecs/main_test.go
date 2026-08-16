@@ -126,6 +126,7 @@ func TestParseOptions(t *testing.T) {
 }
 
 func TestRunRecognizesCommands(t *testing.T) {
+	sourceDir := t.TempDir()
 	cases := []struct {
 		name    string
 		args    []string
@@ -136,12 +137,13 @@ func TestRunRecognizesCommands(t *testing.T) {
 		{name: "update skills", args: []string{"update", "skills"}},
 		{name: "update agents", args: []string{"update", "agents"}},
 		{name: "update with target", args: []string{"update", "--target", "claude"}},
-		{name: "update with source", args: []string{"update", "skills", "--source", "/tmp/src"}},
+		{name: "update with source", args: []string{"update", "skills", "--source", sourceDir}},
 		{name: "unknown command", args: []string{"install"}, wantErr: true},
 		{name: "unknown scope", args: []string{"update", "docs"}, wantErr: true},
 		{name: "too many arguments", args: []string{"update", "skills", "agents"}, wantErr: true},
 		{name: "invalid target", args: []string{"update", "--target", "vscode"}, wantErr: true},
 		{name: "unknown flag", args: []string{"update", "--force"}, wantErr: true},
+		{name: "missing source", args: []string{"update", "--source", "/tmp/nope/does-not-exist"}, wantErr: true},
 	}
 
 	for _, tc := range cases {
@@ -156,6 +158,7 @@ func TestRunRecognizesCommands(t *testing.T) {
 
 func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
+	sourceDir := t.TempDir()
 	cases := []struct {
 		args []string
 		want string
@@ -164,7 +167,7 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 		{args: []string{"update", "skills"}, want: "updating skills for opencode"},
 		{args: []string{"update", "agents"}, want: "updating agents for opencode"},
 		{args: []string{"update", "--target", "claude"}, want: "updating skills and agents for claude"},
-		{args: []string{"update", "--source", "specs", "skills"}, want: "updating skills for opencode from specs"},
+		{args: []string{"update", "--source", sourceDir, "skills"}, want: "updating skills for opencode from " + sourceDir},
 	}
 
 	for _, tc := range cases {
