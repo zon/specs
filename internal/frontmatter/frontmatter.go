@@ -14,31 +14,42 @@ type Fields struct {
 	Tools       []string
 }
 
-// Read reads the frontmatter fields from the definition at path. A file
-// without frontmatter has zero fields.
-func Read(path string) (Fields, error) {
+// Content is one definition file parsed into its frontmatter fields and
+// body.
+type Content struct {
+	Fields Fields
+	Body   string
+}
+
+// Read reads the frontmatter fields and the body from the definition at
+// path. A file without frontmatter has zero fields and its whole content
+// as the body.
+func Read(path string) (Content, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return Fields{}, err
+		return Content{}, err
 	}
 	return parse(string(content))
 }
 
-// parse reads the fields between the leading and closing --- lines.
-func parse(content string) (Fields, error) {
+// parse reads the fields between the leading and closing --- lines, and
+// the body after it.
+func parse(content string) (Content, error) {
 	lines := strings.Split(content, "\n")
 	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
-		return Fields{}, nil
+		return Content{Body: strings.TrimSpace(content)}, nil
 	}
 	var (
 		fields Fields
 		block  *[]string
+		bodyAt int
 	)
 	open := true
-	for _, line := range lines[1:] {
+	for i, line := range lines[1:] {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "---" {
 			open = false
+			bodyAt = i + 2
 			break
 		}
 		if trimmed == "" {
@@ -73,9 +84,10 @@ func parse(content string) (Fields, error) {
 		}
 	}
 	if open {
-		return Fields{}, fmt.Errorf("unterminated frontmatter")
+		return Content{}, fmt.Errorf("unterminated frontmatter")
 	}
-	return fields, nil
+	body := strings.TrimSpace(strings.Join(lines[bodyAt:], "\n"))
+	return Content{Fields: fields, Body: body}, nil
 }
 
 // parseInlineList reads a [a, b] value, or nil when the value is not

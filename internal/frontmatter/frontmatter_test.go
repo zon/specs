@@ -37,8 +37,8 @@ Body text.
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Read = %+v, want %+v", got, want)
+	if !reflect.DeepEqual(got.Fields, want) {
+		t.Fatalf("Read = %+v, want %+v", got.Fields, want)
 	}
 }
 
@@ -49,8 +49,8 @@ func TestReadReadsInlineTools(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	if !reflect.DeepEqual(got.Tools, []string{"read", "edit"}) {
-		t.Fatalf("tools = %v, want [read edit]", got.Tools)
+	if !reflect.DeepEqual(got.Fields.Tools, []string{"read", "edit"}) {
+		t.Fatalf("tools = %v, want [read edit]", got.Fields.Tools)
 	}
 }
 
@@ -61,8 +61,8 @@ func TestReadYieldsZeroFieldsWithoutFrontmatter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	if !reflect.DeepEqual(got, Fields{}) {
-		t.Fatalf("Read = %+v, want zero fields", got)
+	if !reflect.DeepEqual(got.Fields, Fields{}) {
+		t.Fatalf("Read = %+v, want zero fields", got.Fields)
 	}
 }
 
@@ -77,5 +77,68 @@ func TestReadErrorsOnUnterminatedFrontmatter(t *testing.T) {
 func TestReadErrorsOnMissingFile(t *testing.T) {
 	if _, err := Read(filepath.Join(t.TempDir(), "missing.md")); err == nil {
 		t.Fatal("expected an error for a missing file")
+	}
+}
+
+func TestReadReadsTheBody(t *testing.T) {
+	path := write(t, `---
+name: prose-editor
+description: Reviews prose.
+---
+
+You are a prose editor. Review the prose against the guidelines.
+`)
+
+	got, err := Read(path)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	want := "You are a prose editor. Review the prose against the guidelines."
+	if got.Body != want {
+		t.Fatalf("Body = %q, want %q", got.Body, want)
+	}
+}
+
+func TestReadKeepsBodyLines(t *testing.T) {
+	path := write(t, `---
+name: prose-editor
+---
+
+You are a prose editor.
+
+Give numbered instructions.
+`)
+
+	got, err := Read(path)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	want := "You are a prose editor.\n\nGive numbered instructions."
+	if got.Body != want {
+		t.Fatalf("Body = %q, want %q", got.Body, want)
+	}
+}
+
+func TestReadYieldsWholeContentAsBodyWithoutFrontmatter(t *testing.T) {
+	path := write(t, "You are a prose editor.\n")
+
+	got, err := Read(path)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if want := "You are a prose editor."; got.Body != want {
+		t.Fatalf("Body = %q, want %q", got.Body, want)
+	}
+}
+
+func TestReadYieldsEmptyBodyWithoutOne(t *testing.T) {
+	path := write(t, "---\nname: prose-editor\n---\n")
+
+	got, err := Read(path)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if got.Body != "" {
+		t.Fatalf("Body = %q, want empty", got.Body)
 	}
 }

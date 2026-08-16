@@ -1,9 +1,11 @@
-Deny every tool an opencode agent does not list
+Make the agent's body the rendered system prompt
 
-The opencode render maps the definition's tools to a permission block
-denying every other tool. An agent without tools omits the block.
+The frontmatter reader returns the body after the closing frontmatter
+line along with the fields. The claude and opencode renders write that
+body as the prompt.
 
-Added tests cover the denied tools, the frontmatter order, and the no-tools
-case.
+Added tests cover the body after the frontmatter, intact body lines, a
+whole-content body without frontmatter, an empty body, and the fields
+reading with the new return.
 
-Ralph item 8 completed
+Ralph item 9 completed
