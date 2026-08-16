@@ -1,14 +1,10 @@
-Read definitions from GitHub by default
+Read skill definitions from skills/<name>/SKILL.md
 
-The update command reads definitions from the GitHub repository when
-the user gives no --source flag. A --source flag keeps reading from the
-local directory it names.
+The system reads a skill definition only from its canonical path under
+a source. The source reader lists each skill keyed by the directory
+name that holds its SKILL.md, and reports the path it read from.
 
-A new clone module copies the repository into a temp dir, and the update
-command removes the clone after the run. ZPECS_SOURCE overrides the
-default repository, mostly for tests.
+Added tests assert the reader finds a skill at the canonical path and
+reports that path.
 
-Tests cover reading from the default source in-process and as a built
-binary, and a local source winning over the default.
-
-Ralph item 0 completed
+Ralph item 2 completed

@@ -39,6 +39,16 @@ func TestReadLocalFindsSkillAtSkillsNameSKILLMd(t *testing.T) {
 	if got := namesOfKind(defs, Skill); !reflect.DeepEqual(got, []string{"prose-editor"}) {
 		t.Fatalf("skills = %v, want [prose-editor]", got)
 	}
+
+	for _, d := range defs {
+		if d.Kind != Skill {
+			continue
+		}
+		want := filepath.Join(dir, "skills", "prose-editor", "SKILL.md")
+		if d.Path != want {
+			t.Fatalf("skill path = %s, want %s", d.Path, want)
+		}
+	}
 }
 
 func TestReadLocalDoesNotFindMisplacedSkill(t *testing.T) {
