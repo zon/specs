@@ -1,12 +1,16 @@
-Render only what each update command names
+Write every definition at the repository root
 
-The update command reads definitions by scope. A full update reads
-skills and agents. Update skills reads skills only, and update agents
-reads agents only. The source module exposes a scoped read for each
-kind.
+The update command resolves the git repository root from the working
+directory and writes every definition there. A run inside a subdirectory
+still lands at the root. Outside a repository, the command errors before
+it reads or writes anything.
 
-Tests cover scoped reads finding only their kind, missing scopes
-erroring, in-process runs, and a built-binary run of the scoped
-commands against a real source.
+A new internal/repo module finds the root by walking up until a .git
+entry appears. The targetdir module writes under the root instead of the
+working directory.
 
-Ralph item 15 completed
+Tests cover finding the root from a subdirectory, erroring outside a
+repository without writing anything, and nested runs writing at the
+root, in-process and as a built binary.
+
+Ralph item 10 completed

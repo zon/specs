@@ -17,45 +17,66 @@ func agent(name string) source.Definition {
 }
 
 func TestPathClaudeSkill(t *testing.T) {
-	want := filepath.Join(".claude", "skills", "prose-editor", "SKILL.md")
-	if got := Path(Claude, skill("prose-editor")); got != want {
+	root := t.TempDir()
+	want := filepath.Join(root, ".claude", "skills", "prose-editor", "SKILL.md")
+	if got := Path(root, Claude, skill("prose-editor")); got != want {
 		t.Fatalf("Path = %q, want %q", got, want)
 	}
 }
 
 func TestPathClaudeAgent(t *testing.T) {
-	want := filepath.Join(".claude", "agents", "prose-editor.md")
-	if got := Path(Claude, agent("prose-editor")); got != want {
+	root := t.TempDir()
+	want := filepath.Join(root, ".claude", "agents", "prose-editor.md")
+	if got := Path(root, Claude, agent("prose-editor")); got != want {
 		t.Fatalf("Path = %q, want %q", got, want)
 	}
 }
 
 func TestPathOpencodeSkill(t *testing.T) {
-	want := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
-	if got := Path(Opencode, skill("prose-editor")); got != want {
+	root := t.TempDir()
+	want := filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md")
+	if got := Path(root, Opencode, skill("prose-editor")); got != want {
 		t.Fatalf("Path = %q, want %q", got, want)
 	}
 }
 
 func TestPathOpencodeAgent(t *testing.T) {
-	want := filepath.Join(".opencode", "agents", "prose-editor.md")
-	if got := Path(Opencode, agent("prose-editor")); got != want {
+	root := t.TempDir()
+	want := filepath.Join(root, ".opencode", "agents", "prose-editor.md")
+	if got := Path(root, Opencode, agent("prose-editor")); got != want {
 		t.Fatalf("Path = %q, want %q", got, want)
 	}
 }
 
 func TestWriteCreatesDirectoriesAndFile(t *testing.T) {
-	t.Chdir(t.TempDir())
+	root := t.TempDir()
 
-	if err := Write(Claude, agent("prose-editor"), "Review prose.\n"); err != nil {
+	if err := Write(root, Claude, agent("prose-editor"), "Review prose.\n"); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
 
-	content, err := os.ReadFile(filepath.Join(".claude", "agents", "prose-editor.md"))
+	content, err := os.ReadFile(filepath.Join(root, ".claude", "agents", "prose-editor.md"))
 	if err != nil {
 		t.Fatalf("written file: %v", err)
 	}
 	if string(content) != "Review prose.\n" {
 		t.Fatalf("content = %q, want %q", content, "Review prose.\n")
+	}
+}
+
+func TestWriteWritesUnderRootNotWorkingDirectory(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(t.TempDir())
+
+	if err := Write(root, Opencode, skill("prose-editor"), "# prose-editor\n"); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	path := filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("file not written under root: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")); err == nil {
+		t.Fatal("file written in the working directory")
 	}
 }

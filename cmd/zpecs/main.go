@@ -7,6 +7,7 @@ import (
 
 	"github.com/zon/specs/internal/frontmatter"
 	"github.com/zon/specs/internal/render"
+	"github.com/zon/specs/internal/repo"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/targetdir"
 )
@@ -137,6 +138,10 @@ func update(args []string) error {
 	if err != nil {
 		return err
 	}
+	root, err := repo.Root(".")
+	if err != nil {
+		return err
+	}
 	if opts.source == "" {
 		fmt.Printf("updating %s for %s\n", opts.scope, opts.target)
 		return nil
@@ -150,15 +155,15 @@ func update(args []string) error {
 		if err != nil {
 			return err
 		}
-		if err := targetdir.Write(string(opts.target), d, content); err != nil {
-			return fmt.Errorf("writing %s: %w", targetdir.Path(string(opts.target), d), err)
+		if err := targetdir.Write(root, string(opts.target), d, content); err != nil {
+			return fmt.Errorf("writing %s: %w", targetdir.Path(root, string(opts.target), d), err)
 		}
 	}
 	fmt.Printf("updating %s for %s from %s (%d definitions)\n", opts.scope, opts.target, opts.source, len(defs))
 	return nil
 }
 
-// readDefinitions reads the definitions a scope names from the source.
+// readDefinitions returns the definitions a scope selects from the source.
 func readDefinitions(s scope, sourceDir string) ([]source.Definition, error) {
 	switch s {
 	case scopeSkills:

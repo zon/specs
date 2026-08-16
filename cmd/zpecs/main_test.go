@@ -126,6 +126,7 @@ func TestParseOptions(t *testing.T) {
 }
 
 func TestRunRecognizesCommands(t *testing.T) {
+	t.Chdir(gitRepo(t))
 	sourceDir := t.TempDir()
 	cases := []struct {
 		name    string
@@ -158,6 +159,7 @@ func TestRunRecognizesCommands(t *testing.T) {
 
 func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
+	repoDir := gitRepo(t)
 	sourceDir := t.TempDir()
 	cases := []struct {
 		args []string
@@ -171,7 +173,9 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		out, err := exec.Command(binary, tc.args...).CombinedOutput()
+		cmd := exec.Command(binary, tc.args...)
+		cmd.Dir = repoDir
+		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("zpecs %v failed: %v", tc.args, err)
 		}
@@ -200,8 +204,18 @@ func writeSourceFile(t *testing.T, dir, rel, content string) {
 	}
 }
 
+// gitRepo returns a temp dir that looks like a git repository root.
+func gitRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
 func TestUpdateReadsSameFrontmatterForBothTargets(t *testing.T) {
-	t.Chdir(t.TempDir())
+	t.Chdir(gitRepo(t))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
 name: prose-editor
@@ -226,7 +240,7 @@ Review prose.
 }
 
 func TestUpdateWritesAgentUnderSourceNameForBothTargets(t *testing.T) {
-	t.Chdir(t.TempDir())
+	t.Chdir(gitRepo(t))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
 name: renamed
@@ -259,7 +273,7 @@ Review prose.
 }
 
 func TestUpdateWritesSkillAndAgentToClaude(t *testing.T) {
-	t.Chdir(t.TempDir())
+	t.Chdir(gitRepo(t))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
@@ -283,7 +297,7 @@ Review prose.
 }
 
 func TestUpdateWritesSkillAndAgentToOpencode(t *testing.T) {
-	t.Chdir(t.TempDir())
+	t.Chdir(gitRepo(t))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
@@ -312,7 +326,7 @@ func TestBinaryWritesToClaudeTarget(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
-	work := t.TempDir()
+	work := gitRepo(t)
 	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
 	cmd.Dir = work
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -341,7 +355,7 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Chdir(t.TempDir())
+			t.Chdir(gitRepo(t))
 			dir := t.TempDir()
 			writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 			writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
@@ -388,7 +402,7 @@ func TestBinaryScopedUpdateWritesOnlyWhatItNames(t *testing.T) {
 		{scope: "agents"},
 	} {
 		t.Run(tc.scope, func(t *testing.T) {
-			work := t.TempDir()
+			work := gitRepo(t)
 			cmd := exec.Command(binary, "update", tc.scope, "--source", dir)
 			cmd.Dir = work
 			if out, err := cmd.CombinedOutput(); err != nil {
@@ -413,5 +427,85 @@ func TestBinaryScopedUpdateWritesOnlyWhatItNames(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestUpdateWritesToRepositoryRoot(t *testing.T) {
+	root := gitRepo(t)
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
+
+	work := filepath.Join(root, "nested", "deep")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(work)
+
+	if err := run([]string{"update", "--source", dir}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	skillPath := filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md")
+	if _, err := os.Stat(skillPath); err != nil {
+		t.Fatalf("skill not written at the repository root: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")); err == nil {
+		t.Fatal("skill written in the working subdirectory")
+	}
+}
+
+func TestUpdateErrorsOutsideRepository(t *testing.T) {
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
+
+	t.Chdir(t.TempDir())
+	err := run([]string{"update", "--source", dir})
+	if err == nil {
+		t.Fatal("expected update outside a repository to error")
+	}
+	if _, statErr := os.Stat(filepath.Join(".opencode", "agents", "prose-editor.md")); statErr == nil {
+		t.Fatal("update outside a repository wrote a file")
+	}
+}
+
+func TestBinaryWritesToRepositoryRoot(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	root := gitRepo(t)
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
+
+	work := filepath.Join(root, "nested")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
+	cmd.Dir = work
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("zpecs update failed: %v\n%s", err, out)
+	}
+
+	agentPath := filepath.Join(root, ".claude", "agents", "prose-editor.md")
+	if _, err := os.Stat(agentPath); err != nil {
+		t.Fatalf("agent not written at the repository root: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(work, ".claude", "agents", "prose-editor.md")); err == nil {
+		t.Fatal("agent written in the working subdirectory")
+	}
+}
+
+func TestBinaryErrorsOutsideRepository(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+
+	work := t.TempDir()
+	cmd := exec.Command(binary, "update", "--source", dir)
+	cmd.Dir = work
+	if out, err := cmd.CombinedOutput(); err == nil {
+		t.Fatalf("expected failure outside a repository, got success\n%s", out)
+	}
+	if _, err := os.Stat(filepath.Join(work, ".opencode")); err == nil {
+		t.Fatal("binary wrote outside a repository")
 	}
 }
