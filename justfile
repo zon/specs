@@ -5,6 +5,10 @@ skills_dir := "skills"
 default:
     @just --list
 
+# Build the zpecs CLI binary
+build:
+    go build -o zpecs ./cmd/zpecs
+
 # Check that every relative markdown link in the docs and skills resolves
 check:
     #!/usr/bin/env bash
