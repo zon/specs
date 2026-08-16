@@ -1,11 +1,9 @@
-Render an opencode agent in subagent mode without its name
+Render a claude agent with its tools
 
-The render module now maps an agent definition to the opencode target.
-An opencode agent keeps its description and body, and uses
-mode: subagent instead of a name field. It reads the same frontmatter
-fields as the claude render, dropping only the name.
+The claude render lists the definition's tools in its frontmatter after
+the description. An agent without tools omits the field.
 
-Added tests cover the rendered agent using mode: subagent, the rendered
-agent having no name field, and the description and body in order.
+Added tests cover the rendered agent listing read and edit, and the
+full frontmatter in order.
 
-Ralph item 6 completed
+Ralph item 7 completed
