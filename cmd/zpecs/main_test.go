@@ -188,3 +188,38 @@ func TestBinaryRejectsUnknownCommand(t *testing.T) {
 		t.Fatal("expected unknown command to fail")
 	}
 }
+
+func writeSourceFile(t *testing.T, dir, rel, content string) {
+	t.Helper()
+	path := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdateReadsSameFrontmatterForBothTargets(t *testing.T) {
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
+name: prose-editor
+description: Reviews prose.
+tools:
+  - read
+  - edit
+---
+
+Review prose.
+`)
+
+	cases := []target{targetClaude, targetOpencode}
+	for _, trgt := range cases {
+		t.Run(string(trgt), func(t *testing.T) {
+			err := run([]string{"update", "--source", dir, "--target", string(trgt)})
+			if err != nil {
+				t.Fatalf("update for %s: %v", trgt, err)
+			}
+		})
+	}
+}

@@ -1,14 +1,13 @@
-Read skill and agent definitions from a local source
+Read the same frontmatter fields for every target
 
-A local source mirrors the repository layout, so the update command reads
-skill definitions from skills/<name>/SKILL.md and agent definitions from
-agents/<name>.md. The reader does not find a definition in any other
-location, and a missing source directory errors. A new internal/source
-module performs the read, and the update orchestration calls it when a
---source flag names a directory.
+A shared frontmatter reader parses the name, description, and tools fields
+from each definition file. It never depends on the target, so claude and
+opencode both use the same fields. The reader lives in the new
+internal/frontmatter module. The update command calls it for every
+definition from a source.
 
-Added tests cover a skill at the canonical path, a misplaced skill staying
-unfound, the same for agents, a missing source directory erroring, and a
-built-binary run against a source.
+Added tests cover reading all three fields, an inline tools list, a file
+without frontmatter, unterminated frontmatter, a missing file, and the
+update command reading the same agent for both targets.
 
-Ralph item 1 completed
+Ralph item 4 completed

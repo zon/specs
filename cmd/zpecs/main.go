@@ -5,10 +5,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/zon/specs/internal/frontmatter"
 	"github.com/zon/specs/internal/source"
 )
 
-const usage = `zpecs renders skill and agent definitions for the claude and opencode targets
+const usage = `zpecs renders skills and agents for claude and opencode
 
 usage:
   zpecs update                    renders skills and agents
@@ -141,6 +142,11 @@ func update(args []string) error {
 	defs, err := source.ReadLocal(opts.source)
 	if err != nil {
 		return err
+	}
+	for _, d := range defs {
+		if _, err := frontmatter.Read(d.Path); err != nil {
+			return fmt.Errorf("reading %s: %w", d.Path, err)
+		}
 	}
 	fmt.Printf("updating %s for %s from %s (%d definitions)\n", opts.scope, opts.target, opts.source, len(defs))
 	return nil
