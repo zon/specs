@@ -9,6 +9,10 @@ default:
 build:
     go build -o zpecs ./cmd/zpecs
 
+# Install the zpecs CLI with go install
+install:
+    go install ./cmd/zpecs
+
 # Check that every relative markdown link in the docs and skills resolves
 check:
     #!/usr/bin/env bash
