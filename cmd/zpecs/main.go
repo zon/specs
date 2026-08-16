@@ -3,14 +3,19 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 const usage = `zpecs renders skill and agent definitions for the claude and opencode targets
 
 usage:
-  zpecs update            renders skills and agents
-  zpecs update skills     renders skills only
-  zpecs update agents     renders agents only
+  zpecs update                    renders skills and agents
+  zpecs update skills             renders skills only
+  zpecs update agents             renders agents only
+
+flags:
+  --source DIR    read definitions from the local directory DIR (default: GitHub)
+  --target NAME   render for claude or opencode (default: opencode)
 `
 
 type scope int
@@ -30,6 +35,76 @@ func (s scope) String() string {
 	default:
 		return "skills and agents"
 	}
+}
+
+type target string
+
+const (
+	targetClaude   target = "claude"
+	targetOpencode target = "opencode"
+)
+
+func parseTarget(s string) (target, error) {
+	switch target(s) {
+	case targetClaude, targetOpencode:
+		return target(s), nil
+	default:
+		return "", fmt.Errorf("unknown target %q (want claude or opencode)", s)
+	}
+}
+
+type options struct {
+	scope  scope
+	source string
+	target target
+}
+
+func parseOptions(args []string) (options, error) {
+	var (
+		opts options
+		pos  []string
+	)
+	opts.scope = scopeAll
+	opts.target = targetOpencode
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "--source":
+			if i+1 >= len(args) {
+				return opts, fmt.Errorf("--source needs a directory path")
+			}
+			i++
+			opts.source = args[i]
+		case strings.HasPrefix(arg, "--source="):
+			opts.source = strings.TrimPrefix(arg, "--source=")
+		case arg == "--target":
+			if i+1 >= len(args) {
+				return opts, fmt.Errorf("--target needs a target name")
+			}
+			i++
+			t, err := parseTarget(args[i])
+			if err != nil {
+				return opts, err
+			}
+			opts.target = t
+		case strings.HasPrefix(arg, "--target="):
+			t, err := parseTarget(strings.TrimPrefix(arg, "--target="))
+			if err != nil {
+				return opts, err
+			}
+			opts.target = t
+		case strings.HasPrefix(arg, "-"):
+			return opts, fmt.Errorf("unknown flag %q", arg)
+		default:
+			pos = append(pos, arg)
+		}
+	}
+	s, err := scopeFromArgs(pos)
+	if err != nil {
+		return opts, err
+	}
+	opts.scope = s
+	return opts, nil
 }
 
 func main() {
@@ -53,11 +128,15 @@ func run(args []string) error {
 }
 
 func update(args []string) error {
-	s, err := scopeFromArgs(args)
+	opts, err := parseOptions(args)
 	if err != nil {
 		return err
 	}
-	fmt.Println("updating", s)
+	if opts.source == "" {
+		fmt.Printf("updating %s for %s\n", opts.scope, opts.target)
+		return nil
+	}
+	fmt.Printf("updating %s for %s from %s\n", opts.scope, opts.target, opts.source)
 	return nil
 }
 

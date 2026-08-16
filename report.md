@@ -1,11 +1,12 @@
-Expose update, update skills, and update agents commands
+Accept --source and --target flags on the update command
 
-The CLI now parses its command line and dispatches to the update command,
-which resolves a skills, agents, or full scope from its arguments. Unknown
-commands and scopes error with usage on stderr and a non-zero exit.
+The update command accepts a --source flag for a local source directory and
+a --target flag naming the claude or opencode target (default: opencode).
+Flags take the "--flag value" and "--flag=value" forms and interleave with
+the scope word. Unknown flags, missing values, and unknown targets print
+usage to stderr and exit non-zero.
 
-Tests added cover scope resolution, command recognition and rejection at the
-run level, and a built-binary run of each command plus rejection of an unknown
-command.
+Tests cover target and option parsing, command recognition with flags at the
+run level, and built-binary runs that exercise both flags.
 
-Ralph item 17 completed
+Ralph item 18 completed

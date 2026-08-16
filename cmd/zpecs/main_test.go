@@ -67,6 +67,64 @@ func TestScopeFromArgs(t *testing.T) {
 	}
 }
 
+func TestParseTarget(t *testing.T) {
+	cases := []struct {
+		name    string
+		s       string
+		want    target
+		wantErr bool
+	}{
+		{name: "claude", s: "claude", want: targetClaude},
+		{name: "opencode", s: "opencode", want: targetOpencode},
+		{name: "unknown target", s: "vscode", wantErr: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := parseTarget(tc.s)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("parseTarget(%q) error = %v, wantErr %v", tc.s, err, tc.wantErr)
+			}
+			if err == nil && got != tc.want {
+				t.Fatalf("parseTarget(%q) = %v, want %v", tc.s, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestParseOptions(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		want    options
+		wantErr bool
+	}{
+		{name: "defaults", args: nil, want: options{scope: scopeAll, target: targetOpencode}},
+		{name: "scope", args: []string{"skills"}, want: options{scope: scopeSkills, target: targetOpencode}},
+		{name: "claude target", args: []string{"--target", "claude"}, want: options{scope: scopeAll, target: targetClaude}},
+		{name: "claude target equals", args: []string{"--target=claude"}, want: options{scope: scopeAll, target: targetClaude}},
+		{name: "source", args: []string{"--source", "/tmp/src"}, want: options{scope: scopeAll, target: targetOpencode, source: "/tmp/src"}},
+		{name: "source equals", args: []string{"--source=/tmp/src"}, want: options{scope: scopeAll, target: targetOpencode, source: "/tmp/src"}},
+		{name: "all together", args: []string{"agents", "--source", "/tmp/src", "--target", "claude"}, want: options{scope: scopeAgents, target: targetClaude, source: "/tmp/src"}},
+		{name: "unknown target", args: []string{"--target", "vscode"}, wantErr: true},
+		{name: "missing target value", args: []string{"--target"}, wantErr: true},
+		{name: "missing source value", args: []string{"--source"}, wantErr: true},
+		{name: "unknown flag", args: []string{"--force"}, wantErr: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := parseOptions(tc.args)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("parseOptions(%v) error = %v, wantErr %v", tc.args, err, tc.wantErr)
+			}
+			if err == nil && got != tc.want {
+				t.Fatalf("parseOptions(%v) = %+v, want %+v", tc.args, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestRunRecognizesCommands(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -77,9 +135,13 @@ func TestRunRecognizesCommands(t *testing.T) {
 		{name: "update", args: []string{"update"}},
 		{name: "update skills", args: []string{"update", "skills"}},
 		{name: "update agents", args: []string{"update", "agents"}},
+		{name: "update with target", args: []string{"update", "--target", "claude"}},
+		{name: "update with source", args: []string{"update", "skills", "--source", "/tmp/src"}},
 		{name: "unknown command", args: []string{"install"}, wantErr: true},
 		{name: "unknown scope", args: []string{"update", "docs"}, wantErr: true},
 		{name: "too many arguments", args: []string{"update", "skills", "agents"}, wantErr: true},
+		{name: "invalid target", args: []string{"update", "--target", "vscode"}, wantErr: true},
+		{name: "unknown flag", args: []string{"update", "--force"}, wantErr: true},
 	}
 
 	for _, tc := range cases {
@@ -98,9 +160,11 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 		args []string
 		want string
 	}{
-		{args: []string{"update"}, want: "updating skills and agents"},
-		{args: []string{"update", "skills"}, want: "updating skills"},
-		{args: []string{"update", "agents"}, want: "updating agents"},
+		{args: []string{"update"}, want: "updating skills and agents for opencode"},
+		{args: []string{"update", "skills"}, want: "updating skills for opencode"},
+		{args: []string{"update", "agents"}, want: "updating agents for opencode"},
+		{args: []string{"update", "--target", "claude"}, want: "updating skills and agents for claude"},
+		{args: []string{"update", "--source", "specs", "skills"}, want: "updating skills for opencode from specs"},
 	}
 
 	for _, tc := range cases {
