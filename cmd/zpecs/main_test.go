@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/alecthomas/kong"
 )
 
 func buildBinary(t *testing.T, dir string) string {
@@ -39,60 +41,52 @@ func TestBuildProducesRunnableCLIBinary(t *testing.T) {
 	}
 }
 
-func TestScopeFromArgs(t *testing.T) {
-	cases := []struct {
-		name    string
-		args    []string
-		want    scope
-		wantErr bool
-	}{
-		{name: "no scope", args: nil, want: scopeAll},
-		{name: "empty scope", args: []string{}, want: scopeAll},
-		{name: "skills", args: []string{"skills"}, want: scopeSkills},
-		{name: "agents", args: []string{"agents"}, want: scopeAgents},
-		{name: "unknown scope", args: []string{"docs"}, wantErr: true},
-		{name: "too many scopes", args: []string{"skills", "agents"}, wantErr: true},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := scopeFromArgs(tc.args)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("scopeFromArgs(%v) error = %v, wantErr %v", tc.args, err, tc.wantErr)
-			}
-			if err == nil && got != tc.want {
-				t.Fatalf("scopeFromArgs(%v) = %v, want %v", tc.args, got, tc.want)
-			}
-		})
-	}
-}
-
-func TestParseTarget(t *testing.T) {
+func TestParseScope(t *testing.T) {
 	cases := []struct {
 		name    string
 		s       string
-		want    target
+		want    scope
 		wantErr bool
 	}{
-		{name: "claude", s: "claude", want: targetClaude},
-		{name: "opencode", s: "opencode", want: targetOpencode},
-		{name: "unknown target", s: "vscode", wantErr: true},
+		{name: "no scope", s: "", want: scopeAll},
+		{name: "skills", s: "skills", want: scopeSkills},
+		{name: "agents", s: "agents", want: scopeAgents},
+		{name: "unknown scope", s: "docs", wantErr: true},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := parseTarget(tc.s)
+			got, err := parseScope(tc.s)
 			if (err != nil) != tc.wantErr {
-				t.Fatalf("parseTarget(%q) error = %v, wantErr %v", tc.s, err, tc.wantErr)
+				t.Fatalf("parseScope(%q) error = %v, wantErr %v", tc.s, err, tc.wantErr)
 			}
 			if err == nil && got != tc.want {
-				t.Fatalf("parseTarget(%q) = %v, want %v", tc.s, got, tc.want)
+				t.Fatalf("parseScope(%q) = %v, want %v", tc.s, got, tc.want)
 			}
 		})
 	}
 }
 
-func TestParseOptions(t *testing.T) {
+// parseUpdateArgs parses `update <args>` with the same kong grammar run
+// uses, and returns the options it selects.
+func parseUpdateArgs(t *testing.T, args ...string) (options, error) {
+	t.Helper()
+	var c cli
+	parser, err := kong.New(&c)
+	if err != nil {
+		t.Fatalf("kong.New: %v", err)
+	}
+	if _, err := parser.Parse(append([]string{"update"}, args...)); err != nil {
+		return options{}, err
+	}
+	scope, err := parseScope(c.Update.Scope)
+	if err != nil {
+		return options{}, err
+	}
+	return options{scope: scope, source: c.Update.Source, target: target(c.Update.Target)}, nil
+}
+
+func TestParseUpdate(t *testing.T) {
 	cases := []struct {
 		name    string
 		args    []string
@@ -114,12 +108,12 @@ func TestParseOptions(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := parseOptions(tc.args)
+			got, err := parseUpdateArgs(t, tc.args...)
 			if (err != nil) != tc.wantErr {
-				t.Fatalf("parseOptions(%v) error = %v, wantErr %v", tc.args, err, tc.wantErr)
+				t.Fatalf("parseUpdateArgs(%v) error = %v, wantErr %v", tc.args, err, tc.wantErr)
 			}
 			if err == nil && got != tc.want {
-				t.Fatalf("parseOptions(%v) = %+v, want %+v", tc.args, got, tc.want)
+				t.Fatalf("parseUpdateArgs(%v) = %+v, want %+v", tc.args, got, tc.want)
 			}
 		})
 	}

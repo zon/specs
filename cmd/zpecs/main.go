@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/alecthomas/kong"
 	"github.com/zon/specs/internal/clone"
 	"github.com/zon/specs/internal/frontmatter"
 	"github.com/zon/specs/internal/render"
@@ -12,18 +13,6 @@ import (
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/targetdir"
 )
-
-const usage = `zpecs renders skills and agents for claude and opencode
-
-usage:
-  zpecs update                    renders skills and agents
-  zpecs update skills             renders skills only
-  zpecs update agents             renders agents only
-
-flags:
-  --source DIR    read definitions from the local directory DIR (default: GitHub)
-  --target NAME   render for claude or opencode (default: opencode)
-`
 
 type scope int
 
@@ -44,6 +33,19 @@ func (s scope) String() string {
 	}
 }
 
+func parseScope(s string) (scope, error) {
+	switch s {
+	case "":
+		return scopeAll, nil
+	case "skills":
+		return scopeSkills, nil
+	case "agents":
+		return scopeAgents, nil
+	default:
+		return scopeAll, fmt.Errorf("unknown update scope %q", s)
+	}
+}
+
 type target string
 
 const (
@@ -51,94 +53,77 @@ const (
 	targetOpencode target = "opencode"
 )
 
-func parseTarget(s string) (target, error) {
-	switch target(s) {
-	case targetClaude, targetOpencode:
-		return target(s), nil
-	default:
-		return "", fmt.Errorf("unknown target %q (want claude or opencode)", s)
-	}
-}
-
 type options struct {
 	scope  scope
 	source string
 	target target
 }
 
-func parseOptions(args []string) (options, error) {
-	var (
-		opts options
-		pos  []string
-	)
-	opts.scope = scopeAll
-	opts.target = targetOpencode
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		switch {
-		case arg == "--source":
-			if i+1 >= len(args) {
-				return opts, fmt.Errorf("--source needs a directory path")
-			}
-			i++
-			opts.source = args[i]
-		case strings.HasPrefix(arg, "--source="):
-			opts.source = strings.TrimPrefix(arg, "--source=")
-		case arg == "--target":
-			if i+1 >= len(args) {
-				return opts, fmt.Errorf("--target needs a target name")
-			}
-			i++
-			t, err := parseTarget(args[i])
-			if err != nil {
-				return opts, err
-			}
-			opts.target = t
-		case strings.HasPrefix(arg, "--target="):
-			t, err := parseTarget(strings.TrimPrefix(arg, "--target="))
-			if err != nil {
-				return opts, err
-			}
-			opts.target = t
-		case strings.HasPrefix(arg, "-"):
-			return opts, fmt.Errorf("unknown flag %q", arg)
-		default:
-			pos = append(pos, arg)
-		}
-	}
-	s, err := scopeFromArgs(pos)
+// cli is the kong grammar for the whole application.
+type cli struct {
+	Update updateCmd `cmd:"" help:"renders skills and agents"`
+}
+
+// updateCmd is the kong grammar for `zpecs update`.
+type updateCmd struct {
+	Scope  string `arg:"" optional:"" default:"" help:"render skills or agents (default: both)"`
+	Source string `name:"source" help:"read definitions from the local directory DIR (default: GitHub)"`
+	Target string `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
+}
+
+func (u *updateCmd) Run() error {
+	s, err := parseScope(u.Scope)
 	if err != nil {
-		return opts, err
+		return err
 	}
-	opts.scope = s
-	return opts, nil
+	return update(options{
+		scope:  s,
+		source: u.Source,
+		target: target(u.Target),
+	})
+}
+
+// usageText returns the help kong generates for the whole application.
+// The --help hook prints help and stops. With Exit overridden to a no-op,
+// Parse continues and fails on the missing command.
+func usageText() string {
+	var sb strings.Builder
+	var c cli
+	parser, err := kong.New(&c, kong.Writers(&sb, &sb), kong.Exit(func(int) {}))
+	if err != nil {
+		return ""
+	}
+	_, _ = parser.Parse([]string{"--help"})
+	return sb.String()
 }
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "zpecs:", err)
 		fmt.Fprintln(os.Stderr)
-		fmt.Fprint(os.Stderr, usage)
+		fmt.Fprint(os.Stderr, usageText())
 		os.Exit(1)
 	}
 }
 
 func run(args []string) error {
 	if len(args) == 0 {
-		fmt.Print(usage)
+		fmt.Print(usageText())
 		return nil
 	}
-	if args[0] != "update" {
-		return fmt.Errorf("unknown command %q", args[0])
-	}
-	return update(args[1:])
-}
-
-func update(args []string) error {
-	opts, err := parseOptions(args)
+	var c cli
+	parser, err := kong.New(&c)
 	if err != nil {
 		return err
 	}
+	ctx, err := parser.Parse(args)
+	if err != nil {
+		return err
+	}
+	return ctx.Run()
+}
+
+func update(opts options) error {
 	root, err := repo.Root(".")
 	if err != nil {
 		return err
@@ -176,7 +161,7 @@ func update(args []string) error {
 }
 
 // defaultSource is the GitHub repository the CLI reads definitions from
-// when no --source flag is given. ZPECS_SOURCE overrides it, mostly for
+// when run without a --source flag. ZPECS_SOURCE overrides it, mostly for
 // tests.
 func defaultSource() string {
 	if v := os.Getenv("ZPECS_SOURCE"); v != "" {
@@ -241,21 +226,4 @@ func rendered(d source.Definition, t target) (string, error) {
 		return render.ClaudeAgent(content.Fields, content.Body), nil
 	}
 	return render.OpencodeAgent(content.Fields, content.Body), nil
-}
-
-func scopeFromArgs(args []string) (scope, error) {
-	switch len(args) {
-	case 0:
-		return scopeAll, nil
-	case 1:
-		switch args[0] {
-		case "skills":
-			return scopeSkills, nil
-		case "agents":
-			return scopeAgents, nil
-		}
-		return scopeAll, fmt.Errorf("unknown update scope %q", args[0])
-	default:
-		return scopeAll, fmt.Errorf("update takes at most one scope")
-	}
 }
