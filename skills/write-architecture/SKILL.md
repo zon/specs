@@ -5,7 +5,7 @@ description: Creates or edits the architecture document at specs/architecture.ya
 
 # Write Architecture
 
-Write the architecture document at **`specs/architecture.yaml`** after the code, recording the components that exist — not as a plan for code to come.
+Write the architecture document at **`specs/architecture.yaml`**, recording the components that already exist — not as a plan for code to come.
 
 ## Steps
 
@@ -15,7 +15,7 @@ Write the architecture document at **`specs/architecture.yaml`** after the code,
 
 3. **Clarify the scope.** If the user's request is vague, ask clarifying questions before proceeding.
 
-4. **Survey the codebase.** Find the components the application is built from — source code modules, scripts, runtimes, assets, and config. For each candidate component, confirm its path and responsibilities, and whether it coordinates other modules (`orchestration: true`) or handles low-level detail.
+4. **Survey the codebase.** Find the components the application is built from, as the [Architecture Format](docs/specs/architecture-outline.md) defines. For each candidate component, confirm its path, responsibilities, and whether it is an orchestration module.
 
 5. **Draft the architecture** following the format in step 1.
 

@@ -2,14 +2,14 @@
 
 ## Before You Start
 
-Read `specs/architecture.yaml` before writing any code if it exists — it is the component map for the entire codebase. If it does not exist yet, the code you write is what the architecture will record. Add it once written. See [Architecture Format](architecture-outline.md).
+Read `specs/architecture.yaml` before writing any code if it exists. See [Architecture Format](architecture-outline.md).
 
 ## Component Placement
 
 Every piece of code belongs in a specific component. Before writing, ask:
 
-1. **Does an existing component own this concern?** Check `specs/architecture.yaml`. If a component already covers the concern, add the code there rather than duplicating logic or creating a parallel path.
-2. **Does the orchestration pattern assign this code to a component type?** Coordination logic — sequencing steps and delegating work — belongs in an [orchestration module](glossary.md#orchestration-module). Low-level work — queries, calls, transformations — belongs in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
+1. **Does an existing component own this concern?** Check `specs/architecture.yaml`. If a component already covers the concern, add the code there rather than duplicating logic.
+2. **Does the orchestration pattern assign this code to a component type?** Coordination logic belongs in an [orchestration module](glossary.md#orchestration-module). Low-level work belongs in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
 3. **Is there no existing home?** If neither does, determine whether it belongs in an existing component (by expanding its scope) or in a new one. If a new component is needed, add it to `specs/architecture.yaml` once the code is written.
 
 ## Component Types

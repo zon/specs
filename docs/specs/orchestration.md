@@ -2,7 +2,7 @@
 
 Orchestration is a pattern for structuring domain logic. An orchestration sequences steps, enforces domain conditions, and delegates the actual work to other modules. It says what should happen and when, never how.
 
-A coding agent writes the orchestration code while implementing a feature and records orchestration modules in `specs/architecture.yaml`. Decide during planning whether a feature needs orchestration, and apply that decision when writing the code.
+A coding agent writes the orchestration code while implementing a feature. Decide during planning whether a feature needs orchestration, and apply that decision when writing the code.
 
 ## Writing Orchestrations
 
@@ -18,7 +18,7 @@ Keep an orchestration short enough to read in one pass — typically under 20 li
 
 ## Testing Orchestrations
 
-Tests cover orchestration decisions only — that the code calls the right helpers under the right conditions. Every line in a test body should be a domain-language call: setup, invocation, or assertion. If an assertion requires a literal value, a file path, a URL, or any format detail, extract it into a named test helper. Each test verifies one domain outcome: given this domain state, calling the orchestration produces this domain result.
+Tests cover orchestration decisions only. Every line in a test body should be a domain-language call: setup, invocation, or assertion. If an assertion requires a literal value, a file path, a URL, or any format detail, extract it into a named test helper. Each test verifies one domain outcome: given this domain state, calling the orchestration produces this domain result.
 
 ## Example
 
@@ -77,7 +77,7 @@ Orchestration modules must not contain helper methods that perform or test imple
 
 Fixture builders for input types (e.g. a struct passed into the orchestration by the caller) belong with the module that owns the type, not the orchestration module. When drafting test helpers, identify every input type in the orchestration signature and place its fixture builder with that module.
 
-`specs/architecture.yaml` records which components are orchestration modules with `orchestration: true`. See [Architecture Format](architecture-outline.md).
+Record orchestration modules in `specs/architecture.yaml`. See [Architecture Format](architecture-outline.md).
 
 ## What Orchestrations Are Not
 
