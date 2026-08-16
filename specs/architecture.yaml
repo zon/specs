@@ -1,0 +1,9 @@
+- path: cmd/zpecs
+  description: Parses the command line and orchestrates updating a target's definitions from a source.
+  orchestration: true
+
+- path: internal/source
+  description: Reads skill and agent definitions from a local source directory.
+
+- path: internal/clone
+  description: Clones a repository into a temp dir so a remote source reads like a local one.

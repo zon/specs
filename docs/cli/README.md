@@ -1,12 +1,12 @@
 # CLI
 
-The `zpecs` CLI renders this repository's skill and agent definitions into a project's `.claude` or `.opencode` directory.
+The `zpecs` CLI renders this repository's definitions into a project's `.claude` or `.opencode` directory.
 
-It is a Go program that uses [kong](https://github.com/alecthomas/kong) to parse arguments.
+It is a Go program that parses arguments with [kong](https://github.com/alecthomas/kong).
 
 ## Commands
 
-Three commands:
+One command takes an optional scope:
 
 - `update` — render skill and agent definitions
 - `update skills` — render skill definitions only
@@ -17,7 +17,7 @@ All three take the same flags:
 | Flag | Meaning |
 |---|---|---|
 | `--target` | Render for `opencode` (default) or `claude` |
-| `--source` | Path to a local directory to read from. Omit it to read from GitHub |
+| `--source` | Path to a local directory. Omit it to read from GitHub |
 
 ## Definitions
 
@@ -41,7 +41,7 @@ The commands must run inside a git repository, locate the repo root, and write t
 - `claude` — `.claude/skills/<name>/SKILL.md` and `.claude/agents/<name>.md`
 - `opencode` — `.opencode/skills/<name>/SKILL.md` and `.opencode/agents/<name>.md`
 
-It creates missing directories and replaces the files it wrote before, leaving other files alone. Definitions the source no longer lists stop appearing.
+It creates missing directories and replaces the files it wrote, leaving other files alone. Stale definitions stop appearing.
 
 ## Rendering
 
@@ -49,4 +49,4 @@ Both targets read the same frontmatter fields but map them differently:
 
 - claude agents use `name`
 - opencode agents use `mode: subagent` and drop `name`
-- the `tools` list maps to `tools` in claude agents, and to deny rules for every other tool in opencode agents
+- the `tools` list maps to `tools` in claude agents, and to deny rules for every tool not in the list in opencode agents
