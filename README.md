@@ -25,14 +25,13 @@ Before writing any code, read [docs/specs/architecture.md](docs/specs/architectu
 
 **Standards** — [orchestration](docs/specs/orchestration.md), [architecture guidelines](docs/specs/architecture.md), [writing requirements](docs/specs/requirements.md), [agent prompts](docs/specs/prompts.md), [glossary](docs/specs/glossary.md).
 
-**Skills** — six skills an agent invokes by name:
+**Skills** — five skills an agent invokes by name:
 
 | Skill | Writes |
 |---|---|
 | `write-spec` | `specs/<path>.md` |
 | `write-architecture` | `specs/architecture.yaml` |
 | `write-project` | `projects/<slug>.yaml` |
-| `prose-editor` | fixes for violations in docs, comments, or agent prose |
 | `write-skill` | `skills/<name>/SKILL.md` |
 | `write-agent` | `agents/<name>.md` |
 
