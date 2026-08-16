@@ -8,7 +8,7 @@ How to write and organize prose.
 * Don't repeat concepts
 * Prefer the top 1000 most common words
 * Use active voice
-* Avoid semicolons. Split the sentence instead
+* Keep sentences simple. Avoid semicolons and em dashes. Split the sentence instead
 * Don't argue against old text. Omit it instead
 
 ## Organization
