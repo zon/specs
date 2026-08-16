@@ -96,3 +96,53 @@ func TestOpencodeAgentRendersModeDescriptionAndBody(t *testing.T) {
 		t.Fatalf("OpencodeAgent = %q, want %q", got, want)
 	}
 }
+
+func TestOpencodeAgentDeniesEveryOtherTool(t *testing.T) {
+	fields := frontmatter.Fields{Tools: []string{"read", "edit"}}
+
+	got := OpencodeAgent(fields, "Review prose.")
+
+	for _, denied := range []string{"bash", "write", "grep", "glob"} {
+		if !strings.Contains(got, denied+": deny") {
+			t.Fatalf("OpencodeAgent rendered %q without denying %s", got, denied)
+		}
+	}
+}
+
+func TestOpencodeAgentDoesNotDenyListedTools(t *testing.T) {
+	fields := frontmatter.Fields{Tools: []string{"read", "edit"}}
+
+	got := OpencodeAgent(fields, "Review prose.")
+
+	if strings.Contains(got, "read: deny") || strings.Contains(got, "edit: deny") {
+		t.Fatalf("OpencodeAgent rendered %q denying a listed tool", got)
+	}
+}
+
+func TestOpencodeAgentRendersDenyRulesAfterDescription(t *testing.T) {
+	fields := frontmatter.Fields{
+		Description: "Reviews prose.",
+		Tools:       []string{"read", "edit"},
+	}
+
+	got := OpencodeAgent(fields, "Review prose.")
+	want := "---\nmode: subagent\ndescription: Reviews prose.\npermission:\n" +
+		"  apply_patch: deny\n  bash: deny\n  glob: deny\n  grep: deny\n" +
+		"  lsp: deny\n  question: deny\n  skill: deny\n  todowrite: deny\n" +
+		"  webfetch: deny\n  websearch: deny\n  write: deny\n" +
+		"---\n\nReview prose.\n"
+
+	if got != want {
+		t.Fatalf("OpencodeAgent = %q, want %q", got, want)
+	}
+}
+
+func TestOpencodeAgentOmitsDenyRulesWhenToolsEmpty(t *testing.T) {
+	fields := frontmatter.Fields{Name: "prose-editor"}
+
+	got := OpencodeAgent(fields, "Review prose.")
+
+	if strings.Contains(got, "permission:") {
+		t.Fatalf("OpencodeAgent rendered %q with deny rules for an empty tools list", got)
+	}
+}

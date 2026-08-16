@@ -1,9 +1,9 @@
-Render a claude agent with its tools
+Deny every tool an opencode agent does not list
 
-The claude render lists the definition's tools in its frontmatter after
-the description. An agent without tools omits the field.
+The opencode render maps the definition's tools to a permission block
+denying every other tool. An agent without tools omits the block.
 
-Added tests cover the rendered agent listing read and edit, and the
-full frontmatter in order.
+Added tests cover the denied tools, the frontmatter order, and the no-tools
+case.
 
-Ralph item 7 completed
+Ralph item 8 completed
