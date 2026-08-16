@@ -127,6 +127,7 @@ func TestParseOptions(t *testing.T) {
 
 func TestRunRecognizesCommands(t *testing.T) {
 	t.Chdir(gitRepo(t))
+	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
 	sourceDir := t.TempDir()
 	cases := []struct {
 		name    string
@@ -161,6 +162,7 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	repoDir := gitRepo(t)
 	sourceDir := t.TempDir()
+	src := gitCloneSource(t)
 	cases := []struct {
 		args []string
 		want string
@@ -175,6 +177,7 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 	for _, tc := range cases {
 		cmd := exec.Command(binary, tc.args...)
 		cmd.Dir = repoDir
+		cmd.Env = append(os.Environ(), "ZPECS_SOURCE="+src)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("zpecs %v failed: %v", tc.args, err)
@@ -212,6 +215,76 @@ func gitRepo(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return dir
+}
+
+// gitCloneSource returns a temp dir that is a real git repository with
+// one commit, so clone can copy it.
+func gitCloneSource(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	runGit(t, dir, "init", "-q")
+	runGit(t, dir, "config", "user.email", "test@example.com")
+	runGit(t, dir, "config", "user.name", "test")
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
+	runGit(t, dir, "add", "-A")
+	runGit(t, dir, "commit", "-qm", "seed")
+	return dir
+}
+
+func runGit(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
+
+func TestUpdateReadsFromDefaultSource(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
+
+	if err := run([]string{"update"}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")); err != nil {
+		t.Fatalf("skill not written from the default source: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".opencode", "agents", "code-architect.md")); err != nil {
+		t.Fatalf("agent not written from the default source: %v", err)
+	}
+}
+
+func TestUpdateReadsFromLocalSourceOverDefault(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
+	local := t.TempDir()
+	writeSourceFile(t, local, filepath.Join("skills", "local-only", "SKILL.md"), "# local-only\n")
+
+	if err := run([]string{"update", "--source", local}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".opencode", "skills", "local-only", "SKILL.md")); err != nil {
+		t.Fatalf("skill not read from the local source: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")); err == nil {
+		t.Fatal("skill read from the default source despite a --source flag")
+	}
+}
+
+func TestBinaryReadsFromDefaultSource(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	work := gitRepo(t)
+	cmd := exec.Command(binary, "update")
+	cmd.Dir = work
+	cmd.Env = append(os.Environ(), "ZPECS_SOURCE="+gitCloneSource(t))
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("zpecs update failed: %v\n%s", err, out)
+	}
+	if _, err := os.Stat(filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")); err != nil {
+		t.Fatalf("skill not written from the default source: %v", err)
+	}
 }
 
 func TestUpdateReadsSameFrontmatterForBothTargets(t *testing.T) {

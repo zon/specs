@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/zon/specs/internal/clone"
 	"github.com/zon/specs/internal/frontmatter"
 	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/repo"
@@ -142,11 +143,12 @@ func update(args []string) error {
 	if err != nil {
 		return err
 	}
-	if opts.source == "" {
-		fmt.Printf("updating %s for %s\n", opts.scope, opts.target)
-		return nil
+	sourceDir, sourceLabel, cleanup, err := resolveSource(opts.source)
+	if err != nil {
+		return err
 	}
-	defs, err := readDefinitions(opts.scope, opts.source)
+	defer cleanup()
+	defs, err := readDefinitions(opts.scope, sourceDir)
 	if err != nil {
 		return err
 	}
@@ -169,8 +171,33 @@ func update(args []string) error {
 	if err := targetdir.SaveOwned(root, string(opts.target), owned); err != nil {
 		return err
 	}
-	fmt.Printf("updating %s for %s from %s (%d definitions)\n", opts.scope, opts.target, opts.source, len(defs))
+	fmt.Printf("updating %s for %s from %s (%d definitions)\n", opts.scope, opts.target, sourceLabel, len(defs))
 	return nil
+}
+
+// defaultSource is the GitHub repository the CLI reads definitions from
+// when no --source flag is given. ZPECS_SOURCE overrides it, mostly for
+// tests.
+func defaultSource() string {
+	if v := os.Getenv("ZPECS_SOURCE"); v != "" {
+		return v
+	}
+	return "https://github.com/zon/specs"
+}
+
+// resolveSource returns the directory definitions come from, the label
+// to report, and a cleanup func. A --source flag names a local
+// directory. Without one, the default source is cloned into a temp dir.
+func resolveSource(flag string) (dir, label string, cleanup func(), err error) {
+	if flag != "" {
+		return flag, flag, func() {}, nil
+	}
+	url := defaultSource()
+	dir, cleanup, err = clone.Clone(url)
+	if err != nil {
+		return "", "", nil, err
+	}
+	return dir, url, cleanup, nil
 }
 
 // readDefinitions returns the definitions a scope selects from the source.

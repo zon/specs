@@ -1,12 +1,14 @@
-Remove stale definitions from the target
+Read definitions from GitHub by default
 
-The update command now removes rendered definitions the source no longer
-lists. A full run prunes owned skills and agents. Update skills prunes
-only skills, and update agents only agents. The targetdir module deletes
-each stale file and drops it from the manifest.
+The update command reads definitions from the GitHub repository when
+the user gives no --source flag. A --source flag keeps reading from the
+local directory it names.
 
-Tests cover a removed skill and a removed agent leaving the target, a
-scoped run leaving the other kind alone, and a built-binary run removing
-a stale skill.
+A new clone module copies the repository into a temp dir, and the update
+command removes the clone after the run. ZPECS_SOURCE overrides the
+default repository, mostly for tests.
 
-Ralph item 14 completed
+Tests cover reading from the default source in-process and as a built
+binary, and a local source winning over the default.
+
+Ralph item 0 completed
