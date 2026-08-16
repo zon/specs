@@ -509,3 +509,81 @@ func TestBinaryErrorsOutsideRepository(t *testing.T) {
 		t.Fatal("binary wrote outside a repository")
 	}
 }
+
+func TestUpdateLeavesForeignFileAlone(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
+
+	path := filepath.Join(".claude", "agents", "prose-editor.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("manual content\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := run([]string{"update", "--source", dir, "--target", "claude"}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("foreign file: %v", err)
+	}
+	if string(content) != "manual content\n" {
+		t.Fatalf("foreign file changed to %q", content)
+	}
+}
+
+func TestUpdateReplacesOwnedFiles(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nFirst.\n")
+
+	if err := run([]string{"update", "--source", dir}); err != nil {
+		t.Fatalf("first update: %v", err)
+	}
+
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nSecond.\n")
+	if err := run([]string{"update", "--source", dir}); err != nil {
+		t.Fatalf("second update: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(".opencode", "agents", "prose-editor.md"))
+	if err != nil {
+		t.Fatalf("owned file: %v", err)
+	}
+	if !strings.Contains(string(content), "Second.") {
+		t.Fatalf("owned file not replaced: %q", content)
+	}
+}
+
+func TestBinaryLeavesForeignFileAlone(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
+
+	work := gitRepo(t)
+	path := filepath.Join(work, ".claude", "agents", "prose-editor.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("manual content\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
+	cmd.Dir = work
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("zpecs update failed: %v\n%s", err, out)
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("foreign file: %v", err)
+	}
+	if string(content) != "manual content\n" {
+		t.Fatalf("foreign file changed to %q", content)
+	}
+}

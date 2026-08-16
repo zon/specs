@@ -51,8 +51,12 @@ func TestPathOpencodeAgent(t *testing.T) {
 func TestWriteCreatesDirectoriesAndFile(t *testing.T) {
 	root := t.TempDir()
 
-	if err := Write(root, Claude, agent("prose-editor"), "Review prose.\n"); err != nil {
+	written, err := Write(root, Claude, agent("prose-editor"), "Review prose.\n", map[string]bool{})
+	if err != nil {
 		t.Fatalf("Write: %v", err)
+	}
+	if !written {
+		t.Fatal("Write did not write a new file")
 	}
 
 	content, err := os.ReadFile(filepath.Join(root, ".claude", "agents", "prose-editor.md"))
@@ -68,7 +72,7 @@ func TestWriteWritesUnderRootNotWorkingDirectory(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(t.TempDir())
 
-	if err := Write(root, Opencode, skill("prose-editor"), "# prose-editor\n"); err != nil {
+	if _, err := Write(root, Opencode, skill("prose-editor"), "# prose-editor\n", map[string]bool{}); err != nil {
 		t.Fatalf("Write: %v", err)
 	}
 
@@ -78,5 +82,130 @@ func TestWriteWritesUnderRootNotWorkingDirectory(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")); err == nil {
 		t.Fatal("file written in the working directory")
+	}
+}
+
+func TestWriteLeavesForeignFileAlone(t *testing.T) {
+	root := t.TempDir()
+	p := filepath.Join(root, ".claude", "agents", "prose-editor.md")
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte("manual\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	written, err := Write(root, Claude, agent("prose-editor"), "rendered\n", map[string]bool{})
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if written {
+		t.Fatal("Write replaced a foreign file")
+	}
+
+	content, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatalf("foreign file: %v", err)
+	}
+	if string(content) != "manual\n" {
+		t.Fatalf("foreign file changed to %q", content)
+	}
+}
+
+func TestWriteReplacesOwnedFile(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+
+	written, err := Write(root, Claude, agent("prose-editor"), "first\n", owned)
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if !written {
+		t.Fatal("Write did not write the first file")
+	}
+
+	written, err = Write(root, Claude, agent("prose-editor"), "second\n", owned)
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if !written {
+		t.Fatal("Write did not replace an owned file")
+	}
+
+	content, err := os.ReadFile(filepath.Join(root, ".claude", "agents", "prose-editor.md"))
+	if err != nil {
+		t.Fatalf("owned file: %v", err)
+	}
+	if string(content) != "second\n" {
+		t.Fatalf("content = %q, want %q", content, "second\n")
+	}
+}
+
+func TestOwnedEmptyWithoutManifest(t *testing.T) {
+	root := t.TempDir()
+
+	owned, err := Owned(root, Claude)
+	if err != nil {
+		t.Fatalf("Owned: %v", err)
+	}
+	if len(owned) != 0 {
+		t.Fatalf("Owned = %v, want none", owned)
+	}
+}
+
+func TestSaveOwnedPersistsWrittenPaths(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	if _, err := Write(root, Claude, agent("prose-editor"), "content\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if _, err := Write(root, Claude, skill("prose-editor"), "# prose-editor\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if err := SaveOwned(root, Claude, owned); err != nil {
+		t.Fatalf("SaveOwned: %v", err)
+	}
+
+	got, err := Owned(root, Claude)
+	if err != nil {
+		t.Fatalf("Owned: %v", err)
+	}
+	if !got[RelPath(Claude, agent("prose-editor"))] {
+		t.Fatalf("Owned missing the agent path: %v", got)
+	}
+	if !got[RelPath(Claude, skill("prose-editor"))] {
+		t.Fatalf("Owned missing the skill path: %v", got)
+	}
+}
+
+func TestManifestSeparatePerTarget(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	if _, err := Write(root, Claude, agent("prose-editor"), "content\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if err := SaveOwned(root, Claude, owned); err != nil {
+		t.Fatalf("SaveOwned: %v", err)
+	}
+
+	got, err := Owned(root, Opencode)
+	if err != nil {
+		t.Fatalf("Owned: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("Opencode owns claude paths: %v", got)
+	}
+}
+
+func TestWriteRecordedInOwned(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+
+	if _, err := Write(root, Opencode, agent("prose-editor"), "content\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	if !owned[RelPath(Opencode, agent("prose-editor"))] {
+		t.Fatalf("Write did not record %q as owned: %v", RelPath(Opencode, agent("prose-editor")), owned)
 	}
 }

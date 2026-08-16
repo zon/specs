@@ -150,14 +150,21 @@ func update(args []string) error {
 	if err != nil {
 		return err
 	}
+	owned, err := targetdir.Owned(root, string(opts.target))
+	if err != nil {
+		return err
+	}
 	for _, d := range defs {
 		content, err := rendered(d, opts.target)
 		if err != nil {
 			return err
 		}
-		if err := targetdir.Write(root, string(opts.target), d, content); err != nil {
+		if _, err := targetdir.Write(root, string(opts.target), d, content, owned); err != nil {
 			return fmt.Errorf("writing %s: %w", targetdir.Path(root, string(opts.target), d), err)
 		}
+	}
+	if err := targetdir.SaveOwned(root, string(opts.target), owned); err != nil {
+		return err
 	}
 	fmt.Printf("updating %s for %s from %s (%d definitions)\n", opts.scope, opts.target, opts.source, len(defs))
 	return nil

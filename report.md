@@ -1,16 +1,13 @@
-Write every definition at the repository root
+Replace only the files the system wrote
 
-The update command resolves the git repository root from the working
-directory and writes every definition there. A run inside a subdirectory
-still lands at the root. Outside a repository, the command errors before
-it reads or writes anything.
+The update command replaces only the files it wrote on a later run. A
+file in the target directory it did not write stays unchanged.
 
-A new internal/repo module finds the root by walking up until a .git
-entry appears. The targetdir module writes under the root instead of the
-working directory.
+The targetdir module keeps a per-target manifest of written paths. The
+update command reads it before a run and saves the updated list after.
 
-Tests cover finding the root from a subdirectory, erroring outside a
-repository without writing anything, and nested runs writing at the
-root, in-process and as a built binary.
+Tests cover a foreign file surviving a run, a second run replacing an
+owned file, the manifest round trip, separate manifests per target, and
+a built-binary run.
 
-Ralph item 10 completed
+Ralph item 13 completed
