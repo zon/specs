@@ -1,0 +1,5 @@
+workflow:
+  namespace: ralph-specs
+model: deepseek/deepseek-v4-flash
+variant: high
+cleanup: true
