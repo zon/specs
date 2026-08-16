@@ -1,7 +1,11 @@
-Initialize the repo as a Go module that builds a CLI binary
+Expose update, update skills, and update agents commands
 
-The module and the CLI entry point are new. AGENTS.md and the justfile record the build and test commands, and the built binary is ignored.
+The CLI now parses its command line and dispatches to the update command,
+which resolves a skills, agents, or full scope from its arguments. Unknown
+commands and scopes error with usage on stderr and a non-zero exit.
 
-Tests added: a package test that builds and runs the binary, asserting the executable exists and exits cleanly.
+Tests added cover scope resolution, command recognition and rejection at the
+run level, and a built-binary run of each command plus rejection of an unknown
+command.
 
-Ralph item 16 completed
+Ralph item 17 completed
