@@ -68,6 +68,77 @@ func TestWriteCreatesDirectoriesAndFile(t *testing.T) {
 	}
 }
 
+func TestWriteCreatesMissingDirectoriesForASkill(t *testing.T) {
+	root := t.TempDir()
+
+	written, err := Write(root, Claude, skill("prose-editor"), "# prose-editor\n", map[string]bool{})
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if !written {
+		t.Fatal("Write did not write a new file")
+	}
+
+	for _, dir := range []string{
+		filepath.Join(root, ".claude"),
+		filepath.Join(root, ".claude", "skills"),
+		filepath.Join(root, ".claude", "skills", "prose-editor"),
+	} {
+		info, statErr := os.Stat(dir)
+		if statErr != nil {
+			t.Fatalf("directory %s not created: %v", dir, statErr)
+		}
+		if !info.IsDir() {
+			t.Fatalf("%s is not a directory", dir)
+		}
+	}
+}
+
+func TestWriteCreatesMissingDirectoriesForAnAgent(t *testing.T) {
+	root := t.TempDir()
+
+	written, err := Write(root, Opencode, agent("code-architect"), "Architect code.\n", map[string]bool{})
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if !written {
+		t.Fatal("Write did not write a new file")
+	}
+
+	for _, dir := range []string{
+		filepath.Join(root, ".opencode"),
+		filepath.Join(root, ".opencode", "agents"),
+	} {
+		info, statErr := os.Stat(dir)
+		if statErr != nil {
+			t.Fatalf("directory %s not created: %v", dir, statErr)
+		}
+		if !info.IsDir() {
+			t.Fatalf("%s is not a directory", dir)
+		}
+	}
+}
+
+func TestSaveOwnedCreatesMissingTargetDirectory(t *testing.T) {
+	root := t.TempDir()
+
+	if err := SaveOwned(root, Opencode, map[string]bool{}); err != nil {
+		t.Fatalf("SaveOwned: %v", err)
+	}
+
+	dir := filepath.Join(root, ".opencode")
+	info, err := os.Stat(dir)
+	if err != nil {
+		t.Fatalf("target directory %s not created: %v", dir, err)
+	}
+	if !info.IsDir() {
+		t.Fatalf("%s is not a directory", dir)
+	}
+	if _, err := os.Stat(filepath.Join(dir, manifestName)); err != nil {
+		t.Fatalf("manifest not written: %v", err)
+	}
+}
+
 func TestWriteWritesUnderRootNotWorkingDirectory(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(t.TempDir())

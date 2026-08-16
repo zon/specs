@@ -583,6 +583,30 @@ func TestBinaryErrorsOutsideRepository(t *testing.T) {
 	}
 }
 
+func TestUpdateCreatesMissingDirectories(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+
+	if err := run([]string{"update", "skills", "--source", dir, "--target", "claude"}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	for _, path := range []string{
+		filepath.Join(".claude"),
+		filepath.Join(".claude", "skills"),
+		filepath.Join(".claude", "skills", "prose-editor"),
+	} {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("directory %s not created: %v", path, err)
+		}
+		if !info.IsDir() {
+			t.Fatalf("%s is not a directory", path)
+		}
+	}
+}
+
 func TestUpdateLeavesForeignFileAlone(t *testing.T) {
 	t.Chdir(gitRepo(t))
 	dir := t.TempDir()

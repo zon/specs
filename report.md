@@ -1,10 +1,13 @@
-Read agent definitions from agents/<name>.md
+Create directories the update needs
 
-The system reads an agent definition only from its canonical path under
-a source. The source reader lists each agent keyed by the file name
-that holds it, and reports the path it read from.
+The update command creates every directory it needs before writing
+into a target. A run against a fresh repository builds the target
+directory, its skills and agents directories, and each definition's
+directory. The manifest directory appears too, even when no definitions
+write.
 
-Added tests assert the reader finds an agent at the canonical path and
-reports that path.
+Added tests assert Write creates the directories for a skill and an
+agent, SaveOwned creates the target directory for the manifest, and an
+update run creates them in a fresh repository.
 
-Ralph item 3 completed
+Ralph item 12 completed
