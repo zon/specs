@@ -19,7 +19,7 @@ func write(t *testing.T, content string) string {
 func TestReadReadsNameDescriptionAndTools(t *testing.T) {
 	path := write(t, `---
 name: prose-editor
-description: Reviews prose: checks it against the guidelines, and fixes it.
+description: "Reviews prose: checks it against the guidelines, and fixes it."
 tools:
   - read
   - edit
