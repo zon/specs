@@ -32,9 +32,9 @@ func TestReadParsesTitlePurposeRequirementsAndScenarios(t *testing.T) {
 					{
 						Name: "Path argument",
 						Steps: []string{
-							"- GIVEN the path `specs/cli/sync.md`",
-							"- WHEN the command runs",
-							"- THEN it reads the spec at that path",
+							"GIVEN the path `specs/cli/sync.md`",
+							"WHEN the command runs",
+							"THEN it reads the spec at that path",
 						},
 					},
 				},
@@ -46,10 +46,10 @@ func TestReadParsesTitlePurposeRequirementsAndScenarios(t *testing.T) {
 					{
 						Name: "Whole spec",
 						Steps: []string{
-							"- GIVEN a spec file with a title, a purpose, and one requirement",
-							"- WHEN the command runs",
-							"- THEN it prints one JSON object",
-							"- AND the object carries the title, purpose, and requirements",
+							"GIVEN a spec file with a title, a purpose, and one requirement",
+							"WHEN the command runs",
+							"THEN it prints one JSON object",
+							"AND the object carries the title, purpose, and requirements",
 						},
 					},
 				},
@@ -91,7 +91,7 @@ func TestStepLineKeepsInlineCodeBackticks(t *testing.T) {
 	if len(steps) != 1 {
 		t.Fatalf("len(steps) = %d, want 1", len(steps))
 	}
-	if want := "- GIVEN the path `specs/cli/sync.md`"; steps[0] != want {
+	if want := "GIVEN the path `specs/cli/sync.md`"; steps[0] != want {
 		t.Fatalf("step = %q, want %q", steps[0], want)
 	}
 }
@@ -155,7 +155,7 @@ func TestWriteRoundTripsTheDocument(t *testing.T) {
 				Scenarios: []Scenario{
 					{
 						Name:  "Steps in order",
-						Steps: []string{"- GIVEN a scenario", "- THEN it prints steps"},
+						Steps: []string{"GIVEN a scenario", "THEN it prints steps"},
 					},
 				},
 			},
@@ -293,7 +293,7 @@ func TestFromGenericJSONMapsTheTree(t *testing.T) {
 	if scenario.Name != "Path argument" {
 		t.Fatalf("scenario name = %q, want %q", scenario.Name, "Path argument")
 	}
-	if want := []string{"- GIVEN a path"}; !reflect.DeepEqual(scenario.Steps, want) {
+	if want := []string{"GIVEN a path"}; !reflect.DeepEqual(scenario.Steps, want) {
 		t.Fatalf("steps = %v, want %v", scenario.Steps, want)
 	}
 }

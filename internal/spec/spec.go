@@ -207,7 +207,8 @@ func joinProse(prose, block string) string {
 	return prose + "\n\n" + block
 }
 
-// stepsBlock renders a list's items as "- " prefixed step lines.
+// stepsBlock renders a list's items as plain step lines. The list marker
+// is markdown syntax and does not belong in the JSON output.
 func stepsBlock(n genericNode) []string {
 	steps := []string{}
 	for _, item := range n.Children {
@@ -216,7 +217,7 @@ func stepsBlock(n genericNode) []string {
 		}
 		line := strings.TrimSpace(renderNode(item))
 		if line != "" {
-			steps = append(steps, "- "+line)
+			steps = append(steps, line)
 		}
 	}
 	return steps
