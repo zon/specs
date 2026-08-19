@@ -11,6 +11,7 @@ import (
 	"github.com/zon/specs/internal/repo"
 	"github.com/zon/specs/internal/report"
 	"github.com/zon/specs/internal/source"
+	"github.com/zon/specs/internal/spec"
 	"github.com/zon/specs/internal/targetdir"
 )
 
@@ -66,7 +67,8 @@ type options struct {
 
 // cli is the kong grammar for the whole application.
 type cli struct {
-	Update updateCmd `cmd:"" help:"renders skills and agents, or syncs docs"`
+	Update  updateCmd  `cmd:"" help:"renders skills and agents, or syncs docs"`
+	Convert convertCmd `cmd:"" help:"turns a spec markdown file into JSON"`
 }
 
 // updateCmd is the kong grammar for `zpecs update`.
@@ -88,8 +90,21 @@ func (u *updateCmd) Run() error {
 	})
 }
 
+// convertCmd is the kong grammar for `zpecs convert`.
+type convertCmd struct {
+	Path string `arg:"" help:"path to a spec markdown file"`
+}
+
+func (c *convertCmd) Run() error {
+	doc, err := spec.Read(c.Path)
+	if err != nil {
+		return err
+	}
+	return spec.Write(os.Stdout, doc)
+}
+
 // usageText returns the help kong generates for the whole application.
-// The --help hook prints help and stops. With Exit overridden to a no-op,
+// The --help hook prints it and stops. With Exit overridden to a no-op,
 // Parse continues and fails on the missing command.
 func usageText() string {
 	var sb strings.Builder
@@ -169,9 +184,8 @@ func update(opts options) error {
 	return nil
 }
 
-// defaultSource is the GitHub repository the CLI reads definitions from
-// when run without a --source flag. ZPECS_SOURCE overrides it, mostly for
-// tests.
+// defaultSource is the GitHub repository used without a --source flag.
+// ZPECS_SOURCE overrides it, mostly for tests.
 func defaultSource() string {
 	if v := os.Getenv("ZPECS_SOURCE"); v != "" {
 		return v

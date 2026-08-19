@@ -1,5 +1,5 @@
 - path: cmd/zpecs
-  description: Parses the command line and orchestrates updating a target's definitions from a source.
+  description: Parses the command line and orchestrates each command's work.
   orchestration: true
 
 - path: internal/source
@@ -15,10 +15,13 @@
   description: Parses the frontmatter block and body of definition files.
 
 - path: internal/render
-  description: Produces the text each definition renders to for its target, verbatim for skills and docs.
+  description: Produces each definition's text for its target, verbatim for skills and docs.
 
 - path: internal/report
   description: Formats and prints the lines that report each update run.
 
 - path: internal/repo
   description: Locates the repository root that contains the working directory.
+
+- path: internal/spec
+  description: Parses a spec markdown file into a JSON document.

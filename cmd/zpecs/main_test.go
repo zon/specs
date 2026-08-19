@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/kong"
+	"github.com/zon/specs/internal/spec"
 )
 
 func buildBinary(t *testing.T, dir string) string {
@@ -956,5 +959,111 @@ func TestBinaryRemovesStaleSkill(t *testing.T) {
 	}
 	if _, err := os.Stat(path); err == nil {
 		t.Fatal("stale skill still present after the binary ran")
+	}
+}
+
+func TestConvertPrintsTheSpecAsJSON(t *testing.T) {
+	path := filepath.Join("..", "..", "internal", "spec", "testdata", "convert.md")
+
+	stdout := captureStdout(t)
+	if err := run([]string{"convert", path}); err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	out := stdout()
+
+	var doc spec.Document
+	if err := json.Unmarshal(out, &doc); err != nil {
+		t.Fatalf("convert output is not one JSON object: %v\n%s", err, out)
+	}
+	if doc.Title == "" {
+		t.Fatal("title is empty")
+	}
+	if doc.Purpose == "" {
+		t.Fatal("purpose is empty")
+	}
+	if len(doc.Requirements) == 0 {
+		t.Fatal("no requirements")
+	}
+}
+
+func TestConvertErrorsOnMissingFile(t *testing.T) {
+	stdout := captureStdout(t)
+	err := run([]string{"convert", filepath.Join(t.TempDir(), "missing.md")})
+	if err == nil {
+		t.Fatal("convert on a missing file should error")
+	}
+	if out := stdout(); len(out) != 0 {
+		t.Fatalf("convert printed %q on a missing file", out)
+	}
+}
+
+func TestConvertErrorsOnFileWithoutTopLevelHeading(t *testing.T) {
+	path := filepath.Join("..", "..", "internal", "spec", "testdata", "no-title.md")
+
+	if err := run([]string{"convert", path}); err == nil {
+		t.Fatal("convert on a file without a top-level heading should error")
+	}
+}
+
+func TestConvertErrorsOnRequirementWithoutName(t *testing.T) {
+	path := filepath.Join("..", "..", "internal", "spec", "testdata", "requirement-without-name.md")
+
+	if err := run([]string{"convert", path}); err == nil {
+		t.Fatal("convert on a requirement without a name should error")
+	}
+}
+
+func TestBinaryConvertPrintsTheSpecAsJSON(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	path, err := filepath.Abs(filepath.Join("..", "..", "internal", "spec", "testdata", "convert.md"))
+	if err != nil {
+		t.Fatalf("filepath.Abs: %v", err)
+	}
+
+	cmd := exec.Command(binary, "convert", path)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("zpecs convert failed: %v\n%s", err, out)
+	}
+
+	var doc spec.Document
+	if err := json.Unmarshal(out, &doc); err != nil {
+		t.Fatalf("convert output is not one JSON object: %v\n%s", err, out)
+	}
+	if doc.Title == "" {
+		t.Fatal("title is empty")
+	}
+	if doc.Purpose == "" {
+		t.Fatal("purpose is empty")
+	}
+	if len(doc.Requirements) == 0 {
+		t.Fatal("no requirements")
+	}
+}
+
+// captureStdout redirects os.Stdout to a pipe. The returned func reads
+// everything written while captured. The test restores os.Stdout when it
+// finishes.
+func captureStdout(t *testing.T) func() []byte {
+	t.Helper()
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Stdout = old
+		_ = w.Close()
+		_ = r.Close()
+	})
+	return func() []byte {
+		t.Helper()
+		_ = w.Close()
+		out, err := io.ReadAll(r)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
 	}
 }
