@@ -39,18 +39,14 @@ func Read(path string) (Document, error) {
 	if err != nil {
 		return Document{}, err
 	}
-	generic, err := toGenericJSON(content)
-	if err != nil {
-		return Document{}, err
-	}
-	return fromGenericJSON(generic)
+	return fromGenericJSON(toGenericJSON(content))
 }
 
 // toGenericJSON parses markdown with goldmark into a generic JSON tree.
-func toGenericJSON(src []byte) (genericNode, error) {
+func toGenericJSON(src []byte) genericNode {
 	md := goldmark.New()
 	root := md.Parser().Parse(text.NewReader(src))
-	return convertNode(root, src), nil
+	return convertNode(root, src)
 }
 
 // Write prints doc as one indented JSON object.

@@ -206,10 +206,7 @@ func TestWritePrintsEmptyArrays(t *testing.T) {
 
 func TestToGenericJSONProducesANodeTree(t *testing.T) {
 	src := []byte("# Title\n\n## Purpose\nProse `code` here.\n\n- step one\n")
-	root, err := toGenericJSON(src)
-	if err != nil {
-		t.Fatalf("toGenericJSON: %v", err)
-	}
+	root := toGenericJSON(src)
 	if root.Type != "document" {
 		t.Fatalf("root type = %q, want %q", root.Type, "document")
 	}
