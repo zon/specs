@@ -167,28 +167,24 @@ func RemoveStale(root, name string, owned map[string]ownedPath, current []source
 	return removed, nil
 }
 
+// kindNames maps each kind to its manifest word.
+var kindNames = map[source.Kind]string{
+	source.Skill: "skill",
+	source.Agent: "agent",
+	source.Doc:   "doc",
+}
+
 // kindName returns the manifest word for a kind.
 func kindName(k source.Kind) string {
-	switch k {
-	case source.Skill:
-		return "skill"
-	case source.Agent:
-		return "agent"
-	case source.Doc:
-		return "doc"
-	}
-	return ""
+	return kindNames[k]
 }
 
 // parseKind returns the kind a manifest word names.
 func parseKind(s string) (source.Kind, bool) {
-	switch s {
-	case "skill":
-		return source.Skill, true
-	case "agent":
-		return source.Agent, true
-	case "doc":
-		return source.Doc, true
+	for k, word := range kindNames {
+		if word == s {
+			return k, true
+		}
 	}
 	return 0, false
 }

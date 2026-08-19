@@ -521,3 +521,15 @@ func TestSaveOwnedKeepsUnknownEntryAsBarePath(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, rel+"\n", string(manifest))
 }
+
+func TestKindWordsRoundTrip(t *testing.T) {
+	for kind, word := range kindNames {
+		got, ok := parseKind(word)
+		require.True(t, ok)
+		require.Equal(t, kind, got)
+		require.Equal(t, word, kindName(kind))
+	}
+	_, ok := parseKind("not-a-kind")
+	require.False(t, ok)
+	require.Equal(t, "", kindName(source.Kind(99)))
+}

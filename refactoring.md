@@ -8,6 +8,3 @@
 
 `internal/frontmatter/frontmatter.go:40` checks `len(lines) == 0`, but `strings.Split` always returns one element. Delete the guard.
 
-## Replace the kindName and parseKind switches with a map
-
-`internal/targetdir/targetdir.go:170` `kindName` and `parseKind` are mirror switches over the same words. Replace both with one map and two lookups.

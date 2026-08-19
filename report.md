@@ -1,8 +1,7 @@
-Drop the dead empty-target case in report.Summary
+Replace the kindName and parseKind switches with one map
 
-- Summary no longer handles an empty target, since every caller passes one. Only the docs target omits it from the line.
-- Remove the test row that covered the empty-target case. The remaining rows cover both branches of the condition.
-- Remove the completed plan from refactoring.md.
-- go test ./... and just check both pass.
+- Back both lookups with a map from kinds to manifest words
+- Add a round-trip test that pins the kind-word contract
+- Remove the completed plan from refactoring.md
 
-Ralph item 1 completed
+Ralph item 6 completed
