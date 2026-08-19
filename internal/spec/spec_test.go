@@ -5,17 +5,15 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"reflect"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func write(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "spec.md")
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 	return path
 }
 
@@ -58,42 +56,26 @@ func TestReadParsesTitlePurposeRequirementsAndScenarios(t *testing.T) {
 	}
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("Read = %+v, want %+v", got, want)
-	}
+	require.NoError(t, err)
+	require.Equal(t, want, got)
 }
 
 func TestRequirementWithoutScenariosHasEmptyNonNilSlice(t *testing.T) {
 	path := write(t, "# Title\n\n### Requirement: One\nBody.\n")
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
+	require.NoError(t, err)
 	req := got.Requirements[0]
-	if req.Scenarios == nil {
-		t.Fatal("Scenarios = nil, want an empty slice")
-	}
-	if len(req.Scenarios) != 0 {
-		t.Fatalf("len(Scenarios) = %d, want 0", len(req.Scenarios))
-	}
+	require.NotNil(t, req.Scenarios)
+	require.Len(t, req.Scenarios, 0)
 }
 
 func TestStepLineKeepsInlineCodeBackticks(t *testing.T) {
 	path := write(t, "# Convert\n\n### Requirement: Command Form\nBody.\n\n#### Scenario: Path argument\n- GIVEN the path `specs/cli/sync.md`\n")
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
+	require.NoError(t, err)
 	steps := got.Requirements[0].Scenarios[0].Steps
-	if len(steps) != 1 {
-		t.Fatalf("len(steps) = %d, want 1", len(steps))
-	}
-	if want := "GIVEN the path `specs/cli/sync.md`"; steps[0] != want {
-		t.Fatalf("step = %q, want %q", steps[0], want)
-	}
+	require.Len(t, steps, 1)
+	require.Equal(t, "GIVEN the path `specs/cli/sync.md`", steps[0])
 }
 
 func TestReadErrorsOnMalformedContent(t *testing.T) {
@@ -126,17 +108,16 @@ func TestReadErrorsOnMalformedContent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			path := write(t, tt.content)
-			if _, err := Read(path); err == nil || err.Error() != tt.wantErr {
-				t.Fatalf("Read error = %v, want %q", err, tt.wantErr)
-			}
+			_, err := Read(path)
+			require.Error(t, err)
+			require.Equal(t, tt.wantErr, err.Error())
 		})
 	}
 }
 
 func TestReadErrorsOnMissingFile(t *testing.T) {
-	if _, err := Read(filepath.Join(t.TempDir(), "missing.md")); err == nil {
-		t.Fatal("expected an error for a missing file")
-	}
+	_, err := Read(filepath.Join(t.TempDir(), "missing.md"))
+	require.Error(t, err)
 }
 
 func TestWriteRoundTripsTheDocument(t *testing.T) {
@@ -162,16 +143,10 @@ func TestWriteRoundTripsTheDocument(t *testing.T) {
 		},
 	}
 	var buf bytes.Buffer
-	if err := Write(&buf, doc); err != nil {
-		t.Fatalf("Write: %v", err)
-	}
+	require.NoError(t, Write(&buf, doc))
 	var got Document
-	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
-		t.Fatalf("Unmarshal: %v", err)
-	}
-	if !reflect.DeepEqual(got, doc) {
-		t.Fatalf("round trip = %+v, want %+v", got, doc)
-	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	require.Equal(t, doc, got)
 }
 
 func TestWritePrintsEmptyArrays(t *testing.T) {
@@ -194,12 +169,8 @@ func TestWritePrintsEmptyArrays(t *testing.T) {
 		},
 	}
 	var buf bytes.Buffer
-	if err := Write(&buf, doc); err != nil {
-		t.Fatalf("Write: %v", err)
-	}
+	require.NoError(t, Write(&buf, doc))
 	for _, want := range []string{`"scenarios": []`, `"steps": []`} {
-		if !strings.Contains(buf.String(), want) {
-			t.Fatalf("output = %s, want %s", buf.String(), want)
-		}
+		require.Contains(t, buf.String(), want)
 	}
 }

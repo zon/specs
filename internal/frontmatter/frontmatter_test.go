@@ -3,16 +3,15 @@ package frontmatter
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func write(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "definition.md")
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 	return path
 }
 
@@ -34,62 +33,44 @@ Body text.
 	}
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if !reflect.DeepEqual(got.Fields, want) {
-		t.Fatalf("Read = %+v, want %+v", got.Fields, want)
-	}
+	require.NoError(t, err)
+	require.Equal(t, want, got.Fields)
 }
 
 func TestReadReadsInlineTools(t *testing.T) {
 	path := write(t, "---\nname: prose-editor\ntools: [read, edit]\n---\n")
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if !reflect.DeepEqual(got.Fields.Tools, []string{"read", "edit"}) {
-		t.Fatalf("tools = %v, want [read edit]", got.Fields.Tools)
-	}
+	require.NoError(t, err)
+	require.Equal(t, []string{"read", "edit"}, got.Fields.Tools)
 }
 
 func TestReadReadsMode(t *testing.T) {
 	path := write(t, "---\nname: code-architect\nmode: primary\n---\n\nPlan the work.\n")
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if got.Fields.Mode != "primary" {
-		t.Fatalf("Mode = %q, want %q", got.Fields.Mode, "primary")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "primary", got.Fields.Mode)
 }
 
 func TestReadYieldsZeroFieldsWithoutFrontmatter(t *testing.T) {
 	path := write(t, "# Just a body\n")
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if !reflect.DeepEqual(got.Fields, Fields{}) {
-		t.Fatalf("Read = %+v, want zero fields", got.Fields)
-	}
+	require.NoError(t, err)
+	require.Equal(t, Fields{}, got.Fields)
 }
 
 func TestReadErrorsOnUnterminatedFrontmatter(t *testing.T) {
 	path := write(t, "---\nname: prose-editor\n")
 
-	if _, err := Read(path); err == nil {
-		t.Fatal("expected an error for unterminated frontmatter")
-	}
+	_, err := Read(path)
+	require.Error(t, err)
 }
 
 func TestReadErrorsOnMissingFile(t *testing.T) {
-	if _, err := Read(filepath.Join(t.TempDir(), "missing.md")); err == nil {
-		t.Fatal("expected an error for a missing file")
-	}
+	_, err := Read(filepath.Join(t.TempDir(), "missing.md"))
+	require.Error(t, err)
 }
 
 func TestReadReadsTheBody(t *testing.T) {
@@ -102,13 +83,9 @@ You are a prose editor. Review the prose against the guidelines.
 `)
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
+	require.NoError(t, err)
 	want := "You are a prose editor. Review the prose against the guidelines."
-	if got.Body != want {
-		t.Fatalf("Body = %q, want %q", got.Body, want)
-	}
+	require.Equal(t, want, got.Body)
 }
 
 func TestReadKeepsBodyLines(t *testing.T) {
@@ -122,35 +99,23 @@ Give numbered instructions.
 `)
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
+	require.NoError(t, err)
 	want := "You are a prose editor.\n\nGive numbered instructions."
-	if got.Body != want {
-		t.Fatalf("Body = %q, want %q", got.Body, want)
-	}
+	require.Equal(t, want, got.Body)
 }
 
 func TestReadYieldsWholeContentAsBodyWithoutFrontmatter(t *testing.T) {
 	path := write(t, "You are a prose editor.\n")
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if want := "You are a prose editor."; got.Body != want {
-		t.Fatalf("Body = %q, want %q", got.Body, want)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "You are a prose editor.", got.Body)
 }
 
 func TestReadYieldsEmptyBodyWithoutOne(t *testing.T) {
 	path := write(t, "---\nname: prose-editor\n---\n")
 
 	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if got.Body != "" {
-		t.Fatalf("Body = %q, want empty", got.Body)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "", got.Body)
 }

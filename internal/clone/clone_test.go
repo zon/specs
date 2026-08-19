@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func gitRepo(t *testing.T, files ...string) string {
@@ -15,12 +17,8 @@ func gitRepo(t *testing.T, files ...string) string {
 	runGit(t, dir, "config", "user.name", "test")
 	for _, f := range files {
 		path := filepath.Join(dir, f)
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte("content\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte("content\n"), 0o644))
 	}
 	runGit(t, dir, "add", "-A")
 	runGit(t, dir, "commit", "-qm", "seed")
@@ -31,35 +29,28 @@ func runGit(t *testing.T, dir string, args ...string) {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("git %v: %v\n%s", args, err, out)
-	}
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git %v\n%s", args, out)
 }
 
 func TestCloneCopiesRepository(t *testing.T) {
 	src := gitRepo(t, filepath.Join("skills", "seed", "SKILL.md"))
 
 	dir, cleanup, err := Clone(src)
-	if err != nil {
-		t.Fatalf("Clone: %v", err)
-	}
+	require.NoError(t, err)
 	defer cleanup()
 
-	if _, err := os.Stat(filepath.Join(dir, "skills", "seed", "SKILL.md")); err != nil {
-		t.Fatalf("clone missing the file: %v", err)
-	}
+	_, err = os.Stat(filepath.Join(dir, "skills", "seed", "SKILL.md"))
+	require.NoError(t, err)
 }
 
 func TestCloneCleanupRemovesDirectory(t *testing.T) {
 	src := gitRepo(t, filepath.Join("skills", "seed", "SKILL.md"))
 
 	dir, cleanup, err := Clone(src)
-	if err != nil {
-		t.Fatalf("Clone: %v", err)
-	}
+	require.NoError(t, err)
 	cleanup()
 
-	if _, err := os.Stat(dir); err == nil {
-		t.Fatal("cleanup left the clone directory behind")
-	}
+	_, err = os.Stat(dir)
+	require.Error(t, err)
 }

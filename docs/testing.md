@@ -12,7 +12,7 @@ Examples below are Go.
 
 ### Assertions
 
-Use one assertion library across the whole suite, and use it for every assertion: `github.com/stretchr/testify` (`assert` and `require`).
+Use one assertion library across the whole suite for every assertion: `github.com/stretchr/testify` (`assert` and `require`).
 
 ### Test structure
 
@@ -50,7 +50,7 @@ Only implementation modules may hold real dependency implementations. See [Archi
 
 ### CLI command validation
 
-Test the commands defined in specs to confirm they match the expected format. Use the command's own help output to confirm the structure matches the specification:
+Test the commands defined in specs against the expected format. Use the command's own help output to confirm the structure matches the specification:
 
 ```go
 func TestCommand(t *testing.T) {

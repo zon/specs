@@ -3,9 +3,9 @@ package render
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/frontmatter"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/target"
@@ -16,9 +16,7 @@ func TestClaudeAgentKeepsName(t *testing.T) {
 
 	got := ClaudeAgent(fields, "Review prose.")
 
-	if !strings.Contains(got, "name: prose-editor") {
-		t.Fatalf("ClaudeAgent rendered %q without the definition's name", got)
-	}
+	require.Contains(t, got, "name: prose-editor")
 }
 
 func TestClaudeAgentRendersNameDescriptionAndBody(t *testing.T) {
@@ -30,9 +28,7 @@ func TestClaudeAgentRendersNameDescriptionAndBody(t *testing.T) {
 	got := ClaudeAgent(fields, "Review prose against the guidelines.")
 	want := "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
 
-	if got != want {
-		t.Fatalf("ClaudeAgent = %q, want %q", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestClaudeAgentListsTools(t *testing.T) {
@@ -40,9 +36,7 @@ func TestClaudeAgentListsTools(t *testing.T) {
 
 	got := ClaudeAgent(fields, "Review prose.")
 
-	if !strings.Contains(got, "tools:\n  - read\n  - edit") {
-		t.Fatalf("ClaudeAgent rendered %q without the tools list", got)
-	}
+	require.Contains(t, got, "tools:\n  - read\n  - edit")
 }
 
 func TestClaudeAgentRendersToolsAfterDescription(t *testing.T) {
@@ -55,9 +49,7 @@ func TestClaudeAgentRendersToolsAfterDescription(t *testing.T) {
 	got := ClaudeAgent(fields, "Review prose.")
 	want := "---\nname: prose-editor\ndescription: Reviews prose.\ntools:\n  - read\n  - edit\n---\n\nReview prose.\n"
 
-	if got != want {
-		t.Fatalf("ClaudeAgent = %q, want %q", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestClaudeAgentOmitsToolsWhenEmpty(t *testing.T) {
@@ -65,84 +57,61 @@ func TestClaudeAgentOmitsToolsWhenEmpty(t *testing.T) {
 
 	got := ClaudeAgent(fields, "Review prose.")
 
-	if strings.Contains(got, "tools:") {
-		t.Fatalf("ClaudeAgent rendered %q with a tools field for an empty list", got)
-	}
+	require.NotContains(t, got, "tools:")
 }
 
 func TestOpencodeAgentDefaultsToSubagentMode(t *testing.T) {
 	fields := frontmatter.Fields{Name: "prose-editor"}
 
 	got, err := OpencodeAgent(fields, "Review prose.")
-	if err != nil {
-		t.Fatalf("OpencodeAgent: %v", err)
-	}
+	require.NoError(t, err)
 
-	if !strings.Contains(got, "mode: subagent") {
-		t.Fatalf("OpencodeAgent rendered %q without mode: subagent", got)
-	}
+	require.Contains(t, got, "mode: subagent")
 }
 
 func TestOpencodeAgentUsesDefinitionMode(t *testing.T) {
 	fields := frontmatter.Fields{Name: "code-architect", Mode: "primary"}
 
 	got, err := OpencodeAgent(fields, "Plan the work.")
-	if err != nil {
-		t.Fatalf("OpencodeAgent: %v", err)
-	}
+	require.NoError(t, err)
 
-	if !strings.Contains(got, "mode: primary") {
-		t.Fatalf("OpencodeAgent rendered %q without mode: primary", got)
-	}
+	require.Contains(t, got, "mode: primary")
 }
 
 func TestOpencodeAgentRejectsUnknownMode(t *testing.T) {
 	fields := frontmatter.Fields{Name: "prose-editor", Mode: "banana"}
 
-	if _, err := OpencodeAgent(fields, "Review prose."); err == nil {
-		t.Fatal("OpencodeAgent accepted an unknown mode")
-	}
+	_, err := OpencodeAgent(fields, "Review prose.")
+	require.Error(t, err)
 }
 
 func TestOpencodeAgentDropsName(t *testing.T) {
 	fields := frontmatter.Fields{Name: "prose-editor"}
 
 	got, err := OpencodeAgent(fields, "Review prose.")
-	if err != nil {
-		t.Fatalf("OpencodeAgent: %v", err)
-	}
+	require.NoError(t, err)
 
-	if strings.Contains(got, "name:") {
-		t.Fatalf("OpencodeAgent rendered %q with a name field", got)
-	}
+	require.NotContains(t, got, "name:")
 }
 
 func TestOpencodeAgentRendersModeDescriptionAndBody(t *testing.T) {
 	fields := frontmatter.Fields{Description: "Reviews prose against the guidelines."}
 
 	got, err := OpencodeAgent(fields, "Review prose against the guidelines.")
-	if err != nil {
-		t.Fatalf("OpencodeAgent: %v", err)
-	}
+	require.NoError(t, err)
 	want := "---\nmode: subagent\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
 
-	if got != want {
-		t.Fatalf("OpencodeAgent = %q, want %q", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestOpencodeAgentDeniesEveryOtherTool(t *testing.T) {
 	fields := frontmatter.Fields{Tools: []string{"read", "edit"}}
 
 	got, err := OpencodeAgent(fields, "Review prose.")
-	if err != nil {
-		t.Fatalf("OpencodeAgent: %v", err)
-	}
+	require.NoError(t, err)
 
 	for _, denied := range []string{"bash", "write", "grep", "glob"} {
-		if !strings.Contains(got, denied+": deny") {
-			t.Fatalf("OpencodeAgent rendered %q without denying %s", got, denied)
-		}
+		require.Contains(t, got, denied+": deny")
 	}
 }
 
@@ -150,13 +119,10 @@ func TestOpencodeAgentDoesNotDenyListedTools(t *testing.T) {
 	fields := frontmatter.Fields{Tools: []string{"read", "edit"}}
 
 	got, err := OpencodeAgent(fields, "Review prose.")
-	if err != nil {
-		t.Fatalf("OpencodeAgent: %v", err)
-	}
+	require.NoError(t, err)
 
-	if strings.Contains(got, "read: deny") || strings.Contains(got, "edit: deny") {
-		t.Fatalf("OpencodeAgent rendered %q denying a listed tool", got)
-	}
+	require.NotContains(t, got, "read: deny")
+	require.NotContains(t, got, "edit: deny")
 }
 
 func TestOpencodeAgentRendersDenyRulesAfterDescription(t *testing.T) {
@@ -166,95 +132,67 @@ func TestOpencodeAgentRendersDenyRulesAfterDescription(t *testing.T) {
 	}
 
 	got, err := OpencodeAgent(fields, "Review prose.")
-	if err != nil {
-		t.Fatalf("OpencodeAgent: %v", err)
-	}
+	require.NoError(t, err)
 	want := "---\nmode: subagent\ndescription: Reviews prose.\npermission:\n" +
 		"  apply_patch: deny\n  bash: deny\n  glob: deny\n  grep: deny\n" +
 		"  lsp: deny\n  question: deny\n  skill: deny\n  todowrite: deny\n" +
 		"  webfetch: deny\n  websearch: deny\n  write: deny\n" +
 		"---\n\nReview prose.\n"
 
-	if got != want {
-		t.Fatalf("OpencodeAgent = %q, want %q", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestOpencodeAgentOmitsDenyRulesWhenToolsEmpty(t *testing.T) {
 	fields := frontmatter.Fields{Name: "prose-editor"}
 
 	got, err := OpencodeAgent(fields, "Review prose.")
-	if err != nil {
-		t.Fatalf("OpencodeAgent: %v", err)
-	}
+	require.NoError(t, err)
 
-	if strings.Contains(got, "permission:") {
-		t.Fatalf("OpencodeAgent rendered %q with deny rules for an empty tools list", got)
-	}
+	require.NotContains(t, got, "permission:")
 }
 
 func TestDefinitionReturnsSkillVerbatim(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n\nReview prose.\n")
 
 	got, err := Definition(source.Definition{Kind: source.Skill, Name: "prose-editor", Path: path}, target.Claude)
-	if err != nil {
-		t.Fatalf("Definition: %v", err)
-	}
+	require.NoError(t, err)
 	want := "# prose-editor\n\nReview prose.\n"
-	if got != want {
-		t.Fatalf("Definition = %q, want %q", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestDefinitionReturnsDocVerbatim(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
 
 	got, err := Definition(source.Definition{Kind: source.Doc, Name: "prose", Path: path}, target.Opencode)
-	if err != nil {
-		t.Fatalf("Definition: %v", err)
-	}
+	require.NoError(t, err)
 	want := "# Prose guidelines\n"
-	if got != want {
-		t.Fatalf("Definition = %q, want %q", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestDefinitionRendersAgentForClaude(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n")
 
 	got, err := Definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, target.Claude)
-	if err != nil {
-		t.Fatalf("Definition: %v", err)
-	}
+	require.NoError(t, err)
 	want := "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
-	if got != want {
-		t.Fatalf("Definition = %q, want %q", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestDefinitionRendersAgentForOpencode(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n")
 
 	got, err := Definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, target.Opencode)
-	if err != nil {
-		t.Fatalf("Definition: %v", err)
-	}
+	require.NoError(t, err)
 	want := "---\nmode: subagent\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
-	if got != want {
-		t.Fatalf("Definition = %q, want %q", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestDefinitionReportsUnreadableAgentFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "agents", "missing.md")
 
 	_, err := Definition(source.Definition{Kind: source.Agent, Name: "missing", Path: path}, target.Opencode)
-	if err == nil {
-		t.Fatal("Definition accepted a missing agent file")
-	}
-	if !strings.Contains(err.Error(), "reading") {
-		t.Fatalf("Definition error %q does not name the file it could not read", err)
-	}
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "reading")
 }
 
 // writeDefinitionFile writes content at rel under a fresh temp dir and
@@ -262,11 +200,7 @@ func TestDefinitionReportsUnreadableAgentFile(t *testing.T) {
 func writeDefinitionFile(t *testing.T, rel, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), rel)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 	return path
 }

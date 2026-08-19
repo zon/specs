@@ -3,6 +3,8 @@ package report
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSummary(t *testing.T) {
@@ -23,9 +25,7 @@ func TestSummary(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var out strings.Builder
 			Summary(&out, tc.scopeName, tc.target, tc.source, tc.n)
-			if out.String() != tc.want {
-				t.Fatalf("Summary = %q, want %q", out.String(), tc.want)
-			}
+			require.Equal(t, tc.want, out.String())
 		})
 	}
 }

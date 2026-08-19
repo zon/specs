@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/kong"
+	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/spec"
 )
 
@@ -22,9 +23,8 @@ func buildBinary(t *testing.T, dir string) string {
 		binary += ".exe"
 	}
 	build := exec.Command("go", "build", "-o", binary, ".")
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("go build failed: %v\n%s", err, out)
-	}
+	out, err := build.CombinedOutput()
+	require.NoError(t, err, "go build failed\n%s", out)
 	return binary
 }
 
@@ -32,28 +32,19 @@ func TestBuildProducesRunnableCLIBinary(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 
 	info, err := os.Stat(binary)
-	if err != nil {
-		t.Fatalf("binary not produced: %v", err)
-	}
-	if runtime.GOOS != "windows" && info.Mode().Perm()&0o111 == 0 {
-		t.Fatalf("binary is not executable: %v", info.Mode())
-	}
+	require.NoError(t, err)
+	require.False(t, runtime.GOOS != "windows" && info.Mode().Perm()&0o111 == 0, "binary is not executable: %v", info.Mode())
 
 	cmd := exec.Command(binary)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("binary failed to run: %v\n%s", err, out)
-	}
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "binary failed to run\n%s", out)
 }
 
 func TestBinaryPrintsVersion(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	out, err := exec.Command(binary, "--version").CombinedOutput()
-	if err != nil {
-		t.Fatalf("zpecs --version failed: %v\n%s", err, out)
-	}
-	if got := strings.TrimSpace(string(out)); got != version {
-		t.Fatalf("zpecs --version = %q, want %q", got, version)
-	}
+	require.NoError(t, err, "zpecs --version failed\n%s", out)
+	require.Equal(t, version, strings.TrimSpace(string(out)))
 }
 
 func TestUnmarshalScope(t *testing.T) {
@@ -74,11 +65,9 @@ func TestUnmarshalScope(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var got scope
 			err := got.UnmarshalText([]byte(tc.s))
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("UnmarshalText(%q) error = %v, wantErr %v", tc.s, err, tc.wantErr)
-			}
-			if err == nil && got != tc.want {
-				t.Fatalf("UnmarshalText(%q) = %v, want %v", tc.s, got, tc.want)
+			require.Equal(t, tc.wantErr, err != nil)
+			if err == nil {
+				require.Equal(t, tc.want, got)
 			}
 		})
 	}
@@ -90,9 +79,7 @@ func parseUpdateArgs(t *testing.T, args ...string) (options, error) {
 	t.Helper()
 	var c cli
 	parser, err := kong.New(&c, cliVars)
-	if err != nil {
-		t.Fatalf("kong.New: %v", err)
-	}
+	require.NoError(t, err)
 	if _, err := parser.Parse(append([]string{"update"}, args...)); err != nil {
 		return options{}, err
 	}
@@ -125,11 +112,9 @@ func TestParseUpdate(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := parseUpdateArgs(t, tc.args...)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("parseUpdateArgs(%v) error = %v, wantErr %v", tc.args, err, tc.wantErr)
-			}
-			if err == nil && got != tc.want {
-				t.Fatalf("parseUpdateArgs(%v) = %+v, want %+v", tc.args, got, tc.want)
+			require.Equal(t, tc.wantErr, err != nil)
+			if err == nil {
+				require.Equal(t, tc.want, got)
 			}
 		})
 	}
@@ -138,13 +123,9 @@ func TestParseUpdate(t *testing.T) {
 func TestParseUpdateEnvOverridesDefault(t *testing.T) {
 	t.Setenv("ZPECS_SOURCE", "/env/src")
 	got, err := parseUpdateArgs(t)
-	if err != nil {
-		t.Fatalf("parseUpdateArgs: %v", err)
-	}
+	require.NoError(t, err)
 	want := options{scope: scopeAll, target: targetOpencode, source: "/env/src"}
-	if got != want {
-		t.Fatalf("parseUpdateArgs() = %+v, want %+v", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestRunRecognizesCommands(t *testing.T) {
@@ -174,9 +155,7 @@ func TestRunRecognizesCommands(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := run(tc.args)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("run(%v) error = %v, wantErr %v", tc.args, err, tc.wantErr)
-			}
+			require.Equal(t, tc.wantErr, err != nil)
 		})
 	}
 }
@@ -184,28 +163,21 @@ func TestRunRecognizesCommands(t *testing.T) {
 func TestPrintErrorShowsUsageForParseErrors(t *testing.T) {
 	var c cli
 	parser, err := kong.New(&c, cliVars)
-	if err != nil {
-		t.Fatalf("kong.New: %v", err)
-	}
+	require.NoError(t, err)
 	_, parseErr := parser.Parse([]string{"update", "--target", "vscode"})
-	if parseErr == nil {
-		t.Fatal("expected a parse error")
-	}
+	require.Error(t, parseErr)
 
 	stderr := captureStderr(t)
 	printError(parseErr)
-	if out := string(stderr()); !strings.Contains(out, "Usage:") {
-		t.Fatalf("parse error did not print usage:\n%s", out)
-	}
+	out := string(stderr())
+	require.Contains(t, out, "Usage:")
 }
 
 func TestPrintErrorOmitsUsageForRuntimeErrors(t *testing.T) {
 	stderr := captureStderr(t)
 	printError(errors.New("update outside a repository"))
 	out := string(stderr())
-	if strings.Contains(out, "Usage:") {
-		t.Fatalf("runtime error printed usage:\n%s", out)
-	}
+	require.NotContains(t, out, "Usage:")
 }
 
 func TestBinaryRunsEachUpdateCommand(t *testing.T) {
@@ -230,41 +202,29 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 		cmd.Dir = repoDir
 		cmd.Env = append(os.Environ(), "ZPECS_SOURCE="+src)
 		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("zpecs %v failed: %v", tc.args, err)
-		}
-		if !strings.Contains(string(out), tc.want) {
-			t.Fatalf("zpecs %v output %q missing %q", tc.args, out, tc.want)
-		}
+		require.NoError(t, err, "zpecs %v failed", tc.args)
+		require.Contains(t, string(out), tc.want)
 	}
 }
 
 func TestBinaryRejectsUnknownCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	cmd := exec.Command(binary, "install")
-	if err := cmd.Run(); err == nil {
-		t.Fatal("expected unknown command to fail")
-	}
+	require.Error(t, cmd.Run())
 }
 
 func writeSourceFile(t *testing.T, dir, rel, content string) {
 	t.Helper()
 	path := filepath.Join(dir, rel)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }
 
 // gitRepo returns a temp dir that looks like a git repository root.
 func gitRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	if err := os.Mkdir(filepath.Join(dir, ".git"), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
 	return dir
 }
 
@@ -288,24 +248,19 @@ func runGit(t *testing.T, dir string, args ...string) {
 	t.Helper()
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("git %v: %v\n%s", args, err, out)
-	}
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "git %v\n%s", args, out)
 }
 
 func TestUpdateReadsFromDefaultSource(t *testing.T) {
 	t.Chdir(gitRepo(t))
 	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
 
-	if err := run([]string{"update"}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")); err != nil {
-		t.Fatalf("skill not written from the default source: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(".opencode", "agents", "code-architect.md")); err != nil {
-		t.Fatalf("agent not written from the default source: %v", err)
-	}
+	require.NoError(t, run([]string{"update"}))
+	_, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"))
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(".opencode", "agents", "code-architect.md"))
+	require.NoError(t, err)
 }
 
 func TestUpdateReadsFromLocalSourceOverDefault(t *testing.T) {
@@ -314,15 +269,11 @@ func TestUpdateReadsFromLocalSourceOverDefault(t *testing.T) {
 	local := t.TempDir()
 	writeSourceFile(t, local, filepath.Join("skills", "local-only", "SKILL.md"), "# local-only\n")
 
-	if err := run([]string{"update", "--source", local}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(".opencode", "skills", "local-only", "SKILL.md")); err != nil {
-		t.Fatalf("skill not read from the local source: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")); err == nil {
-		t.Fatal("skill read from the default source despite a --source flag")
-	}
+	require.NoError(t, run([]string{"update", "--source", local}))
+	_, err := os.Stat(filepath.Join(".opencode", "skills", "local-only", "SKILL.md"))
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"))
+	require.Error(t, err)
 }
 
 func TestBinaryReadsFromDefaultSource(t *testing.T) {
@@ -331,12 +282,10 @@ func TestBinaryReadsFromDefaultSource(t *testing.T) {
 	cmd := exec.Command(binary, "update")
 	cmd.Dir = work
 	cmd.Env = append(os.Environ(), "ZPECS_SOURCE="+gitCloneSource(t))
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("zpecs update failed: %v\n%s", err, out)
-	}
-	if _, err := os.Stat(filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")); err != nil {
-		t.Fatalf("skill not written from the default source: %v", err)
-	}
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "zpecs update failed\n%s", out)
+	_, err = os.Stat(filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md"))
+	require.NoError(t, err)
 }
 
 func TestUpdateReadsSameFrontmatterForBothTargets(t *testing.T) {
@@ -357,9 +306,7 @@ Review prose.
 	for _, trgt := range cases {
 		t.Run(string(trgt), func(t *testing.T) {
 			err := run([]string{"update", "--source", dir, "--target", string(trgt)})
-			if err != nil {
-				t.Fatalf("update for %s: %v", trgt, err)
-			}
+			require.NoError(t, err)
 		})
 	}
 }
@@ -378,20 +325,14 @@ Review prose.
 	for _, trgt := range cases {
 		t.Run(string(trgt), func(t *testing.T) {
 			err := run([]string{"update", "--source", dir, "--target", string(trgt)})
-			if err != nil {
-				t.Fatalf("update for %s: %v", trgt, err)
-			}
+			require.NoError(t, err)
 			path := filepath.Join("."+string(trgt), "agents", "prose-editor.md")
 			content, err := os.ReadFile(path)
-			if err != nil {
-				t.Fatalf("%s wrote nothing at %s: %v", trgt, path, err)
-			}
+			require.NoError(t, err)
 			if trgt == targetClaude {
-				if !strings.Contains(string(content), "name: renamed") {
-					t.Fatalf("%s wrote %q without the rendered name field", trgt, content)
-				}
-			} else if strings.Contains(string(content), "name:") {
-				t.Fatalf("%s wrote %q with a name field", trgt, content)
+				require.Contains(t, string(content), "name: renamed")
+			} else {
+				require.NotContains(t, string(content), "name:")
 			}
 		})
 	}
@@ -409,16 +350,12 @@ Review prose.
 `)
 
 	err := run([]string{"update", "--source", dir, "--target", "claude"})
-	if err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, err)
 
-	if _, err := os.Stat(filepath.Join(".claude", "skills", "prose-editor", "SKILL.md")); err != nil {
-		t.Fatalf("claude skill not written: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(".claude", "agents", "prose-editor.md")); err != nil {
-		t.Fatalf("claude agent not written: %v", err)
-	}
+	_, err = os.Stat(filepath.Join(".claude", "skills", "prose-editor", "SKILL.md"))
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(".claude", "agents", "prose-editor.md"))
+	require.NoError(t, err)
 }
 
 func TestUpdateWritesSkillAndAgentToOpencode(t *testing.T) {
@@ -433,16 +370,12 @@ Review prose.
 `)
 
 	err := run([]string{"update", "--source", dir, "--target", "opencode"})
-	if err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, err)
 
-	if _, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")); err != nil {
-		t.Fatalf("opencode skill not written: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(".opencode", "agents", "prose-editor.md")); err != nil {
-		t.Fatalf("opencode agent not written: %v", err)
-	}
+	_, err = os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"))
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(".opencode", "agents", "prose-editor.md"))
+	require.NoError(t, err)
 }
 
 func TestBinaryWritesToClaudeTarget(t *testing.T) {
@@ -454,16 +387,13 @@ func TestBinaryWritesToClaudeTarget(t *testing.T) {
 	work := gitRepo(t)
 	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
 	cmd.Dir = work
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("zpecs update failed: %v\n%s", err, out)
-	}
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "zpecs update failed\n%s", out)
 
-	if _, err := os.Stat(filepath.Join(work, ".claude", "skills", "prose-editor", "SKILL.md")); err != nil {
-		t.Fatalf("claude skill not written: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(work, ".claude", "agents", "prose-editor.md")); err != nil {
-		t.Fatalf("claude agent not written: %v", err)
-	}
+	_, err = os.Stat(filepath.Join(work, ".claude", "skills", "prose-editor", "SKILL.md"))
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(work, ".claude", "agents", "prose-editor.md"))
+	require.NoError(t, err)
 }
 
 func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
@@ -493,33 +423,31 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 				args = append(args, tc.scope)
 			}
 			args = append(args, "--source", dir)
-			if err := run(args); err != nil {
-				t.Fatalf("run(%v): %v", args, err)
-			}
+			require.NoError(t, run(args))
 
 			skillPath := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
 			agentPath := filepath.Join(".opencode", "agents", "code-architect.md")
 			docPath := filepath.Join("docs", "zpecs", "prose.md")
 			if tc.wantSkill {
-				if _, err := os.Stat(skillPath); err != nil {
-					t.Fatalf("skill not rendered at %s: %v", skillPath, err)
-				}
-			} else if _, err := os.Stat(skillPath); err == nil {
-				t.Fatalf("skill rendered at %s but the command does not name it", skillPath)
+				_, err := os.Stat(skillPath)
+				require.NoError(t, err)
+			} else {
+				_, err := os.Stat(skillPath)
+				require.Error(t, err)
 			}
 			if tc.wantAgent {
-				if _, err := os.Stat(agentPath); err != nil {
-					t.Fatalf("agent not rendered at %s: %v", agentPath, err)
-				}
-			} else if _, err := os.Stat(agentPath); err == nil {
-				t.Fatalf("agent rendered at %s but the command does not name it", agentPath)
+				_, err := os.Stat(agentPath)
+				require.NoError(t, err)
+			} else {
+				_, err := os.Stat(agentPath)
+				require.Error(t, err)
 			}
 			if tc.wantDoc {
-				if _, err := os.Stat(docPath); err != nil {
-					t.Fatalf("doc not rendered at %s: %v", docPath, err)
-				}
-			} else if _, err := os.Stat(docPath); err == nil {
-				t.Fatalf("doc rendered at %s but the command does not name it", docPath)
+				_, err := os.Stat(docPath)
+				require.NoError(t, err)
+			} else {
+				_, err := os.Stat(docPath)
+				require.Error(t, err)
 			}
 		})
 	}
@@ -541,26 +469,21 @@ func TestBinaryScopedUpdateWritesOnlyWhatItNames(t *testing.T) {
 			work := gitRepo(t)
 			cmd := exec.Command(binary, "update", tc.scope, "--source", dir)
 			cmd.Dir = work
-			if out, err := cmd.CombinedOutput(); err != nil {
-				t.Fatalf("zpecs update %s failed: %v\n%s", tc.scope, err, out)
-			}
+			out, err := cmd.CombinedOutput()
+			require.NoError(t, err, "zpecs update %s failed\n%s", tc.scope, out)
 
 			skillPath := filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")
 			agentPath := filepath.Join(work, ".opencode", "agents", "code-architect.md")
 			if tc.scope == "skills" {
-				if _, err := os.Stat(skillPath); err != nil {
-					t.Fatalf("skill not written: %v", err)
-				}
-				if _, err := os.Stat(agentPath); err == nil {
-					t.Fatal("agent written by update skills")
-				}
+				_, err := os.Stat(skillPath)
+				require.NoError(t, err)
+				_, err = os.Stat(agentPath)
+				require.Error(t, err)
 			} else {
-				if _, err := os.Stat(agentPath); err != nil {
-					t.Fatalf("agent not written: %v", err)
-				}
-				if _, err := os.Stat(skillPath); err == nil {
-					t.Fatal("skill written by update agents")
-				}
+				_, err := os.Stat(agentPath)
+				require.NoError(t, err)
+				_, err = os.Stat(skillPath)
+				require.Error(t, err)
 			}
 		})
 	}
@@ -573,22 +496,16 @@ func TestUpdateWritesToRepositoryRoot(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
 	work := filepath.Join(root, "nested", "deep")
-	if err := os.MkdirAll(work, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(work, 0o755))
 	t.Chdir(work)
 
-	if err := run([]string{"update", "--source", dir}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir}))
 
 	skillPath := filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md")
-	if _, err := os.Stat(skillPath); err != nil {
-		t.Fatalf("skill not written at the repository root: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")); err == nil {
-		t.Fatal("skill written in the working subdirectory")
-	}
+	_, err := os.Stat(skillPath)
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md"))
+	require.Error(t, err)
 }
 
 func TestUpdateErrorsOutsideRepository(t *testing.T) {
@@ -597,12 +514,9 @@ func TestUpdateErrorsOutsideRepository(t *testing.T) {
 
 	t.Chdir(t.TempDir())
 	err := run([]string{"update", "--source", dir})
-	if err == nil {
-		t.Fatal("expected update outside a repository to error")
-	}
-	if _, statErr := os.Stat(filepath.Join(".opencode", "agents", "prose-editor.md")); statErr == nil {
-		t.Fatal("update outside a repository wrote a file")
-	}
+	require.Error(t, err)
+	_, statErr := os.Stat(filepath.Join(".opencode", "agents", "prose-editor.md"))
+	require.Error(t, statErr)
 }
 
 func TestBinaryWritesToRepositoryRoot(t *testing.T) {
@@ -612,22 +526,17 @@ func TestBinaryWritesToRepositoryRoot(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
 	work := filepath.Join(root, "nested")
-	if err := os.MkdirAll(work, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(work, 0o755))
 	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
 	cmd.Dir = work
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("zpecs update failed: %v\n%s", err, out)
-	}
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "zpecs update failed\n%s", out)
 
 	agentPath := filepath.Join(root, ".claude", "agents", "prose-editor.md")
-	if _, err := os.Stat(agentPath); err != nil {
-		t.Fatalf("agent not written at the repository root: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(work, ".claude", "agents", "prose-editor.md")); err == nil {
-		t.Fatal("agent written in the working subdirectory")
-	}
+	_, err = os.Stat(agentPath)
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(work, ".claude", "agents", "prose-editor.md"))
+	require.Error(t, err)
 }
 
 func TestBinaryErrorsOutsideRepository(t *testing.T) {
@@ -638,12 +547,10 @@ func TestBinaryErrorsOutsideRepository(t *testing.T) {
 	work := t.TempDir()
 	cmd := exec.Command(binary, "update", "--source", dir)
 	cmd.Dir = work
-	if out, err := cmd.CombinedOutput(); err == nil {
-		t.Fatalf("expected failure outside a repository, got success\n%s", out)
-	}
-	if _, err := os.Stat(filepath.Join(work, ".opencode")); err == nil {
-		t.Fatal("binary wrote outside a repository")
-	}
+	out, err := cmd.CombinedOutput()
+	require.Error(t, err, "expected failure outside a repository, got success\n%s", out)
+	_, err = os.Stat(filepath.Join(work, ".opencode"))
+	require.Error(t, err)
 }
 
 func TestUpdateCreatesMissingDirectories(t *testing.T) {
@@ -651,9 +558,7 @@ func TestUpdateCreatesMissingDirectories(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 
-	if err := run([]string{"update", "skills", "--source", dir, "--target", "claude"}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "skills", "--source", dir, "--target", "claude"}))
 
 	for _, path := range []string{
 		filepath.Join(".claude"),
@@ -661,12 +566,8 @@ func TestUpdateCreatesMissingDirectories(t *testing.T) {
 		filepath.Join(".claude", "skills", "prose-editor"),
 	} {
 		info, err := os.Stat(path)
-		if err != nil {
-			t.Fatalf("directory %s not created: %v", path, err)
-		}
-		if !info.IsDir() {
-			t.Fatalf("%s is not a directory", path)
-		}
+		require.NoError(t, err)
+		require.True(t, info.IsDir())
 	}
 }
 
@@ -676,24 +577,14 @@ func TestUpdateLeavesForeignFileAlone(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
 	path := filepath.Join(".claude", "agents", "prose-editor.md")
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte("manual content\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte("manual content\n"), 0o644))
 
-	if err := run([]string{"update", "--source", dir, "--target", "claude"}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir, "--target", "claude"}))
 
 	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("foreign file: %v", err)
-	}
-	if string(content) != "manual content\n" {
-		t.Fatalf("foreign file changed to %q", content)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "manual content\n", string(content))
 }
 
 func TestUpdateReplacesOwnedFiles(t *testing.T) {
@@ -701,22 +592,14 @@ func TestUpdateReplacesOwnedFiles(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nFirst.\n")
 
-	if err := run([]string{"update", "--source", dir}); err != nil {
-		t.Fatalf("first update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir}))
 
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nSecond.\n")
-	if err := run([]string{"update", "--source", dir}); err != nil {
-		t.Fatalf("second update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir}))
 
 	content, err := os.ReadFile(filepath.Join(".opencode", "agents", "prose-editor.md"))
-	if err != nil {
-		t.Fatalf("owned file: %v", err)
-	}
-	if !strings.Contains(string(content), "Second.") {
-		t.Fatalf("owned file not replaced: %q", content)
-	}
+	require.NoError(t, err)
+	require.Contains(t, string(content), "Second.")
 }
 
 func TestBinaryLeavesForeignFileAlone(t *testing.T) {
@@ -726,26 +609,17 @@ func TestBinaryLeavesForeignFileAlone(t *testing.T) {
 
 	work := gitRepo(t)
 	path := filepath.Join(work, ".claude", "agents", "prose-editor.md")
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte("manual content\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte("manual content\n"), 0o644))
 
 	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
 	cmd.Dir = work
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("zpecs update failed: %v\n%s", err, out)
-	}
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "zpecs update failed\n%s", out)
 
 	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("foreign file: %v", err)
-	}
-	if string(content) != "manual content\n" {
-		t.Fatalf("foreign file changed to %q", content)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "manual content\n", string(content))
 }
 
 func TestUpdateRemovesStaleSkill(t *testing.T) {
@@ -753,24 +627,16 @@ func TestUpdateRemovesStaleSkill(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 
-	if err := run([]string{"update", "--source", dir}); err != nil {
-		t.Fatalf("first update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir}))
 	path := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("skill not written: %v", err)
-	}
+	_, err := os.Stat(path)
+	require.NoError(t, err)
 
-	if err := os.RemoveAll(filepath.Join(dir, "skills")); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.RemoveAll(filepath.Join(dir, "skills")))
 
-	if err := run([]string{"update", "--source", dir}); err != nil {
-		t.Fatalf("second update: %v", err)
-	}
-	if _, err := os.Stat(path); err == nil {
-		t.Fatal("stale skill still present after the source stopped listing it")
-	}
+	require.NoError(t, run([]string{"update", "--source", dir}))
+	_, err = os.Stat(path)
+	require.Error(t, err)
 }
 
 func TestUpdateRemovesStaleAgent(t *testing.T) {
@@ -778,24 +644,16 @@ func TestUpdateRemovesStaleAgent(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
-	if err := run([]string{"update", "--source", dir, "--target", "claude"}); err != nil {
-		t.Fatalf("first update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir, "--target", "claude"}))
 	path := filepath.Join(".claude", "agents", "prose-editor.md")
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("agent not written: %v", err)
-	}
+	_, err := os.Stat(path)
+	require.NoError(t, err)
 
-	if err := os.RemoveAll(filepath.Join(dir, "agents")); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.RemoveAll(filepath.Join(dir, "agents")))
 
-	if err := run([]string{"update", "--source", dir, "--target", "claude"}); err != nil {
-		t.Fatalf("second update: %v", err)
-	}
-	if _, err := os.Stat(path); err == nil {
-		t.Fatal("stale agent still present after the source stopped listing it")
-	}
+	require.NoError(t, run([]string{"update", "--source", dir, "--target", "claude"}))
+	_, err = os.Stat(path)
+	require.Error(t, err)
 }
 
 func TestUpdateAllWritesDocs(t *testing.T) {
@@ -805,18 +663,15 @@ func TestUpdateAllWritesDocs(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
 
-	if err := run([]string{"update", "--source", dir}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir}))
 
 	for _, path := range []string{
 		filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"),
 		filepath.Join(".opencode", "agents", "code-architect.md"),
 		filepath.Join("docs", "zpecs", "prose.md"),
 	} {
-		if _, err := os.Stat(path); err != nil {
-			t.Fatalf("%s not written: %v", path, err)
-		}
+		_, err := os.Stat(path)
+		require.NoError(t, err)
 	}
 }
 
@@ -826,16 +681,12 @@ func TestUpdateAllWritesDocsToTheTargetItNames(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
 
-	if err := run([]string{"update", "--source", dir, "--target", "claude"}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir, "--target", "claude"}))
 
-	if _, err := os.Stat(filepath.Join(".claude", "agents", "code-architect.md")); err != nil {
-		t.Fatalf("claude agent not written: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join("docs", "zpecs", "prose.md")); err != nil {
-		t.Fatalf("doc not written: %v", err)
-	}
+	_, err := os.Stat(filepath.Join(".claude", "agents", "code-architect.md"))
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join("docs", "zpecs", "prose.md"))
+	require.NoError(t, err)
 }
 
 func TestUpdateDocsWritesFromSource(t *testing.T) {
@@ -843,24 +694,16 @@ func TestUpdateDocsWritesFromSource(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
-	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
 
 	path := filepath.Join("docs", "zpecs", "architecture.md")
 	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("doc not written: %v", err)
-	}
-	if string(content) != "# Architecture\n" {
-		t.Fatalf("doc content = %q, want %q", content, "# Architecture\n")
-	}
-	if _, err := os.Stat(filepath.Join(".opencode")); err == nil {
-		t.Fatal("update docs touched the opencode target")
-	}
-	if _, err := os.Stat(filepath.Join(".claude")); err == nil {
-		t.Fatal("update docs touched the claude target")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "# Architecture\n", string(content))
+	_, err = os.Stat(filepath.Join(".opencode"))
+	require.Error(t, err)
+	_, err = os.Stat(filepath.Join(".claude"))
+	require.Error(t, err)
 }
 
 func TestUpdateDocsIgnoresTarget(t *testing.T) {
@@ -868,24 +711,16 @@ func TestUpdateDocsIgnoresTarget(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
 
-	if err := run([]string{"update", "docs", "--source", dir, "--target", "claude"}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "docs", "--source", dir, "--target", "claude"}))
 
 	path := filepath.Join("docs", "zpecs", "prose.md")
 	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("doc not written: %v", err)
-	}
-	if string(content) != "# Prose guidelines\n" {
-		t.Fatalf("doc content = %q, want %q", content, "# Prose guidelines\n")
-	}
-	if _, err := os.Stat(filepath.Join(".claude")); err == nil {
-		t.Fatal("update docs wrote to the claude target")
-	}
-	if _, err := os.Stat(filepath.Join(".opencode")); err == nil {
-		t.Fatal("update docs wrote to the opencode target")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "# Prose guidelines\n", string(content))
+	_, err = os.Stat(filepath.Join(".claude"))
+	require.Error(t, err)
+	_, err = os.Stat(filepath.Join(".opencode"))
+	require.Error(t, err)
 }
 
 func TestUpdateDocsLeavesForeignFileAlone(t *testing.T) {
@@ -894,24 +729,14 @@ func TestUpdateDocsLeavesForeignFileAlone(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
 	path := filepath.Join("docs", "zpecs", "prose.md")
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte("manual content\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte("manual content\n"), 0o644))
 
-	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
 
 	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("foreign file: %v", err)
-	}
-	if string(content) != "manual content\n" {
-		t.Fatalf("foreign file changed to %q", content)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "manual content\n", string(content))
 }
 
 func TestUpdateDocsReplacesOwned(t *testing.T) {
@@ -919,22 +744,14 @@ func TestUpdateDocsReplacesOwned(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
-	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
-		t.Fatalf("first update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
 
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture, second\n")
-	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
-		t.Fatalf("second update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
 
 	content, err := os.ReadFile(filepath.Join("docs", "zpecs", "architecture.md"))
-	if err != nil {
-		t.Fatalf("owned file: %v", err)
-	}
-	if !strings.Contains(string(content), "second") {
-		t.Fatalf("owned file not replaced: %q", content)
-	}
+	require.NoError(t, err)
+	require.Contains(t, string(content), "second")
 }
 
 func TestUpdateDocsRemovesStale(t *testing.T) {
@@ -942,24 +759,16 @@ func TestUpdateDocsRemovesStale(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
-	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
-		t.Fatalf("first update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
 	path := filepath.Join("docs", "zpecs", "architecture.md")
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("doc not written: %v", err)
-	}
+	_, err := os.Stat(path)
+	require.NoError(t, err)
 
-	if err := os.RemoveAll(filepath.Join(dir, "docs")); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.RemoveAll(filepath.Join(dir, "docs")))
 
-	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
-		t.Fatalf("second update: %v", err)
-	}
-	if _, err := os.Stat(path); err == nil {
-		t.Fatal("stale doc still present after the source stopped listing it")
-	}
+	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
+	_, err = os.Stat(path)
+	require.Error(t, err)
 }
 
 func TestUpdateDocsWritesToRepositoryRoot(t *testing.T) {
@@ -968,22 +777,16 @@ func TestUpdateDocsWritesToRepositoryRoot(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
 	work := filepath.Join(root, "nested", "deep")
-	if err := os.MkdirAll(work, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(work, 0o755))
 	t.Chdir(work)
 
-	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
-		t.Fatalf("update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
 
 	path := filepath.Join(root, "docs", "zpecs", "architecture.md")
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("doc not written at the repository root: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(work, "docs", "zpecs", "architecture.md")); err == nil {
-		t.Fatal("doc written in the working subdirectory")
-	}
+	_, err := os.Stat(path)
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(work, "docs", "zpecs", "architecture.md"))
+	require.Error(t, err)
 }
 
 func TestUpdateDocsErrorsOutsideRepository(t *testing.T) {
@@ -992,12 +795,9 @@ func TestUpdateDocsErrorsOutsideRepository(t *testing.T) {
 
 	t.Chdir(t.TempDir())
 	err := run([]string{"update", "docs", "--source", dir})
-	if err == nil {
-		t.Fatal("expected update outside a repository to error")
-	}
-	if _, statErr := os.Stat(filepath.Join("docs", "zpecs", "architecture.md")); statErr == nil {
-		t.Fatal("update outside a repository wrote a file")
-	}
+	require.Error(t, err)
+	_, statErr := os.Stat(filepath.Join("docs", "zpecs", "architecture.md"))
+	require.Error(t, statErr)
 }
 
 func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
@@ -1006,31 +806,21 @@ func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
 
-	if err := run([]string{"update", "--source", dir}); err != nil {
-		t.Fatalf("first update: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "--source", dir}))
 	skillPath := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
 	agentPath := filepath.Join(".opencode", "agents", "code-architect.md")
-	if _, err := os.Stat(skillPath); err != nil {
-		t.Fatalf("skill not written: %v", err)
-	}
-	if _, err := os.Stat(agentPath); err != nil {
-		t.Fatalf("agent not written: %v", err)
-	}
+	_, err := os.Stat(skillPath)
+	require.NoError(t, err)
+	_, err = os.Stat(agentPath)
+	require.NoError(t, err)
 
-	if err := os.RemoveAll(filepath.Join(dir, "skills")); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.RemoveAll(filepath.Join(dir, "skills")))
 
-	if err := run([]string{"update", "skills", "--source", dir}); err != nil {
-		t.Fatalf("update skills: %v", err)
-	}
-	if _, err := os.Stat(skillPath); err == nil {
-		t.Fatal("stale skill still present")
-	}
-	if _, err := os.Stat(agentPath); err != nil {
-		t.Fatalf("agent removed by update skills: %v", err)
-	}
+	require.NoError(t, run([]string{"update", "skills", "--source", dir}))
+	_, err = os.Stat(skillPath)
+	require.Error(t, err)
+	_, err = os.Stat(agentPath)
+	require.NoError(t, err)
 }
 
 func TestBinaryRemovesStaleSkill(t *testing.T) {
@@ -1041,105 +831,70 @@ func TestBinaryRemovesStaleSkill(t *testing.T) {
 	work := gitRepo(t)
 	cmd := exec.Command(binary, "update", "--source", dir)
 	cmd.Dir = work
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("first update failed: %v\n%s", err, out)
-	}
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, "first update failed\n%s", out)
 	path := filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("skill not written: %v", err)
-	}
+	_, err = os.Stat(path)
+	require.NoError(t, err)
 
-	if err := os.RemoveAll(filepath.Join(dir, "skills")); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.RemoveAll(filepath.Join(dir, "skills")))
 
 	cmd = exec.Command(binary, "update", "--source", dir)
 	cmd.Dir = work
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("second update failed: %v\n%s", err, out)
-	}
-	if _, err := os.Stat(path); err == nil {
-		t.Fatal("stale skill still present after the binary ran")
-	}
+	out, err = cmd.CombinedOutput()
+	require.NoError(t, err, "second update failed\n%s", out)
+	_, err = os.Stat(path)
+	require.Error(t, err)
 }
 
 func TestConvertPrintsTheSpecAsJSON(t *testing.T) {
 	path := filepath.Join("..", "..", "internal", "spec", "testdata", "convert.md")
 
 	stdout := captureStdout(t)
-	if err := run([]string{"convert", path}); err != nil {
-		t.Fatalf("convert: %v", err)
-	}
+	require.NoError(t, run([]string{"convert", path}))
 	out := stdout()
 
 	var doc spec.Document
-	if err := json.Unmarshal(out, &doc); err != nil {
-		t.Fatalf("convert output is not one JSON object: %v\n%s", err, out)
-	}
-	if doc.Title == "" {
-		t.Fatal("title is empty")
-	}
-	if doc.Purpose == "" {
-		t.Fatal("purpose is empty")
-	}
-	if len(doc.Requirements) == 0 {
-		t.Fatal("no requirements")
-	}
+	require.NoError(t, json.Unmarshal(out, &doc), "convert output is not one JSON object\n%s", out)
+	require.NotEmpty(t, doc.Title)
+	require.NotEmpty(t, doc.Purpose)
+	require.NotEmpty(t, doc.Requirements)
 }
 
 func TestConvertErrorsOnMissingFile(t *testing.T) {
 	stdout := captureStdout(t)
 	err := run([]string{"convert", filepath.Join(t.TempDir(), "missing.md")})
-	if err == nil {
-		t.Fatal("convert on a missing file should error")
-	}
-	if out := stdout(); len(out) != 0 {
-		t.Fatalf("convert printed %q on a missing file", out)
-	}
+	require.Error(t, err)
+	out := stdout()
+	require.Empty(t, out)
 }
 
 func TestConvertErrorsOnFileWithoutTopLevelHeading(t *testing.T) {
 	path := filepath.Join("..", "..", "internal", "spec", "testdata", "no-title.md")
 
-	if err := run([]string{"convert", path}); err == nil {
-		t.Fatal("convert on a file without a top-level heading should error")
-	}
+	require.Error(t, run([]string{"convert", path}))
 }
 
 func TestConvertErrorsOnRequirementWithoutName(t *testing.T) {
 	path := filepath.Join("..", "..", "internal", "spec", "testdata", "requirement-without-name.md")
 
-	if err := run([]string{"convert", path}); err == nil {
-		t.Fatal("convert on a requirement without a name should error")
-	}
+	require.Error(t, run([]string{"convert", path}))
 }
 
 func TestBinaryConvertPrintsTheSpecAsJSON(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	path, err := filepath.Abs(filepath.Join("..", "..", "internal", "spec", "testdata", "convert.md"))
-	if err != nil {
-		t.Fatalf("filepath.Abs: %v", err)
-	}
+	require.NoError(t, err)
 
 	cmd := exec.Command(binary, "convert", path)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("zpecs convert failed: %v\n%s", err, out)
-	}
+	require.NoError(t, err, "zpecs convert failed\n%s", out)
 
 	var doc spec.Document
-	if err := json.Unmarshal(out, &doc); err != nil {
-		t.Fatalf("convert output is not one JSON object: %v\n%s", err, out)
-	}
-	if doc.Title == "" {
-		t.Fatal("title is empty")
-	}
-	if doc.Purpose == "" {
-		t.Fatal("purpose is empty")
-	}
-	if len(doc.Requirements) == 0 {
-		t.Fatal("no requirements")
-	}
+	require.NoError(t, json.Unmarshal(out, &doc), "convert output is not one JSON object\n%s", out)
+	require.NotEmpty(t, doc.Title)
+	require.NotEmpty(t, doc.Purpose)
+	require.NotEmpty(t, doc.Requirements)
 }
 
 // captureStdout redirects os.Stdout to a pipe. The returned func reads
@@ -1162,9 +917,7 @@ func captureStderr(t *testing.T) func() []byte {
 func capture(t *testing.T, old *os.File, set func(*os.File)) func() []byte {
 	t.Helper()
 	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	set(w)
 	t.Cleanup(func() {
 		set(old)
@@ -1175,9 +928,7 @@ func capture(t *testing.T, old *os.File, set func(*os.File)) func() []byte {
 		t.Helper()
 		_ = w.Close()
 		out, err := io.ReadAll(r)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		return out
 	}
 }
