@@ -1,0 +1,8 @@
+- Split the `fromAST` walk in internal/spec/spec.go so heading handling and content handling each live in their own method and the walk loop stays shallow. Remove the matching plan from refactoring.md
+- Drop the empty-target case in `report.Summary` and its test, since every caller passes a target. Remove the matching plan from refactoring.md
+- Make `targetdir.Write` return only an error and always record the path it writes in `owned`, updating the tests that assert on the dropped bool. Remove the matching plan from refactoring.md
+- State the legacy-manifest rule once in internal/targetdir/targetdir.go on the `known` field and shorten the other four comments. Remove the matching plan from refactoring.md
+- Remove the `len(lines) == 0` guard in `frontmatter.parse`, which can never fire. Remove the matching plan from refactoring.md
+- Move the `"://"` URL check out of `resolveSource` in cmd/zpecs/main.go into a helper in internal/clone, keeping main.go pure delegation. Remove the matching plan from refactoring.md
+- Replace the `kindName` and `parseKind` switches in internal/targetdir with one map and two lookups. Remove the matching plan from refactoring.md
+- Extract the repeated temp-git-repo fixtures in cmd and internal tests into a shared internal/testutil package. Remove the matching plan from refactoring.md
