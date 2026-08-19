@@ -54,6 +54,18 @@ func TestReadReadsInlineTools(t *testing.T) {
 	}
 }
 
+func TestReadReadsMode(t *testing.T) {
+	path := write(t, "---\nname: code-architect\nmode: primary\n---\n\nPlan the work.\n")
+
+	got, err := Read(path)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if got.Fields.Mode != "primary" {
+		t.Fatalf("Mode = %q, want %q", got.Fields.Mode, "primary")
+	}
+}
+
 func TestReadYieldsZeroFieldsWithoutFrontmatter(t *testing.T) {
 	path := write(t, "# Just a body\n")
 

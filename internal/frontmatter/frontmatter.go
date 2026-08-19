@@ -14,6 +14,7 @@ type Fields struct {
 	Name        string   `yaml:"name"`
 	Description string   `yaml:"description"`
 	Tools       []string `yaml:"tools"`
+	Mode        string   `yaml:"mode"`
 }
 
 // Content holds one definition's fields and body.

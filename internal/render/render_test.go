@@ -66,20 +66,47 @@ func TestClaudeAgentOmitsToolsWhenEmpty(t *testing.T) {
 	}
 }
 
-func TestOpencodeAgentUsesSubagentMode(t *testing.T) {
+func TestOpencodeAgentDefaultsToSubagentMode(t *testing.T) {
 	fields := frontmatter.Fields{Name: "prose-editor"}
 
-	got := OpencodeAgent(fields, "Review prose.")
+	got, err := OpencodeAgent(fields, "Review prose.")
+	if err != nil {
+		t.Fatalf("OpencodeAgent: %v", err)
+	}
 
 	if !strings.Contains(got, "mode: subagent") {
 		t.Fatalf("OpencodeAgent rendered %q without mode: subagent", got)
 	}
 }
 
+func TestOpencodeAgentUsesDefinitionMode(t *testing.T) {
+	fields := frontmatter.Fields{Name: "code-architect", Mode: "primary"}
+
+	got, err := OpencodeAgent(fields, "Plan the work.")
+	if err != nil {
+		t.Fatalf("OpencodeAgent: %v", err)
+	}
+
+	if !strings.Contains(got, "mode: primary") {
+		t.Fatalf("OpencodeAgent rendered %q without mode: primary", got)
+	}
+}
+
+func TestOpencodeAgentRejectsUnknownMode(t *testing.T) {
+	fields := frontmatter.Fields{Name: "prose-editor", Mode: "banana"}
+
+	if _, err := OpencodeAgent(fields, "Review prose."); err == nil {
+		t.Fatal("OpencodeAgent accepted an unknown mode")
+	}
+}
+
 func TestOpencodeAgentDropsName(t *testing.T) {
 	fields := frontmatter.Fields{Name: "prose-editor"}
 
-	got := OpencodeAgent(fields, "Review prose.")
+	got, err := OpencodeAgent(fields, "Review prose.")
+	if err != nil {
+		t.Fatalf("OpencodeAgent: %v", err)
+	}
 
 	if strings.Contains(got, "name:") {
 		t.Fatalf("OpencodeAgent rendered %q with a name field", got)
@@ -89,7 +116,10 @@ func TestOpencodeAgentDropsName(t *testing.T) {
 func TestOpencodeAgentRendersModeDescriptionAndBody(t *testing.T) {
 	fields := frontmatter.Fields{Description: "Reviews prose against the guidelines."}
 
-	got := OpencodeAgent(fields, "Review prose against the guidelines.")
+	got, err := OpencodeAgent(fields, "Review prose against the guidelines.")
+	if err != nil {
+		t.Fatalf("OpencodeAgent: %v", err)
+	}
 	want := "---\nmode: subagent\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
 
 	if got != want {
@@ -100,7 +130,10 @@ func TestOpencodeAgentRendersModeDescriptionAndBody(t *testing.T) {
 func TestOpencodeAgentDeniesEveryOtherTool(t *testing.T) {
 	fields := frontmatter.Fields{Tools: []string{"read", "edit"}}
 
-	got := OpencodeAgent(fields, "Review prose.")
+	got, err := OpencodeAgent(fields, "Review prose.")
+	if err != nil {
+		t.Fatalf("OpencodeAgent: %v", err)
+	}
 
 	for _, denied := range []string{"bash", "write", "grep", "glob"} {
 		if !strings.Contains(got, denied+": deny") {
@@ -112,7 +145,10 @@ func TestOpencodeAgentDeniesEveryOtherTool(t *testing.T) {
 func TestOpencodeAgentDoesNotDenyListedTools(t *testing.T) {
 	fields := frontmatter.Fields{Tools: []string{"read", "edit"}}
 
-	got := OpencodeAgent(fields, "Review prose.")
+	got, err := OpencodeAgent(fields, "Review prose.")
+	if err != nil {
+		t.Fatalf("OpencodeAgent: %v", err)
+	}
 
 	if strings.Contains(got, "read: deny") || strings.Contains(got, "edit: deny") {
 		t.Fatalf("OpencodeAgent rendered %q denying a listed tool", got)
@@ -125,7 +161,10 @@ func TestOpencodeAgentRendersDenyRulesAfterDescription(t *testing.T) {
 		Tools:       []string{"read", "edit"},
 	}
 
-	got := OpencodeAgent(fields, "Review prose.")
+	got, err := OpencodeAgent(fields, "Review prose.")
+	if err != nil {
+		t.Fatalf("OpencodeAgent: %v", err)
+	}
 	want := "---\nmode: subagent\ndescription: Reviews prose.\npermission:\n" +
 		"  apply_patch: deny\n  bash: deny\n  glob: deny\n  grep: deny\n" +
 		"  lsp: deny\n  question: deny\n  skill: deny\n  todowrite: deny\n" +
@@ -140,7 +179,10 @@ func TestOpencodeAgentRendersDenyRulesAfterDescription(t *testing.T) {
 func TestOpencodeAgentOmitsDenyRulesWhenToolsEmpty(t *testing.T) {
 	fields := frontmatter.Fields{Name: "prose-editor"}
 
-	got := OpencodeAgent(fields, "Review prose.")
+	got, err := OpencodeAgent(fields, "Review prose.")
+	if err != nil {
+		t.Fatalf("OpencodeAgent: %v", err)
+	}
 
 	if strings.Contains(got, "permission:") {
 		t.Fatalf("OpencodeAgent rendered %q with deny rules for an empty tools list", got)

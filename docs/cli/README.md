@@ -47,6 +47,6 @@ It creates missing directories and replaces the files it wrote, leaving other fi
 
 Both targets read the same frontmatter fields but map them differently:
 
-- claude agents use `name`
-- opencode agents use `mode: subagent` and drop `name`
-- the `tools` list maps to `tools` in claude agents, and to deny rules for every tool not in the list in opencode agents
+- claude agents use `name` and drop `mode`
+- opencode agents use `mode` and drop `name`, defaulting to `subagent` when the definition omits it
+- the `tools` list maps to `tools` in claude agents. In opencode agents it maps to deny rules for every tool not in the list

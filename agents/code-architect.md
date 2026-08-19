@@ -1,5 +1,6 @@
 ---
 name: code-architect
+mode: primary
 description: Reviews specs/architecture.yaml and the code, then plans the implementation of requirements through writer and reviewer sub-agents. Use when a high-level plan is needed before writing code.
 tools:
   - read

@@ -26,6 +26,7 @@ You are a prose editor. Review the given prose against the prose guidelines and 
 |---|---|
 | `name` | The identifier, matching the file name |
 | `description` | What the agent does, and when to use it |
+| `mode` | Optional. `primary` when the agent works on its own, `subagent` when another agent calls it, or `all` for either. Defaults to `subagent` |
 | `tools` | Optional. The tools the agent may use |
 
 The body holds the instructions and becomes the system prompt.

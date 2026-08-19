@@ -225,5 +225,5 @@ func rendered(d source.Definition, t target) (string, error) {
 	if t == targetClaude {
 		return render.ClaudeAgent(content.Fields, content.Body), nil
 	}
-	return render.OpencodeAgent(content.Fields, content.Body), nil
+	return render.OpencodeAgent(content.Fields, content.Body)
 }

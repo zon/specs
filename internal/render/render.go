@@ -26,12 +26,19 @@ func ClaudeAgent(fields frontmatter.Fields, body string) string {
 	return out.String()
 }
 
-// OpencodeAgent uses subagent mode, drops the name, and denies every tool
-// the definition does not list.
-func OpencodeAgent(fields frontmatter.Fields, body string) string {
+// OpencodeAgent writes the definition's mode, defaulting to subagent,
+// drops the name, and denies every tool the definition does not list.
+func OpencodeAgent(fields frontmatter.Fields, body string) (string, error) {
+	mode := fields.Mode
+	if mode == "" {
+		mode = "subagent"
+	}
+	if !validModes[mode] {
+		return "", fmt.Errorf("unknown mode %q", mode)
+	}
 	var out strings.Builder
 	out.WriteString("---\n")
-	out.WriteString("mode: subagent\n")
+	fmt.Fprintf(&out, "mode: %s\n", mode)
 	fmt.Fprintf(&out, "description: %s\n", fields.Description)
 	if len(fields.Tools) > 0 {
 		denied := deniedTools(fields.Tools)
@@ -43,7 +50,14 @@ func OpencodeAgent(fields frontmatter.Fields, body string) string {
 	out.WriteString("---\n\n")
 	out.WriteString(body)
 	out.WriteString("\n")
-	return out.String()
+	return out.String(), nil
+}
+
+// validModes are the mode values an opencode agent may take.
+var validModes = map[string]bool{
+	"primary":  true,
+	"subagent": true,
+	"all":      true,
 }
 
 // opencodeTools are the tools an opencode agent can use.
