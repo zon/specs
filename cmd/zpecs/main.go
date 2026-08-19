@@ -84,13 +84,13 @@ type options struct {
 // cli is the kong grammar for the whole application.
 type cli struct {
 	Version kong.VersionFlag `name:"version" help:"Print version information and quit"`
-	Update  updateCmd        `cmd:"" help:"renders skills and agents, or syncs docs"`
+	Update  updateCmd        `cmd:"" help:"renders skills, agents, and docs"`
 	Convert convertCmd       `cmd:"" help:"turns a spec markdown file into JSON"`
 }
 
 // updateCmd is the kong grammar for `zpecs update`.
 type updateCmd struct {
-	Scope  scope  `arg:"" default:"all" help:"render skills or agents, or sync docs"`
+	Scope  scope  `arg:"" default:"all" help:"render skills, agents, and docs, or one of them"`
 	Source string `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
 	Target target `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
 }
@@ -175,34 +175,46 @@ func update(opts options) error {
 		return err
 	}
 	defer cleanup()
-	defs, err := readDefinitions(opts.scope, sourceDir)
-	if err != nil {
+	if err := updateScope(root, sourceDir, sourceLabel, opts.scope, string(opts.target)); err != nil {
 		return err
 	}
-	target := opts.target
-	if opts.scope == scopeDocs {
+	if opts.scope == scopeAll {
+		return updateScope(root, sourceDir, sourceLabel, scopeDocs, "")
+	}
+	return nil
+}
+
+// updateScope renders the definitions one scope selects into their target
+// under root and reports the run. Docs have no target: they always write
+// to docs/zpecs/.
+func updateScope(root, sourceDir, sourceLabel string, s scope, target string) error {
+	if s == scopeDocs {
 		target = targetdir.Docs
 	}
-	owned, err := targetdir.Owned(root, string(target))
+	defs, err := readDefinitions(s, sourceDir)
 	if err != nil {
 		return err
 	}
-	if _, err := targetdir.RemoveStale(root, string(target), owned, defs, scopeKinds(opts.scope)...); err != nil {
+	owned, err := targetdir.Owned(root, target)
+	if err != nil {
+		return err
+	}
+	if _, err := targetdir.RemoveStale(root, target, owned, defs, scopeKinds(s)...); err != nil {
 		return fmt.Errorf("removing stale definitions: %w", err)
 	}
-	if err := targetdir.WriteAll(root, string(target), defs, func(d source.Definition) (string, error) {
-		return render.Definition(d, string(opts.target))
+	if err := targetdir.WriteAll(root, target, defs, func(d source.Definition) (string, error) {
+		return render.Definition(d, target)
 	}, owned); err != nil {
 		return err
 	}
-	if err := targetdir.SaveOwned(root, string(target), owned); err != nil {
+	if err := targetdir.SaveOwned(root, target, owned); err != nil {
 		return err
 	}
-	if opts.scope == scopeDocs {
-		report.Summary(os.Stdout, opts.scope.String(), "", sourceLabel, len(defs))
-	} else {
-		report.Summary(os.Stdout, opts.scope.String(), string(opts.target), sourceLabel, len(defs))
+	if s == scopeDocs {
+		report.Summary(os.Stdout, s.String(), "", sourceLabel, len(defs))
+		return nil
 	}
+	report.Summary(os.Stdout, s.String(), target, sourceLabel, len(defs))
 	return nil
 }
 

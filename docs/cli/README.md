@@ -8,12 +8,12 @@ It is a Go program that parses arguments with [kong](https://github.com/alecthom
 
 One command takes an optional scope:
 
-- `update` — render skill and agent definitions
+- `update` — render skill and agent definitions, and sync the standards docs
 - `update skills` — render skill definitions only
 - `update agents` — render agent definitions only
-- `update docs` — sync the standards docs from the source into the target's `docs/zpecs/`
+- `update docs` — sync the standards docs only
 
-All four take the same flags, but `update docs` ignores `--target`:
+All four take the same flags. Docs always go to `docs/zpecs/`, so `--target` only picks where skills and agents go:
 
 | Flag | Meaning |
 |---|---|

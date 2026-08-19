@@ -56,16 +56,18 @@ Build and install the CLI from source:
 go install ./cmd/zpecs
 ```
 
-Run the [CLI](docs/cli/README.md) inside the target repository to render the skill and agent definitions into its `.claude` or `.opencode` directory:
+Run the [CLI](docs/cli/README.md) inside the target repository:
 
 ```bash
 zpecs update --target claude
 zpecs update --target opencode
 ```
 
-Sync the standards docs into the target's `docs/zpecs/`:
+To touch one area only, pass a scope:
 
 ```bash
+zpecs update skills
+zpecs update agents
 zpecs update docs
 ```
 

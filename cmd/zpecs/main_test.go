@@ -472,10 +472,12 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 		scope     string
 		wantSkill bool
 		wantAgent bool
+		wantDoc   bool
 	}{
-		{name: "update renders skills and agents", wantSkill: true, wantAgent: true},
+		{name: "update renders skills, agents, and docs", wantSkill: true, wantAgent: true, wantDoc: true},
 		{name: "update skills renders skills only", scope: "skills", wantSkill: true},
 		{name: "update agents renders agents only", scope: "agents", wantAgent: true},
+		{name: "update docs renders docs only", scope: "docs", wantDoc: true},
 	}
 
 	for _, tc := range cases {
@@ -484,6 +486,7 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 			dir := t.TempDir()
 			writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 			writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
+			writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
 
 			args := []string{"update"}
 			if tc.scope != "" {
@@ -496,6 +499,7 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 
 			skillPath := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
 			agentPath := filepath.Join(".opencode", "agents", "code-architect.md")
+			docPath := filepath.Join("docs", "zpecs", "prose.md")
 			if tc.wantSkill {
 				if _, err := os.Stat(skillPath); err != nil {
 					t.Fatalf("skill not rendered at %s: %v", skillPath, err)
@@ -509,6 +513,13 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 				}
 			} else if _, err := os.Stat(agentPath); err == nil {
 				t.Fatalf("agent rendered at %s but the command does not name it", agentPath)
+			}
+			if tc.wantDoc {
+				if _, err := os.Stat(docPath); err != nil {
+					t.Fatalf("doc not rendered at %s: %v", docPath, err)
+				}
+			} else if _, err := os.Stat(docPath); err == nil {
+				t.Fatalf("doc rendered at %s but the command does not name it", docPath)
 			}
 		})
 	}
@@ -784,6 +795,46 @@ func TestUpdateRemovesStaleAgent(t *testing.T) {
 	}
 	if _, err := os.Stat(path); err == nil {
 		t.Fatal("stale agent still present after the source stopped listing it")
+	}
+}
+
+func TestUpdateAllWritesDocs(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
+
+	if err := run([]string{"update", "--source", dir}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	for _, path := range []string{
+		filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"),
+		filepath.Join(".opencode", "agents", "code-architect.md"),
+		filepath.Join("docs", "zpecs", "prose.md"),
+	} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("%s not written: %v", path, err)
+		}
+	}
+}
+
+func TestUpdateAllWritesDocsToTheTargetItNames(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
+
+	if err := run([]string{"update", "--source", dir, "--target", "claude"}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(".claude", "agents", "code-architect.md")); err != nil {
+		t.Fatalf("claude agent not written: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join("docs", "zpecs", "prose.md")); err != nil {
+		t.Fatalf("doc not written: %v", err)
 	}
 }
 

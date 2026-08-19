@@ -67,7 +67,8 @@ The system SHALL render what each command names.
 #### Scenario: Full update
 - GIVEN `update`
 - WHEN the system runs
-- THEN it renders skills and agents
+- THEN it renders skills and agents for the target
+- AND it syncs docs
 
 #### Scenario: Skills only
 - GIVEN `update skills`
