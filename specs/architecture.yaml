@@ -28,3 +28,6 @@
 
 - path: internal/spec
   description: Parses a spec markdown file into a JSON document.
+
+- path: internal/testutil
+  description: Builds temp git repositories for tests.

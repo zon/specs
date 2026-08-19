@@ -27,7 +27,3 @@
 ## Replace the kindName and parseKind switches with a map
 
 `internal/targetdir/targetdir.go:172` `kindName` and `parseKind` are mirror switches over the same words. Replace both with one map and two lookups.
-
-## Share the git fixture helpers
-
-`cmd/zpecs/main_test.go:224`, `internal/clone/clone_test.go:12`, and `internal/repo/repo_test.go:12` each build a temp git repo. Extract a `testutil` package with `GitRepo` and `RunGit` helpers.

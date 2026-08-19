@@ -6,25 +6,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/zon/specs/internal/testutil"
 )
 
-// gitRoot returns a temp dir that looks like a git repository root.
-func gitRoot(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
-	return dir
-}
-
 func TestRootAtRepositoryRoot(t *testing.T) {
-	root := gitRoot(t)
+	root := testutil.GitRepo(t, nil)
 	got, err := Root(root)
 	require.NoError(t, err)
 	require.Equal(t, root, got)
 }
 
 func TestRootFindsRepositoryFromSubdirectory(t *testing.T) {
-	root := gitRoot(t)
+	root := testutil.GitRepo(t, nil)
 	sub := filepath.Join(root, "docs", "specs")
 	require.NoError(t, os.MkdirAll(sub, 0o755))
 	got, err := Root(sub)
