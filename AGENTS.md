@@ -2,9 +2,13 @@
 
 This repository holds the spec formats and standards that projects install, and the Go source of the zpecs CLI that installs them.
 
+## Code
+
+Read the [code guidelines](docs/zpecs/code.md) before writing code.
+
 ## Prose
 
-Read [prose guidelines](docs/zpecs/prose.md) before writing any kind of prose. This includes docs, code comments, git descriptions, or agent communication.
+Read the [prose guidelines](docs/zpecs/prose.md) before writing any kind of prose. This includes docs, code comments, git descriptions, and agent communication.
 
 After writing or editing prose, invoke the `prose-editor` subagent to review it. Pass the files you touched as the scope.
 
