@@ -44,7 +44,7 @@ The commands must run inside a git repository, locate the repo root, and write t
 - `opencode` — `.opencode/skills/<name>/SKILL.md` and `.opencode/agents/<name>.md`
 - `docs` — `docs/zpecs/<name>.md`. Docs are target-independent, so `--target` does not apply to `update docs`
 
-On a repo whose `docs/zpecs/` files were placed by copying (no `.zpecs` manifest), the first `update docs` run leaves those files alone. It uses the same owned-file semantics as the other targets.
+When a repo's `docs/zpecs/` files came from a copy, with no `.zpecs` manifest, the first `update docs` run leaves them alone. It uses the same owned-file semantics as the other targets.
 
 It creates missing directories and replaces the files it wrote, leaving other files alone. Stale definitions stop appearing.
 

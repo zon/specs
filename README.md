@@ -63,11 +63,13 @@ zpecs update --target claude
 zpecs update --target opencode
 ```
 
-Sync the standards docs into the target's `docs/zpecs/`, then point its `AGENTS.md` at them:
+Sync the standards docs into the target's `docs/zpecs/`:
 
 ```bash
 zpecs update docs
 ```
+
+Then point its `AGENTS.md` at the docs:
 
 ```markdown
 Before writing any code, read [docs/zpecs/architecture.md](docs/zpecs/architecture.md).
