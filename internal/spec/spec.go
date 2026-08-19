@@ -39,14 +39,8 @@ func Read(path string) (Document, error) {
 	if err != nil {
 		return Document{}, err
 	}
-	return fromGenericJSON(toGenericJSON(content))
-}
-
-// toGenericJSON parses markdown with goldmark into a generic JSON tree.
-func toGenericJSON(src []byte) genericNode {
-	md := goldmark.New()
-	root := md.Parser().Parse(text.NewReader(src))
-	return convertNode(root, src)
+	root := goldmark.New().Parser().Parse(text.NewReader(content))
+	return fromAST(root, content)
 }
 
 // Write prints doc as one indented JSON object.
@@ -56,94 +50,30 @@ func Write(w io.Writer, doc Document) error {
 	return encoder.Encode(doc)
 }
 
-// genericNode is one node of the generic JSON tree. Containers carry
-// children, headings carry a level, and leaves carry text.
-type genericNode struct {
-	Type     string        `json:"type"`
-	Level    int           `json:"level,omitempty"`
-	Children []genericNode `json:"children,omitempty"`
-	Text     string        `json:"text,omitempty"`
-}
-
-// convertNode maps one AST node to the generic JSON shape.
-func convertNode(n ast.Node, src []byte) genericNode {
-	switch n.Kind() {
-	case ast.KindDocument:
-		return genericNode{Type: "document", Children: convertChildren(n, src)}
-	case ast.KindHeading:
-		return genericNode{Type: "heading", Level: n.(*ast.Heading).Level, Children: convertChildren(n, src)}
-	case ast.KindParagraph:
-		return genericNode{Type: "paragraph", Children: convertChildren(n, src)}
-	case ast.KindTextBlock:
-		return genericNode{Type: "text_block", Children: convertChildren(n, src)}
-	case ast.KindText:
-		t := n.(*ast.Text)
-		value := string(t.Value(src))
-		if t.SoftLineBreak() || t.HardLineBreak() {
-			value += "\n"
-		}
-		return genericNode{Type: "text", Text: value}
-	case ast.KindCodeSpan:
-		// CodeSpan carries no opening and closing marker lengths, so
-		// single backticks are the closest faithful rendering.
-		return genericNode{Type: "code", Text: "`" + string(n.Text(src)) + "`"}
-	case ast.KindList:
-		return genericNode{Type: "list", Children: convertChildren(n, src)}
-	case ast.KindListItem:
-		return genericNode{Type: "list_item", Children: convertChildren(n, src)}
-	case ast.KindEmphasis:
-		if n.(*ast.Emphasis).Level == 2 {
-			return genericNode{Type: "strong", Children: convertChildren(n, src)}
-		}
-		return genericNode{Type: "emph", Children: convertChildren(n, src)}
-	case ast.KindLink:
-		return genericNode{Type: "link", Children: convertChildren(n, src)}
-	default:
-		gn := genericNode{Type: strings.ToLower(n.Kind().String())}
-		if n.HasChildren() {
-			gn.Children = convertChildren(n, src)
-		} else if n.Type() == ast.TypeInline {
-			gn.Text = strings.TrimRight(string(n.Text(src)), "\n")
-		}
-		return gn
-	}
-}
-
-// convertChildren maps the children of an AST node.
-func convertChildren(n ast.Node, src []byte) []genericNode {
-	if n.ChildCount() == 0 {
-		return nil
-	}
-	children := make([]genericNode, 0, n.ChildCount())
-	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
-		children = append(children, convertNode(c, src))
-	}
-	return children
-}
-
-// fromGenericJSON maps a generic JSON tree to a Document.
-func fromGenericJSON(root genericNode) (Document, error) {
+// fromAST walks the markdown AST into a Document. Headings drive the
+// state; prose and lists fill the current section.
+func fromAST(root ast.Node, src []byte) (Document, error) {
 	doc := Document{Requirements: []Requirement{}}
 	current := -1
 	inPurpose := false
 	titleSet := false
-	for _, child := range root.Children {
-		if child.Type != "heading" {
+	for child := root.FirstChild(); child != nil; child = child.NextSibling() {
+		if child.Kind() != ast.KindHeading {
 			switch {
 			case inPurpose:
-				doc.Purpose = joinProse(doc.Purpose, proseBlock(child))
+				doc.Purpose = joinProse(doc.Purpose, proseBlock(child, src))
 			case current >= 0 && len(doc.Requirements[current].Scenarios) > 0:
-				if child.Type == "list" {
+				if child.Kind() == ast.KindList {
 					scenario := &doc.Requirements[current].Scenarios[len(doc.Requirements[current].Scenarios)-1]
-					scenario.Steps = append(scenario.Steps, stepsBlock(child)...)
+					scenario.Steps = append(scenario.Steps, stepsBlock(child, src)...)
 				}
 			case current >= 0:
-				doc.Requirements[current].Body = joinProse(doc.Requirements[current].Body, proseBlock(child))
+				doc.Requirements[current].Body = joinProse(doc.Requirements[current].Body, proseBlock(child, src))
 			}
 			continue
 		}
-		level := child.Level
-		text := renderNode(child)
+		level := child.(*ast.Heading).Level
+		text := renderNode(child, src)
 		switch {
 		case level == 1 && !titleSet:
 			doc.Title = text
@@ -185,11 +115,11 @@ func fromGenericJSON(root genericNode) (Document, error) {
 }
 
 // proseBlock renders one prose block. Only paragraphs carry prose.
-func proseBlock(n genericNode) string {
-	if n.Type != "paragraph" {
+func proseBlock(n ast.Node, src []byte) string {
+	if n.Kind() != ast.KindParagraph {
 		return ""
 	}
-	return strings.TrimSpace(renderNode(n))
+	return strings.TrimSpace(renderNode(n, src))
 }
 
 // joinProse joins a prose block onto an existing section with a blank line.
@@ -205,13 +135,13 @@ func joinProse(prose, block string) string {
 
 // stepsBlock renders a list's items as plain step lines. The list marker
 // is markdown syntax and does not belong in the JSON output.
-func stepsBlock(n genericNode) []string {
+func stepsBlock(n ast.Node, src []byte) []string {
 	steps := []string{}
-	for _, item := range n.Children {
-		if item.Type != "list_item" {
+	for item := n.FirstChild(); item != nil; item = item.NextSibling() {
+		if item.Kind() != ast.KindListItem {
 			continue
 		}
-		line := strings.TrimSpace(renderNode(item))
+		line := strings.TrimSpace(renderNode(item, src))
 		if line != "" {
 			steps = append(steps, line)
 		}
@@ -219,16 +149,41 @@ func stepsBlock(n genericNode) []string {
 	return steps
 }
 
-// renderNode renders a generic node as text. Containers concatenate their
-// children. Strong, emph, and link drop their markers. Code nodes carry
-// their backticks already.
-func renderNode(n genericNode) string {
-	if len(n.Children) == 0 {
-		return n.Text
+// renderNode renders an AST node as text. Containers concatenate their
+// children. Strong, emph, and link drop their markers. Code spans get
+// wrapped in backticks.
+func renderNode(n ast.Node, src []byte) string {
+	switch n.Kind() {
+	case ast.KindText:
+		t := n.(*ast.Text)
+		value := string(t.Value(src))
+		if t.SoftLineBreak() || t.HardLineBreak() {
+			value += "\n"
+		}
+		return value
+	case ast.KindCodeSpan:
+		// CodeSpan carries no opening and closing marker lengths, so
+		// single backticks are the closest faithful rendering.
+		return "`" + string(n.Text(src)) + "`"
+	case ast.KindDocument, ast.KindHeading, ast.KindParagraph, ast.KindTextBlock,
+		ast.KindList, ast.KindListItem, ast.KindEmphasis, ast.KindLink:
+		return joinChildren(n, src)
+	default:
+		if n.HasChildren() {
+			return joinChildren(n, src)
+		}
+		if n.Type() == ast.TypeInline {
+			return strings.TrimRight(string(n.Text(src)), "\n")
+		}
+		return ""
 	}
+}
+
+// joinChildren renders an AST node's children in order.
+func joinChildren(n ast.Node, src []byte) string {
 	var sb strings.Builder
-	for _, child := range n.Children {
-		sb.WriteString(renderNode(child))
+	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
+		sb.WriteString(renderNode(c, src))
 	}
 	return sb.String()
 }

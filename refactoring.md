@@ -1,19 +1,5 @@
 # Refactoring
 
-## Parse specs in one hop
-
-`internal/spec` maps a goldmark AST to a generic JSON tree and then to a
-`Document`. No requirement uses the generic tree. The convert spec asks
-only for a title, a purpose, and requirements.
-
-Map the goldmark AST straight to a `Document`. Delete `genericNode`,
-`toGenericJSON`, `convertNode`, `convertChildren`, and
-`fromGenericJSON`. Build the prose, steps, and heading logic on the AST
-directly. Delete the two tests for the generic tree.
-
-Scope: `internal/spec/spec.go` and `internal/spec/spec_test.go`.
-Verify: `go test ./internal/spec/`.
-
 ## Store the kind in the ownership manifest
 
 The `.zpecs` manifest lists written paths. `RemoveStale` recovers each
