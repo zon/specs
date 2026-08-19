@@ -1,6 +1,7 @@
 package source
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,45 +26,31 @@ type Definition struct {
 	Path string
 }
 
-// ReadLocal reads definitions from a local source that follows the
-// repository layout.
-func ReadLocal(dir string) ([]Definition, error) {
+// ReadKinds reads the listed kinds from a local source, in that order.
+func ReadKinds(kinds []Kind, dir string) ([]Definition, error) {
 	if err := checkDir(dir); err != nil {
 		return nil, err
 	}
-	defs, err := readSkills(dir)
-	if err != nil {
-		return nil, err
+	var defs []Definition
+	for _, kind := range kinds {
+		var got []Definition
+		var err error
+		switch kind {
+		case Skill:
+			got, err = readSkills(dir)
+		case Agent:
+			got, err = readAgents(dir)
+		case Doc:
+			got, err = readDocs(dir)
+		default:
+			return nil, fmt.Errorf("unknown kind %d", kind)
+		}
+		if err != nil {
+			return nil, err
+		}
+		defs = append(defs, got...)
 	}
-	agents, err := readAgents(dir)
-	if err != nil {
-		return nil, err
-	}
-	return append(defs, agents...), nil
-}
-
-// ReadSkills reads skill definitions from a local source.
-func ReadSkills(dir string) ([]Definition, error) {
-	if err := checkDir(dir); err != nil {
-		return nil, err
-	}
-	return readSkills(dir)
-}
-
-// ReadAgents reads agent definitions from a local source.
-func ReadAgents(dir string) ([]Definition, error) {
-	if err := checkDir(dir); err != nil {
-		return nil, err
-	}
-	return readAgents(dir)
-}
-
-// ReadDocs reads doc definitions from a local source.
-func ReadDocs(dir string) ([]Definition, error) {
-	if err := checkDir(dir); err != nil {
-		return nil, err
-	}
-	return readDocs(dir)
+	return defs, nil
 }
 
 func checkDir(dir string) error {

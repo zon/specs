@@ -40,19 +40,6 @@ const (
 	scopeDocs
 )
 
-func (s scope) String() string {
-	switch s {
-	case scopeSkills:
-		return "skills"
-	case scopeAgents:
-		return "agents"
-	case scopeDocs:
-		return "docs"
-	default:
-		return "skills and agents"
-	}
-}
-
 func (s *scope) UnmarshalText(text []byte) error {
 	switch string(text) {
 	case "all":
@@ -80,6 +67,32 @@ type options struct {
 	scope  scope
 	source string
 	target targetName
+}
+
+// pair is one run of the sync pipeline: the name to report, the target
+// to write to, and the kinds it selects.
+type pair struct {
+	name   string
+	target string
+	kinds  []source.Kind
+}
+
+// pairs selects the runs for a scope. Skills and agents write to the
+// command's target. Docs always write to docs/zpecs.
+func pairs(s scope, runner string) []pair {
+	switch s {
+	case scopeSkills:
+		return []pair{{name: "skills", target: runner, kinds: []source.Kind{source.Skill}}}
+	case scopeAgents:
+		return []pair{{name: "agents", target: runner, kinds: []source.Kind{source.Agent}}}
+	case scopeDocs:
+		return []pair{{name: "docs", target: target.Docs, kinds: []source.Kind{source.Doc}}}
+	default:
+		return []pair{
+			{name: "skills and agents", target: runner, kinds: []source.Kind{source.Skill, source.Agent}},
+			{name: "docs", target: target.Docs, kinds: []source.Kind{source.Doc}},
+		}
+	}
 }
 
 // cli is the kong grammar for the whole application.
@@ -138,8 +151,7 @@ func main() {
 	}
 }
 
-// printError writes err to stderr, then the usage text when err is a
-// parse error. Runtime errors get no usage text.
+// printError writes err to stderr, then the usage text for parse errors.
 func printError(err error) {
 	fmt.Fprintln(os.Stderr, "zpecs:", err)
 	var parseErr *kong.ParseError
@@ -176,46 +188,37 @@ func update(opts options) error {
 		return err
 	}
 	defer cleanup()
-	if err := updateScope(root, sourceDir, sourceLabel, opts.scope, string(opts.target)); err != nil {
-		return err
-	}
-	if opts.scope == scopeAll {
-		return updateScope(root, sourceDir, sourceLabel, scopeDocs, "")
+	for _, p := range pairs(opts.scope, string(opts.target)) {
+		if err := updatePair(root, sourceDir, sourceLabel, p); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// updateScope renders the definitions one scope selects into their target
-// under root and reports the run. Docs have no target: they always write
-// to docs/zpecs/.
-func updateScope(root, sourceDir, sourceLabel string, s scope, targetName string) error {
-	if s == scopeDocs {
-		targetName = target.Docs
-	}
-	defs, err := readDefinitions(s, sourceDir)
+// updatePair renders a pair's definitions into its target under root.
+// It then reports the run.
+func updatePair(root, sourceDir, sourceLabel string, p pair) error {
+	defs, err := source.ReadKinds(p.kinds, sourceDir)
 	if err != nil {
 		return err
 	}
-	owned, err := targetdir.Owned(root, targetName)
+	owned, err := targetdir.Owned(root, p.target)
 	if err != nil {
 		return err
 	}
-	if _, err := targetdir.RemoveStale(root, targetName, owned, defs, scopeKinds(s)...); err != nil {
+	if _, err := targetdir.RemoveStale(root, p.target, owned, defs, p.kinds...); err != nil {
 		return fmt.Errorf("removing stale definitions: %w", err)
 	}
-	if err := targetdir.WriteAll(root, targetName, defs, func(d source.Definition) (string, error) {
-		return render.Definition(d, targetName)
+	if err := targetdir.WriteAll(root, p.target, defs, func(d source.Definition) (string, error) {
+		return render.Definition(d, p.target)
 	}, owned); err != nil {
 		return err
 	}
-	if err := targetdir.SaveOwned(root, targetName, owned); err != nil {
+	if err := targetdir.SaveOwned(root, p.target, owned); err != nil {
 		return err
 	}
-	if s == scopeDocs {
-		report.Summary(os.Stdout, s.String(), "", sourceLabel, len(defs))
-		return nil
-	}
-	report.Summary(os.Stdout, s.String(), targetName, sourceLabel, len(defs))
+	report.Summary(os.Stdout, p.name, p.target, sourceLabel, len(defs))
 	return nil
 }
 
@@ -233,32 +236,4 @@ func resolveSource(source string) (dir, label string, cleanup func(), err error)
 		return dir, source, cleanup, nil
 	}
 	return source, source, func() {}, nil
-}
-
-// readDefinitions returns the definitions a scope selects from the source.
-func readDefinitions(s scope, sourceDir string) ([]source.Definition, error) {
-	switch s {
-	case scopeSkills:
-		return source.ReadSkills(sourceDir)
-	case scopeAgents:
-		return source.ReadAgents(sourceDir)
-	case scopeDocs:
-		return source.ReadDocs(sourceDir)
-	default:
-		return source.ReadLocal(sourceDir)
-	}
-}
-
-// scopeKinds returns the definition kinds a scope selects.
-func scopeKinds(s scope) []source.Kind {
-	switch s {
-	case scopeSkills:
-		return []source.Kind{source.Skill}
-	case scopeAgents:
-		return []source.Kind{source.Agent}
-	case scopeDocs:
-		return []source.Kind{source.Doc}
-	default:
-		return []source.Kind{source.Skill, source.Agent}
-	}
 }

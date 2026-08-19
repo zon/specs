@@ -27,218 +27,75 @@ func namesOfKind(defs []Definition, kind Kind) []string {
 	return names
 }
 
-func TestReadLocalFindsSkillAtSkillsNameSKILLMd(t *testing.T) {
+func TestReadKindsReadsListedKindsInOrder(t *testing.T) {
 	dir := t.TempDir()
 	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
+	write(t, filepath.Join(dir, "docs", "zpecs", "architecture.md"), "# architecture\n")
 
-	defs, err := ReadLocal(dir)
+	defs, err := ReadKinds([]Kind{Skill, Agent}, dir)
 	if err != nil {
-		t.Fatalf("ReadLocal: %v", err)
+		t.Fatalf("ReadKinds: %v", err)
 	}
 
 	if got := namesOfKind(defs, Skill); !reflect.DeepEqual(got, []string{"prose-editor"}) {
 		t.Fatalf("skills = %v, want [prose-editor]", got)
 	}
-
-	for _, d := range defs {
-		if d.Kind != Skill {
-			continue
-		}
-		want := filepath.Join(dir, "skills", "prose-editor", "SKILL.md")
-		if d.Path != want {
-			t.Fatalf("skill path = %s, want %s", d.Path, want)
-		}
-	}
-}
-
-func TestReadLocalDoesNotFindMisplacedSkill(t *testing.T) {
-	dir := t.TempDir()
-	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	write(t, filepath.Join(dir, "skills", "loose.md"), "# loose\n")
-	write(t, filepath.Join(dir, "docs", "editor", "SKILL.md"), "# editor\n")
-	write(t, filepath.Join(dir, "skills", "nested", "deep", "SKILL.md"), "# deep\n")
-
-	defs, err := ReadLocal(dir)
-	if err != nil {
-		t.Fatalf("ReadLocal: %v", err)
-	}
-
-	if got := namesOfKind(defs, Skill); !reflect.DeepEqual(got, []string{"prose-editor"}) {
-		t.Fatalf("skills = %v, want only [prose-editor]", got)
-	}
-}
-
-func TestReadLocalFindsAgentAtAgentsNameMd(t *testing.T) {
-	dir := t.TempDir()
-	write(t, filepath.Join(dir, "agents", "prose-editor.md"), "# prose-editor\n")
-
-	defs, err := ReadLocal(dir)
-	if err != nil {
-		t.Fatalf("ReadLocal: %v", err)
-	}
-
-	if got := namesOfKind(defs, Agent); !reflect.DeepEqual(got, []string{"prose-editor"}) {
-		t.Fatalf("agents = %v, want [prose-editor]", got)
-	}
-
-	for _, d := range defs {
-		if d.Kind != Agent {
-			continue
-		}
-		want := filepath.Join(dir, "agents", "prose-editor.md")
-		if d.Path != want {
-			t.Fatalf("agent path = %s, want %s", d.Path, want)
-		}
-	}
-}
-
-func TestReadLocalDoesNotFindMisplacedAgent(t *testing.T) {
-	dir := t.TempDir()
-	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
-	write(t, filepath.Join(dir, "agents", "drafts", "note.md"), "# note\n")
-	write(t, filepath.Join(dir, "notes", "orphan.md"), "# orphan\n")
-
-	defs, err := ReadLocal(dir)
-	if err != nil {
-		t.Fatalf("ReadLocal: %v", err)
-	}
-
-	if got := namesOfKind(defs, Agent); !reflect.DeepEqual(got, []string{"code-architect"}) {
-		t.Fatalf("agents = %v, want only [code-architect]", got)
-	}
-}
-
-func TestReadLocalErrorsOnMissingSource(t *testing.T) {
-	if _, err := ReadLocal(filepath.Join(t.TempDir(), "missing")); err == nil {
-		t.Fatal("expected an error for a missing source directory")
-	}
-}
-
-func TestReadSkillsFindsOnlySkills(t *testing.T) {
-	dir := t.TempDir()
-	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
-
-	defs, err := ReadSkills(dir)
-	if err != nil {
-		t.Fatalf("ReadSkills: %v", err)
-	}
-
-	if got := namesOfKind(defs, Skill); !reflect.DeepEqual(got, []string{"prose-editor"}) {
-		t.Fatalf("skills = %v, want [prose-editor]", got)
-	}
-	if got := namesOfKind(defs, Agent); len(got) != 0 {
-		t.Fatalf("ReadSkills returned agents %v", got)
-	}
-}
-
-func TestReadAgentsFindsOnlyAgents(t *testing.T) {
-	dir := t.TempDir()
-	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
-
-	defs, err := ReadAgents(dir)
-	if err != nil {
-		t.Fatalf("ReadAgents: %v", err)
-	}
-
 	if got := namesOfKind(defs, Agent); !reflect.DeepEqual(got, []string{"code-architect"}) {
 		t.Fatalf("agents = %v, want [code-architect]", got)
 	}
-	if got := namesOfKind(defs, Skill); len(got) != 0 {
-		t.Fatalf("ReadAgents returned skills %v", got)
+	if got := namesOfKind(defs, Doc); len(got) != 0 {
+		t.Fatalf("ReadKinds returned docs %v", got)
+	}
+
+	kinds := make([]Kind, len(defs))
+	for i, d := range defs {
+		kinds[i] = d.Kind
+	}
+	if want := []Kind{Skill, Agent}; !reflect.DeepEqual(kinds, want) {
+		t.Fatalf("kinds = %v, want %v", kinds, want)
 	}
 }
 
-func TestReadSkillsErrorsOnMissingSource(t *testing.T) {
-	if _, err := ReadSkills(filepath.Join(t.TempDir(), "missing")); err == nil {
-		t.Fatal("expected an error for a missing source directory")
-	}
-}
-
-func TestReadAgentsErrorsOnMissingSource(t *testing.T) {
-	if _, err := ReadAgents(filepath.Join(t.TempDir(), "missing")); err == nil {
-		t.Fatal("expected an error for a missing source directory")
-	}
-}
-
-func TestReadDocsFindsDocAtDocsZpecsNameMd(t *testing.T) {
+func TestReadKindsSelectsSingleKind(t *testing.T) {
 	dir := t.TempDir()
+	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
 	write(t, filepath.Join(dir, "docs", "zpecs", "architecture.md"), "# architecture\n")
 
-	defs, err := ReadDocs(dir)
+	defs, err := ReadKinds([]Kind{Doc}, dir)
 	if err != nil {
-		t.Fatalf("ReadDocs: %v", err)
+		t.Fatalf("ReadKinds: %v", err)
 	}
 
+	if len(defs) != 1 {
+		t.Fatalf("ReadKinds returned %d defs, want 1", len(defs))
+	}
 	if got := namesOfKind(defs, Doc); !reflect.DeepEqual(got, []string{"architecture"}) {
 		t.Fatalf("docs = %v, want [architecture]", got)
 	}
-
-	for _, d := range defs {
-		if d.Kind != Doc {
-			continue
-		}
-		want := filepath.Join(dir, "docs", "zpecs", "architecture.md")
-		if d.Path != want {
-			t.Fatalf("doc path = %s, want %s", d.Path, want)
-		}
-	}
 }
 
-func TestReadDocsFindsOnlyDocs(t *testing.T) {
-	dir := t.TempDir()
-	write(t, filepath.Join(dir, "docs", "zpecs", "prose.md"), "# prose\n")
-	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
-
-	defs, err := ReadDocs(dir)
-	if err != nil {
-		t.Fatalf("ReadDocs: %v", err)
-	}
-
-	if got := namesOfKind(defs, Doc); !reflect.DeepEqual(got, []string{"prose"}) {
-		t.Fatalf("docs = %v, want [prose]", got)
-	}
-	if got := namesOfKind(defs, Skill); len(got) != 0 {
-		t.Fatalf("ReadDocs returned skills %v", got)
-	}
-	if got := namesOfKind(defs, Agent); len(got) != 0 {
-		t.Fatalf("ReadDocs returned agents %v", got)
-	}
-}
-
-func TestReadDocsDoesNotFindMisplacedDoc(t *testing.T) {
-	dir := t.TempDir()
-	write(t, filepath.Join(dir, "docs", "specs", "foo.md"), "# foo\n")
-	write(t, filepath.Join(dir, "docs", "cli", "README.md"), "# cli\n")
-	write(t, filepath.Join(dir, "docs", "zpecs", "nested", "deep.md"), "# deep\n")
-
-	defs, err := ReadDocs(dir)
-	if err != nil {
-		t.Fatalf("ReadDocs: %v", err)
-	}
-
-	if got := namesOfKind(defs, Doc); len(got) != 0 {
-		t.Fatalf("docs = %v, want only flat docs/zpecs/*.md", got)
-	}
-}
-
-func TestReadDocsErrorsOnMissingSource(t *testing.T) {
-	if _, err := ReadDocs(filepath.Join(t.TempDir(), "missing")); err == nil {
+func TestReadKindsErrorsOnMissingSource(t *testing.T) {
+	if _, err := ReadKinds([]Kind{Skill}, filepath.Join(t.TempDir(), "missing")); err == nil {
 		t.Fatal("expected an error for a missing source directory")
 	}
 }
 
-func TestReadLocalDoesNotReturnDocs(t *testing.T) {
+func TestReadKindsDoesNotReadMisplacedFiles(t *testing.T) {
 	dir := t.TempDir()
-	write(t, filepath.Join(dir, "docs", "zpecs", "prose.md"), "# prose\n")
+	write(t, filepath.Join(dir, "skills", "loose.md"), "# loose\n")
+	write(t, filepath.Join(dir, "skills", "editor", "nested", "SKILL.md"), "# nested\n")
+	write(t, filepath.Join(dir, "docs", "editor", "SKILL.md"), "# editor\n")
+	write(t, filepath.Join(dir, "agents", "drafts", "note.md"), "# note\n")
+	write(t, filepath.Join(dir, "docs", "specs", "foo.md"), "# foo\n")
 	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
+	write(t, filepath.Join(dir, "docs", "zpecs", "architecture.md"), "# architecture\n")
 
-	defs, err := ReadLocal(dir)
+	defs, err := ReadKinds([]Kind{Skill, Agent, Doc}, dir)
 	if err != nil {
-		t.Fatalf("ReadLocal: %v", err)
+		t.Fatalf("ReadKinds: %v", err)
 	}
 
 	if got := namesOfKind(defs, Skill); !reflect.DeepEqual(got, []string{"prose-editor"}) {
@@ -247,7 +104,34 @@ func TestReadLocalDoesNotReturnDocs(t *testing.T) {
 	if got := namesOfKind(defs, Agent); !reflect.DeepEqual(got, []string{"code-architect"}) {
 		t.Fatalf("agents = %v, want [code-architect]", got)
 	}
-	if got := namesOfKind(defs, Doc); len(got) != 0 {
-		t.Fatalf("ReadLocal returned docs %v", got)
+	if got := namesOfKind(defs, Doc); !reflect.DeepEqual(got, []string{"architecture"}) {
+		t.Fatalf("docs = %v, want [architecture]", got)
+	}
+}
+
+func TestReadKindsReturnsSourcePaths(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
+	write(t, filepath.Join(dir, "docs", "zpecs", "architecture.md"), "# architecture\n")
+
+	defs, err := ReadKinds([]Kind{Skill, Agent, Doc}, dir)
+	if err != nil {
+		t.Fatalf("ReadKinds: %v", err)
+	}
+
+	want := []Definition{
+		{Kind: Skill, Name: "prose-editor", Path: filepath.Join(dir, "skills", "prose-editor", "SKILL.md")},
+		{Kind: Agent, Name: "code-architect", Path: filepath.Join(dir, "agents", "code-architect.md")},
+		{Kind: Doc, Name: "architecture", Path: filepath.Join(dir, "docs", "zpecs", "architecture.md")},
+	}
+	if !reflect.DeepEqual(defs, want) {
+		t.Fatalf("defs = %v, want %v", defs, want)
+	}
+}
+
+func TestReadKindsErrorsOnUnknownKind(t *testing.T) {
+	if _, err := ReadKinds([]Kind{Kind(99)}, t.TempDir()); err == nil {
+		t.Fatal("expected an error for an unknown kind")
 	}
 }
