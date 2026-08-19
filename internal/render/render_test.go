@@ -1,10 +1,14 @@
 package render
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/zon/specs/internal/frontmatter"
+	"github.com/zon/specs/internal/source"
+	"github.com/zon/specs/internal/targetdir"
 )
 
 func TestClaudeAgentKeepsName(t *testing.T) {
@@ -187,4 +191,82 @@ func TestOpencodeAgentOmitsDenyRulesWhenToolsEmpty(t *testing.T) {
 	if strings.Contains(got, "permission:") {
 		t.Fatalf("OpencodeAgent rendered %q with deny rules for an empty tools list", got)
 	}
+}
+
+func TestDefinitionReturnsSkillVerbatim(t *testing.T) {
+	path := writeDefinitionFile(t, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n\nReview prose.\n")
+
+	got, err := Definition(source.Definition{Kind: source.Skill, Name: "prose-editor", Path: path}, targetdir.Claude)
+	if err != nil {
+		t.Fatalf("Definition: %v", err)
+	}
+	want := "# prose-editor\n\nReview prose.\n"
+	if got != want {
+		t.Fatalf("Definition = %q, want %q", got, want)
+	}
+}
+
+func TestDefinitionReturnsDocVerbatim(t *testing.T) {
+	path := writeDefinitionFile(t, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
+
+	got, err := Definition(source.Definition{Kind: source.Doc, Name: "prose", Path: path}, targetdir.Opencode)
+	if err != nil {
+		t.Fatalf("Definition: %v", err)
+	}
+	want := "# Prose guidelines\n"
+	if got != want {
+		t.Fatalf("Definition = %q, want %q", got, want)
+	}
+}
+
+func TestDefinitionRendersAgentForClaude(t *testing.T) {
+	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n")
+
+	got, err := Definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, targetdir.Claude)
+	if err != nil {
+		t.Fatalf("Definition: %v", err)
+	}
+	want := "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
+	if got != want {
+		t.Fatalf("Definition = %q, want %q", got, want)
+	}
+}
+
+func TestDefinitionRendersAgentForOpencode(t *testing.T) {
+	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n")
+
+	got, err := Definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, targetdir.Opencode)
+	if err != nil {
+		t.Fatalf("Definition: %v", err)
+	}
+	want := "---\nmode: subagent\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
+	if got != want {
+		t.Fatalf("Definition = %q, want %q", got, want)
+	}
+}
+
+func TestDefinitionReportsUnreadableAgentFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "agents", "missing.md")
+
+	_, err := Definition(source.Definition{Kind: source.Agent, Name: "missing", Path: path}, targetdir.Opencode)
+	if err == nil {
+		t.Fatal("Definition accepted a missing agent file")
+	}
+	if !strings.Contains(err.Error(), "reading") {
+		t.Fatalf("Definition error %q does not name the file it could not read", err)
+	}
+}
+
+// writeDefinitionFile writes content at rel under a fresh temp dir and
+// returns the path.
+func writeDefinitionFile(t *testing.T, rel, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), rel)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }

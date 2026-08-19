@@ -13,7 +13,7 @@ Write an agent definition that a runner renders into a target project's `.claude
 
 2. **Ask for the task and output** if the user's request doesn't state them.
 
-3. **Read [docs/specs/prompts.md](docs/specs/prompts.md).** The body becomes the system prompt, so use the same structure: role, task, context, numbered instructions, output.
+3. **Read [docs/zpecs/prompts.md](docs/zpecs/prompts.md).** The body becomes the system prompt, so use the same structure: role, task, context, numbered instructions, output.
 
 4. **Write the definition** to `agents/<name>.md`.
 

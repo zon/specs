@@ -51,7 +51,8 @@ func TestParseScope(t *testing.T) {
 		{name: "no scope", s: "", want: scopeAll},
 		{name: "skills", s: "skills", want: scopeSkills},
 		{name: "agents", s: "agents", want: scopeAgents},
-		{name: "unknown scope", s: "docs", wantErr: true},
+		{name: "docs", s: "docs", want: scopeDocs},
+		{name: "unknown scope", s: "vscode", wantErr: true},
 	}
 
 	for _, tc := range cases {
@@ -95,6 +96,7 @@ func TestParseUpdate(t *testing.T) {
 	}{
 		{name: "defaults", args: nil, want: options{scope: scopeAll, target: targetOpencode}},
 		{name: "scope", args: []string{"skills"}, want: options{scope: scopeSkills, target: targetOpencode}},
+		{name: "docs scope", args: []string{"docs"}, want: options{scope: scopeDocs, target: targetOpencode}},
 		{name: "claude target", args: []string{"--target", "claude"}, want: options{scope: scopeAll, target: targetClaude}},
 		{name: "claude target equals", args: []string{"--target=claude"}, want: options{scope: scopeAll, target: targetClaude}},
 		{name: "source", args: []string{"--source", "/tmp/src"}, want: options{scope: scopeAll, target: targetOpencode, source: "/tmp/src"}},
@@ -135,7 +137,8 @@ func TestRunRecognizesCommands(t *testing.T) {
 		{name: "update with target", args: []string{"update", "--target", "claude"}},
 		{name: "update with source", args: []string{"update", "skills", "--source", sourceDir}},
 		{name: "unknown command", args: []string{"install"}, wantErr: true},
-		{name: "unknown scope", args: []string{"update", "docs"}, wantErr: true},
+		{name: "update docs", args: []string{"update", "docs"}},
+		{name: "unknown scope", args: []string{"update", "vscode"}, wantErr: true},
 		{name: "too many arguments", args: []string{"update", "skills", "agents"}, wantErr: true},
 		{name: "invalid target", args: []string{"update", "--target", "vscode"}, wantErr: true},
 		{name: "unknown flag", args: []string{"update", "--force"}, wantErr: true},
@@ -164,6 +167,7 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 		{args: []string{"update"}, want: "updating skills and agents for opencode"},
 		{args: []string{"update", "skills"}, want: "updating skills for opencode"},
 		{args: []string{"update", "agents"}, want: "updating agents for opencode"},
+		{args: []string{"update", "docs"}, want: "updating docs"},
 		{args: []string{"update", "--target", "claude"}, want: "updating skills and agents for claude"},
 		{args: []string{"update", "--source", sourceDir, "skills"}, want: "updating skills for opencode from " + sourceDir},
 	}
@@ -221,6 +225,7 @@ func gitCloneSource(t *testing.T) string {
 	runGit(t, dir, "config", "user.name", "test")
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
 	runGit(t, dir, "add", "-A")
 	runGit(t, dir, "commit", "-qm", "seed")
 	return dir
@@ -726,6 +731,168 @@ func TestUpdateRemovesStaleAgent(t *testing.T) {
 	}
 	if _, err := os.Stat(path); err == nil {
 		t.Fatal("stale agent still present after the source stopped listing it")
+	}
+}
+
+func TestUpdateDocsWritesFromSource(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
+
+	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	path := filepath.Join("docs", "zpecs", "architecture.md")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("doc not written: %v", err)
+	}
+	if string(content) != "# Architecture\n" {
+		t.Fatalf("doc content = %q, want %q", content, "# Architecture\n")
+	}
+	if _, err := os.Stat(filepath.Join(".opencode")); err == nil {
+		t.Fatal("update docs touched the opencode target")
+	}
+	if _, err := os.Stat(filepath.Join(".claude")); err == nil {
+		t.Fatal("update docs touched the claude target")
+	}
+}
+
+func TestUpdateDocsIgnoresTarget(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
+
+	if err := run([]string{"update", "docs", "--source", dir, "--target", "claude"}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	path := filepath.Join("docs", "zpecs", "prose.md")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("doc not written: %v", err)
+	}
+	if string(content) != "# Prose guidelines\n" {
+		t.Fatalf("doc content = %q, want %q", content, "# Prose guidelines\n")
+	}
+	if _, err := os.Stat(filepath.Join(".claude")); err == nil {
+		t.Fatal("update docs wrote to the claude target")
+	}
+	if _, err := os.Stat(filepath.Join(".opencode")); err == nil {
+		t.Fatal("update docs wrote to the opencode target")
+	}
+}
+
+func TestUpdateDocsLeavesForeignFileAlone(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
+
+	path := filepath.Join("docs", "zpecs", "prose.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("manual content\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("foreign file: %v", err)
+	}
+	if string(content) != "manual content\n" {
+		t.Fatalf("foreign file changed to %q", content)
+	}
+}
+
+func TestUpdateDocsReplacesOwned(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
+
+	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
+		t.Fatalf("first update: %v", err)
+	}
+
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture, second\n")
+	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
+		t.Fatalf("second update: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join("docs", "zpecs", "architecture.md"))
+	if err != nil {
+		t.Fatalf("owned file: %v", err)
+	}
+	if !strings.Contains(string(content), "second") {
+		t.Fatalf("owned file not replaced: %q", content)
+	}
+}
+
+func TestUpdateDocsRemovesStale(t *testing.T) {
+	t.Chdir(gitRepo(t))
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
+
+	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
+		t.Fatalf("first update: %v", err)
+	}
+	path := filepath.Join("docs", "zpecs", "architecture.md")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("doc not written: %v", err)
+	}
+
+	if err := os.RemoveAll(filepath.Join(dir, "docs")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
+		t.Fatalf("second update: %v", err)
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("stale doc still present after the source stopped listing it")
+	}
+}
+
+func TestUpdateDocsWritesToRepositoryRoot(t *testing.T) {
+	root := gitRepo(t)
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
+
+	work := filepath.Join(root, "nested", "deep")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(work)
+
+	if err := run([]string{"update", "docs", "--source", dir}); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	path := filepath.Join(root, "docs", "zpecs", "architecture.md")
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("doc not written at the repository root: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(work, "docs", "zpecs", "architecture.md")); err == nil {
+		t.Fatal("doc written in the working subdirectory")
+	}
+}
+
+func TestUpdateDocsErrorsOutsideRepository(t *testing.T) {
+	dir := t.TempDir()
+	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
+
+	t.Chdir(t.TempDir())
+	err := run([]string{"update", "docs", "--source", dir})
+	if err == nil {
+		t.Fatal("expected update outside a repository to error")
+	}
+	if _, statErr := os.Stat(filepath.Join("docs", "zpecs", "architecture.md")); statErr == nil {
+		t.Fatal("update outside a repository wrote a file")
 	}
 }
 

@@ -161,3 +161,93 @@ func TestReadAgentsErrorsOnMissingSource(t *testing.T) {
 		t.Fatal("expected an error for a missing source directory")
 	}
 }
+
+func TestReadDocsFindsDocAtDocsZpecsNameMd(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "docs", "zpecs", "architecture.md"), "# architecture\n")
+
+	defs, err := ReadDocs(dir)
+	if err != nil {
+		t.Fatalf("ReadDocs: %v", err)
+	}
+
+	if got := namesOfKind(defs, Doc); !reflect.DeepEqual(got, []string{"architecture"}) {
+		t.Fatalf("docs = %v, want [architecture]", got)
+	}
+
+	for _, d := range defs {
+		if d.Kind != Doc {
+			continue
+		}
+		want := filepath.Join(dir, "docs", "zpecs", "architecture.md")
+		if d.Path != want {
+			t.Fatalf("doc path = %s, want %s", d.Path, want)
+		}
+	}
+}
+
+func TestReadDocsFindsOnlyDocs(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "docs", "zpecs", "prose.md"), "# prose\n")
+	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
+
+	defs, err := ReadDocs(dir)
+	if err != nil {
+		t.Fatalf("ReadDocs: %v", err)
+	}
+
+	if got := namesOfKind(defs, Doc); !reflect.DeepEqual(got, []string{"prose"}) {
+		t.Fatalf("docs = %v, want [prose]", got)
+	}
+	if got := namesOfKind(defs, Skill); len(got) != 0 {
+		t.Fatalf("ReadDocs returned skills %v", got)
+	}
+	if got := namesOfKind(defs, Agent); len(got) != 0 {
+		t.Fatalf("ReadDocs returned agents %v", got)
+	}
+}
+
+func TestReadDocsDoesNotFindMisplacedDoc(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "docs", "specs", "foo.md"), "# foo\n")
+	write(t, filepath.Join(dir, "docs", "cli", "README.md"), "# cli\n")
+	write(t, filepath.Join(dir, "docs", "zpecs", "nested", "deep.md"), "# deep\n")
+
+	defs, err := ReadDocs(dir)
+	if err != nil {
+		t.Fatalf("ReadDocs: %v", err)
+	}
+
+	if got := namesOfKind(defs, Doc); len(got) != 0 {
+		t.Fatalf("docs = %v, want only flat docs/zpecs/*.md", got)
+	}
+}
+
+func TestReadDocsErrorsOnMissingSource(t *testing.T) {
+	if _, err := ReadDocs(filepath.Join(t.TempDir(), "missing")); err == nil {
+		t.Fatal("expected an error for a missing source directory")
+	}
+}
+
+func TestReadLocalDoesNotReturnDocs(t *testing.T) {
+	dir := t.TempDir()
+	write(t, filepath.Join(dir, "docs", "zpecs", "prose.md"), "# prose\n")
+	write(t, filepath.Join(dir, "skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
+	write(t, filepath.Join(dir, "agents", "code-architect.md"), "# code-architect\n")
+
+	defs, err := ReadLocal(dir)
+	if err != nil {
+		t.Fatalf("ReadLocal: %v", err)
+	}
+
+	if got := namesOfKind(defs, Skill); !reflect.DeepEqual(got, []string{"prose-editor"}) {
+		t.Fatalf("skills = %v, want [prose-editor]", got)
+	}
+	if got := namesOfKind(defs, Agent); !reflect.DeepEqual(got, []string{"code-architect"}) {
+		t.Fatalf("agents = %v, want [code-architect]", got)
+	}
+	if got := namesOfKind(defs, Doc); len(got) != 0 {
+		t.Fatalf("ReadLocal returned docs %v", got)
+	}
+}

@@ -1,4 +1,4 @@
-docs_dir := "docs/specs"
+docs_dir := "docs/zpecs"
 skills_dir := "skills"
 
 # List available recipes

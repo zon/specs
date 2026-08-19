@@ -36,6 +36,11 @@ The system SHALL write rendered definitions to the target's directories, keyed b
 - WHEN the system writes a skill and an agent
 - THEN it writes them to `.opencode/skills/<name>/SKILL.md` and `.opencode/agents/<name>.md`
 
+#### Scenario: Docs target
+- GIVEN `update docs`
+- WHEN the system writes a doc
+- THEN it writes it to `docs/zpecs/<name>.md`
+
 ### Requirement: Missing Directories
 The system SHALL create directories it needs that do not exist.
 
@@ -73,3 +78,8 @@ The system SHALL render what each command names.
 - GIVEN `update agents`
 - WHEN the system runs
 - THEN it renders agents and not skills
+
+#### Scenario: Docs only
+- GIVEN `update docs`
+- WHEN the system runs
+- THEN it syncs docs and not skills or agents

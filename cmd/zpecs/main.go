@@ -7,9 +7,9 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/zon/specs/internal/clone"
-	"github.com/zon/specs/internal/frontmatter"
 	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/repo"
+	"github.com/zon/specs/internal/report"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/targetdir"
 )
@@ -20,6 +20,7 @@ const (
 	scopeAll scope = iota
 	scopeSkills
 	scopeAgents
+	scopeDocs
 )
 
 func (s scope) String() string {
@@ -28,6 +29,8 @@ func (s scope) String() string {
 		return "skills"
 	case scopeAgents:
 		return "agents"
+	case scopeDocs:
+		return "docs"
 	default:
 		return "skills and agents"
 	}
@@ -41,6 +44,8 @@ func parseScope(s string) (scope, error) {
 		return scopeSkills, nil
 	case "agents":
 		return scopeAgents, nil
+	case "docs":
+		return scopeDocs, nil
 	default:
 		return scopeAll, fmt.Errorf("unknown update scope %q", s)
 	}
@@ -49,8 +54,8 @@ func parseScope(s string) (scope, error) {
 type target string
 
 const (
-	targetClaude   target = "claude"
-	targetOpencode target = "opencode"
+	targetClaude   target = targetdir.Claude
+	targetOpencode target = targetdir.Opencode
 )
 
 type options struct {
@@ -61,12 +66,12 @@ type options struct {
 
 // cli is the kong grammar for the whole application.
 type cli struct {
-	Update updateCmd `cmd:"" help:"renders skills and agents"`
+	Update updateCmd `cmd:"" help:"renders skills and agents, or syncs docs"`
 }
 
 // updateCmd is the kong grammar for `zpecs update`.
 type updateCmd struct {
-	Scope  string `arg:"" optional:"" default:"" help:"render skills or agents (default: both)"`
+	Scope  string `arg:"" optional:"" default:"" help:"render skills or agents, or sync docs (default: skills and agents)"`
 	Source string `name:"source" help:"read definitions from the local directory DIR (default: GitHub)"`
 	Target string `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
 }
@@ -137,26 +142,30 @@ func update(opts options) error {
 	if err != nil {
 		return err
 	}
-	owned, err := targetdir.Owned(root, string(opts.target))
+	target := opts.target
+	if opts.scope == scopeDocs {
+		target = targetdir.Docs
+	}
+	owned, err := targetdir.Owned(root, string(target))
 	if err != nil {
 		return err
 	}
-	if _, err := targetdir.RemoveStale(root, string(opts.target), owned, defs, scopeKinds(opts.scope)...); err != nil {
+	if _, err := targetdir.RemoveStale(root, string(target), owned, defs, scopeKinds(opts.scope)...); err != nil {
 		return fmt.Errorf("removing stale definitions: %w", err)
 	}
-	for _, d := range defs {
-		content, err := rendered(d, opts.target)
-		if err != nil {
-			return err
-		}
-		if _, err := targetdir.Write(root, string(opts.target), d, content, owned); err != nil {
-			return fmt.Errorf("writing %s: %w", targetdir.Path(root, string(opts.target), d), err)
-		}
-	}
-	if err := targetdir.SaveOwned(root, string(opts.target), owned); err != nil {
+	if err := targetdir.WriteAll(root, string(target), defs, func(d source.Definition) (string, error) {
+		return render.Definition(d, string(opts.target))
+	}, owned); err != nil {
 		return err
 	}
-	fmt.Printf("updating %s for %s from %s (%d definitions)\n", opts.scope, opts.target, sourceLabel, len(defs))
+	if err := targetdir.SaveOwned(root, string(target), owned); err != nil {
+		return err
+	}
+	if opts.scope == scopeDocs {
+		report.Summary(os.Stdout, opts.scope.String(), "", sourceLabel, len(defs))
+	} else {
+		report.Summary(os.Stdout, opts.scope.String(), string(opts.target), sourceLabel, len(defs))
+	}
 	return nil
 }
 
@@ -192,6 +201,8 @@ func readDefinitions(s scope, sourceDir string) ([]source.Definition, error) {
 		return source.ReadSkills(sourceDir)
 	case scopeAgents:
 		return source.ReadAgents(sourceDir)
+	case scopeDocs:
+		return source.ReadDocs(sourceDir)
 	default:
 		return source.ReadLocal(sourceDir)
 	}
@@ -204,26 +215,9 @@ func scopeKinds(s scope) []source.Kind {
 		return []source.Kind{source.Skill}
 	case scopeAgents:
 		return []source.Kind{source.Agent}
+	case scopeDocs:
+		return []source.Kind{source.Doc}
 	default:
 		return []source.Kind{source.Skill, source.Agent}
 	}
-}
-
-// rendered returns a skill unchanged or an agent built from its frontmatter.
-func rendered(d source.Definition, t target) (string, error) {
-	if d.Kind == source.Skill {
-		raw, err := os.ReadFile(d.Path)
-		if err != nil {
-			return "", fmt.Errorf("reading %s: %w", d.Path, err)
-		}
-		return string(raw), nil
-	}
-	content, err := frontmatter.Read(d.Path)
-	if err != nil {
-		return "", fmt.Errorf("reading %s: %w", d.Path, err)
-	}
-	if t == targetClaude {
-		return render.ClaudeAgent(content.Fields, content.Body), nil
-	}
-	return render.OpencodeAgent(content.Fields, content.Body)
 }

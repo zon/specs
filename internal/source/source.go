@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Kind marks a definition as a skill or an agent.
+// Kind marks a definition as a skill, an agent, or a doc.
 type Kind int
 
 const (
@@ -14,9 +14,11 @@ const (
 	Skill Kind = iota
 	// Agent is a definition at agents/<name>.md.
 	Agent
+	// Doc is a definition at docs/zpecs/<name>.md.
+	Doc
 )
 
-// Definition is one skill or agent found in a source.
+// Definition is one skill, agent, or doc found in a source.
 type Definition struct {
 	Kind Kind
 	Name string
@@ -56,6 +58,14 @@ func ReadAgents(dir string) ([]Definition, error) {
 	return readAgents(dir)
 }
 
+// ReadDocs reads doc definitions from a local source.
+func ReadDocs(dir string) ([]Definition, error) {
+	if err := checkDir(dir); err != nil {
+		return nil, err
+	}
+	return readDocs(dir)
+}
+
 func checkDir(dir string) error {
 	_, err := os.Stat(dir)
 	return err
@@ -86,6 +96,22 @@ func readAgents(dir string) ([]Definition, error) {
 	for _, path := range matches {
 		defs = append(defs, Definition{
 			Kind: Agent,
+			Name: strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)),
+			Path: path,
+		})
+	}
+	return defs, nil
+}
+
+func readDocs(dir string) ([]Definition, error) {
+	matches, err := filepath.Glob(filepath.Join(dir, "docs", "zpecs", "*.md"))
+	if err != nil {
+		return nil, err
+	}
+	defs := make([]Definition, 0, len(matches))
+	for _, path := range matches {
+		defs = append(defs, Definition{
+			Kind: Doc,
 			Name: strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)),
 			Path: path,
 		})

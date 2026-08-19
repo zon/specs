@@ -1,6 +1,6 @@
 # Specs
 
-The document formats and standards for spec-driven development with AI coding agents. Everything in this directory installs into a project at `docs/specs/`, where the paths are the same, so every link resolves identically.
+The document formats and standards for spec-driven development with AI coding agents. Everything in this directory installs into a project at `docs/zpecs/`. The paths are the same, so every link resolves identically.
 
 ## Formats
 

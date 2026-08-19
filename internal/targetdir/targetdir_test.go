@@ -16,6 +16,10 @@ func agent(name string) source.Definition {
 	return source.Definition{Kind: source.Agent, Name: name}
 }
 
+func doc(name string) source.Definition {
+	return source.Definition{Kind: source.Doc, Name: name}
+}
+
 func TestPathClaudeSkill(t *testing.T) {
 	root := t.TempDir()
 	want := filepath.Join(root, ".claude", "skills", "prose-editor", "SKILL.md")
@@ -44,6 +48,14 @@ func TestPathOpencodeAgent(t *testing.T) {
 	root := t.TempDir()
 	want := filepath.Join(root, ".opencode", "agents", "prose-editor.md")
 	if got := Path(root, Opencode, agent("prose-editor")); got != want {
+		t.Fatalf("Path = %q, want %q", got, want)
+	}
+}
+
+func TestPathDocsDoc(t *testing.T) {
+	root := t.TempDir()
+	want := filepath.Join(root, "docs", "zpecs", "architecture.md")
+	if got := Path(root, Docs, doc("architecture")); got != want {
 		t.Fatalf("Path = %q, want %q", got, want)
 	}
 }
@@ -116,6 +128,27 @@ func TestWriteCreatesMissingDirectoriesForAnAgent(t *testing.T) {
 		if !info.IsDir() {
 			t.Fatalf("%s is not a directory", dir)
 		}
+	}
+}
+
+func TestWriteDocsCreatesDirectoryAndFile(t *testing.T) {
+	root := t.TempDir()
+
+	written, err := Write(root, Docs, doc("architecture"), "# Architecture\n", map[string]bool{})
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if !written {
+		t.Fatal("Write did not write a new file")
+	}
+
+	p := filepath.Join(root, "docs", "zpecs", "architecture.md")
+	content, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatalf("written file: %v", err)
+	}
+	if string(content) != "# Architecture\n" {
+		t.Fatalf("content = %q, want %q", content, "# Architecture\n")
 	}
 }
 
@@ -268,6 +301,37 @@ func TestManifestSeparatePerTarget(t *testing.T) {
 	}
 }
 
+func TestManifestSeparateForDocs(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	if _, err := Write(root, Docs, doc("architecture"), "# Architecture\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if err := SaveOwned(root, Docs, owned); err != nil {
+		t.Fatalf("SaveOwned: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(root, "docs", "zpecs", manifestName)); err != nil {
+		t.Fatalf("docs manifest not written: %v", err)
+	}
+
+	got, err := Owned(root, Opencode)
+	if err != nil {
+		t.Fatalf("Owned: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("Opencode owns docs paths: %v", got)
+	}
+
+	got, err = Owned(root, Docs)
+	if err != nil {
+		t.Fatalf("Owned: %v", err)
+	}
+	if !got[RelPath(Docs, doc("architecture"))] {
+		t.Fatalf("Docs missing the doc path: %v", got)
+	}
+}
+
 func TestWriteRecordedInOwned(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]bool{}
@@ -278,6 +342,83 @@ func TestWriteRecordedInOwned(t *testing.T) {
 
 	if !owned[RelPath(Opencode, agent("prose-editor"))] {
 		t.Fatalf("Write did not record %q as owned: %v", RelPath(Opencode, agent("prose-editor")), owned)
+	}
+}
+
+func TestWriteAllWritesSeveralDefinitions(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	defs := []source.Definition{
+		skill("prose-editor"),
+		agent("code-architect"),
+		doc("architecture"),
+	}
+
+	err := WriteAll(root, Claude, defs, func(d source.Definition) (string, error) {
+		return d.Name + "\n", nil
+	}, owned)
+	if err != nil {
+		t.Fatalf("WriteAll: %v", err)
+	}
+
+	for _, d := range defs {
+		content, err := os.ReadFile(Path(root, Claude, d))
+		if err != nil {
+			t.Fatalf("written file for %s: %v", d.Name, err)
+		}
+		if string(content) != d.Name+"\n" {
+			t.Fatalf("content = %q, want %q", content, d.Name+"\n")
+		}
+		if !owned[RelPath(Claude, d)] {
+			t.Fatalf("WriteAll did not record %q as owned: %v", RelPath(Claude, d), owned)
+		}
+	}
+}
+
+func TestWriteAllSkipsForeignFile(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	defs := []source.Definition{
+		agent("prose-editor"),
+		skill("code-architect"),
+	}
+
+	foreign := Path(root, Opencode, agent("prose-editor"))
+	if err := os.MkdirAll(filepath.Dir(foreign), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(foreign, []byte("manual\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := WriteAll(root, Opencode, defs, func(d source.Definition) (string, error) {
+		return "rendered\n", nil
+	}, owned)
+	if err != nil {
+		t.Fatalf("WriteAll: %v", err)
+	}
+
+	content, err := os.ReadFile(foreign)
+	if err != nil {
+		t.Fatalf("foreign file: %v", err)
+	}
+	if string(content) != "manual\n" {
+		t.Fatalf("foreign file changed to %q", content)
+	}
+	if owned[RelPath(Opencode, agent("prose-editor"))] {
+		t.Fatalf("WriteAll recorded a foreign file as owned: %v", owned)
+	}
+
+	skillPath := Path(root, Opencode, skill("code-architect"))
+	content, err = os.ReadFile(skillPath)
+	if err != nil {
+		t.Fatalf("other definition not written: %v", err)
+	}
+	if string(content) != "rendered\n" {
+		t.Fatalf("content = %q, want %q", content, "rendered\n")
+	}
+	if !owned[RelPath(Opencode, skill("code-architect"))] {
+		t.Fatalf("WriteAll did not record the written skill as owned: %v", owned)
 	}
 }
 
@@ -298,6 +439,29 @@ func TestRemoveStaleRemovesFileNoLongerWritten(t *testing.T) {
 
 	if _, err := os.Stat(filepath.Join(root, ".claude", "skills", "prose-editor", "SKILL.md")); err == nil {
 		t.Fatal("stale skill still present")
+	}
+	if len(owned) != 0 {
+		t.Fatalf("owned = %v, want none", owned)
+	}
+}
+
+func TestRemoveStaleDocsRemovesStaleDoc(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]bool{}
+	if _, err := Write(root, Docs, doc("architecture"), "# Architecture\n", owned); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	removed, err := RemoveStale(root, Docs, owned, nil, source.Doc)
+	if err != nil {
+		t.Fatalf("RemoveStale: %v", err)
+	}
+	if len(removed) != 1 {
+		t.Fatalf("RemoveStale removed %v, want one path", removed)
+	}
+
+	if _, err := os.Stat(filepath.Join(root, "docs", "zpecs", "architecture.md")); err == nil {
+		t.Fatal("stale doc still present")
 	}
 	if len(owned) != 0 {
 		t.Fatalf("owned = %v, want none", owned)

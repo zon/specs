@@ -1,7 +1,7 @@
 # CLI Source Specification
 
 ## Purpose
-Read skill and agent definitions from a local directory or from GitHub.
+Read skill, agent, and doc definitions from a local directory or from GitHub.
 
 ## Requirements
 
@@ -26,3 +26,13 @@ The system SHALL read skill definitions from `skills/<name>/SKILL.md`.
 
 ### Requirement: Agents
 The system SHALL read agent definitions from `agents/<name>.md`.
+
+### Requirement: Docs
+The system SHALL read doc definitions from `docs/zpecs/<name>.md`.
+
+#### Scenario: Doc placement
+- GIVEN a source that places a doc at `docs/zpecs/prose.md`
+- AND a source that places a doc outside `docs/zpecs/<name>.md`
+- WHEN the system reads definitions
+- THEN it finds the doc at `docs/zpecs/prose.md`
+- AND it does not find the doc outside that path

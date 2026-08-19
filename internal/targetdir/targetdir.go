@@ -1,6 +1,7 @@
 package targetdir
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,6 +14,7 @@ import (
 const (
 	Claude   = "claude"
 	Opencode = "opencode"
+	Docs     = "docs"
 )
 
 // manifestName is the file inside a target directory that records
@@ -32,13 +34,19 @@ func RelPath(name string, d source.Definition) string {
 	if d.Kind == source.Skill {
 		return filepath.Join(target, "skills", d.Name, "SKILL.md")
 	}
+	if d.Kind == source.Doc {
+		return filepath.Join(target, d.Name+".md")
+	}
 	return filepath.Join(target, "agents", d.Name+".md")
 }
 
-// targetDir returns the hidden directory a target writes to.
+// targetDir returns the directory a target writes to.
 func targetDir(name string) string {
 	if name == Claude {
 		return ".claude"
+	}
+	if name == Docs {
+		return filepath.Join("docs", "zpecs")
 	}
 	return ".opencode"
 }
@@ -81,6 +89,22 @@ func Write(root, name string, d source.Definition, content string, owned map[str
 	}
 	owned[rel] = true
 	return true, nil
+}
+
+// WriteAll writes every definition in defs under root for target, using
+// content to produce each file's text. It follows the same owned-file
+// rules as Write and records what it writes in owned.
+func WriteAll(root, name string, defs []source.Definition, content func(source.Definition) (string, error), owned map[string]bool) error {
+	for _, d := range defs {
+		text, err := content(d)
+		if err != nil {
+			return err
+		}
+		if _, err := Write(root, name, d, text, owned); err != nil {
+			return fmt.Errorf("writing %s: %w", Path(root, name, d), err)
+		}
+	}
+	return nil
 }
 
 // SaveOwned persists the owned paths for a target under root.
@@ -138,6 +162,9 @@ func pathKind(target, rel string) (source.Kind, bool) {
 	case strings.HasPrefix(rel, dir+"agents"+string(filepath.Separator)) &&
 		strings.HasSuffix(rel, ".md"):
 		return source.Agent, true
+	case strings.HasPrefix(rel, dir) &&
+		strings.HasSuffix(rel, ".md"):
+		return source.Doc, true
 	}
 	return 0, false
 }

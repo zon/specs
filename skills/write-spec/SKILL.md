@@ -16,13 +16,13 @@ Create a well-formed spec file in `./specs/` based on the user's description of 
    - Are there known edge cases or failure modes to capture?
 
 2. **Read the spec format docs** to refresh your understanding:
-   - [docs/specs/specs.md](docs/specs/specs.md)
+   - [docs/zpecs/specs.md](docs/zpecs/specs.md)
 
-3. **Determine the file path.** Check the existing `specs/` structure to match its convention as described in [docs/specs/specs.md](docs/specs/specs.md#file-location).
+3. **Determine the file path.** Check the existing `specs/` structure to match its convention as described in [docs/zpecs/specs.md](docs/zpecs/specs.md#file-location).
 
-4. **Choose the level** as described in [docs/specs/specs.md](docs/specs/specs.md) (default to Lite).
+4. **Choose the level** as described in [docs/zpecs/specs.md](docs/zpecs/specs.md) (default to Lite).
 
-5. **Draft the spec** following the format and guidelines in [docs/specs/specs.md](docs/specs/specs.md).
+5. **Draft the spec** following the format and guidelines in [docs/zpecs/specs.md](docs/zpecs/specs.md).
 
 6. **Write the file** to `./specs/<path>.md`, where the last path segment names the spec.
 

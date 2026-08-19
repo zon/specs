@@ -4,15 +4,15 @@ This repository holds the spec formats and standards that projects install, and 
 
 ## Prose
 
-Read [prose guidelines](docs/specs/prose.md) before writing any kind of prose. This includes docs, code comments, git descriptions, or agent communication.
+Read [prose guidelines](docs/zpecs/prose.md) before writing any kind of prose. This includes docs, code comments, git descriptions, or agent communication.
 
 After writing or editing prose, invoke the `prose-editor` subagent to review it. Pass the files you touched as the scope.
 
 ## Editing Docs
 
-Documents live in [docs/specs/](docs/specs/README.md) and install to `docs/specs/` in the target repository. The path is identical in both places, which is what makes relative links work everywhere.
+Documents live in [docs/zpecs/](docs/zpecs/README.md) and install to `docs/zpecs/` in the target repository. The path is identical in both places, so relative links work everywhere.
 
-- **Link between documents with plain relative links.** From inside `docs/specs/`, that is a bare filename: `[Architecture Format](architecture-outline.md)`.
+- **Link between documents with plain relative links.** From inside `docs/zpecs/`, that is a bare filename: `[Architecture Format](architecture-outline.md)`.
 - **Never rewrite a link to an absolute URL.** Install is a file copy. A raw GitHub URL would pin the target to whatever this repo looked like at install time.
 - **Paths belonging to the target project stay unlinked.** `specs/architecture.yaml`, `specs/<path>.md`, and `projects/<slug>.yaml` are resolved wherever a skill runs, so write them as code spans.
 
@@ -21,7 +21,7 @@ Documents live in [docs/specs/](docs/specs/README.md) and install to `docs/specs
 Author skills in the central `skills/<name>/SKILL.md` directory. Use the `write-skill` skill, or follow the same rules by hand:
 
 - The frontmatter `name` must match the directory name.
-- Reference documents with markdown links at their installed path: `[docs/specs/architecture.md](docs/specs/architecture.md)`. Never a bare path, never a code span.
+- Reference documents with markdown links at their installed path: `[docs/zpecs/architecture.md](docs/zpecs/architecture.md)`. Never a bare path, never a code span.
 - Reference documentation rather than restating it. A skill that repeats a format goes stale when the format changes.
 
 ## Before Committing

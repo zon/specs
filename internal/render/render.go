@@ -2,10 +2,34 @@ package render
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/zon/specs/internal/frontmatter"
+	"github.com/zon/specs/internal/source"
+	"github.com/zon/specs/internal/targetdir"
 )
+
+// Definition returns the text a definition renders to for a target.
+// Skills and docs return their file contents verbatim; agents are
+// parsed and rendered for the target.
+func Definition(d source.Definition, target string) (string, error) {
+	if d.Kind == source.Skill || d.Kind == source.Doc {
+		raw, err := os.ReadFile(d.Path)
+		if err != nil {
+			return "", fmt.Errorf("reading %s: %w", d.Path, err)
+		}
+		return string(raw), nil
+	}
+	content, err := frontmatter.Read(d.Path)
+	if err != nil {
+		return "", fmt.Errorf("reading %s: %w", d.Path, err)
+	}
+	if target == targetdir.Claude {
+		return ClaudeAgent(content.Fields, content.Body), nil
+	}
+	return OpencodeAgent(content.Fields, content.Body)
+}
 
 // ClaudeAgent keeps the name, description, and tools, and uses the body as
 // the prompt.

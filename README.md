@@ -6,23 +6,23 @@ Repositories install these rather than depend on them, so a repository gets a co
 
 ## Standards
 
-The formats and guidelines that shape how a repository writes and organizes its specs, architecture, and requirements. They install to the target's `docs/specs/`.
+The formats and guidelines that shape how a repository writes and organizes its specs, architecture, and requirements. They install to the target's `docs/zpecs/`.
 
 **Formats**
 
-- [Spec](docs/specs/specs.md) — behavior contracts: structured requirements and scenarios
-- [Architecture](docs/specs/architecture-outline.md) — the components of an application, in YAML
-- [Project](docs/specs/project.md) — a list of requirements for a coding agent to work through
+- [Spec](docs/zpecs/specs.md) — behavior contracts: structured requirements and scenarios
+- [Architecture](docs/zpecs/architecture-outline.md) — the components of an application, in YAML
+- [Project](docs/zpecs/project.md) — a list of requirements for a coding agent to work through
 
 **Guidelines**
 
-- [Orchestration](docs/specs/orchestration.md) — separates coordination logic from implementation detail
-- [Architecture](docs/specs/architecture.md) — component placement, and what belongs in each component type
-- [Writing Requirements](docs/specs/requirements.md) — what makes a good unit of work
-- [Agent Prompts](docs/specs/prompts.md) — how to structure a single-task prompt
-- [Dependencies](docs/specs/dependencies.md) — when to use one instead of writing your own
-- [Prose Guidelines](docs/specs/prose.md) — how to write and organize prose
-- [Glossary](docs/specs/glossary.md) — terms used throughout these documents
+- [Orchestration](docs/zpecs/orchestration.md) — separates coordination logic from implementation detail
+- [Architecture](docs/zpecs/architecture.md) — component placement, and what belongs in each component type
+- [Writing Requirements](docs/zpecs/requirements.md) — what makes a good unit of work
+- [Agent Prompts](docs/zpecs/prompts.md) — how to structure a single-task prompt
+- [Dependencies](docs/zpecs/dependencies.md) — when to use one instead of writing your own
+- [Prose Guidelines](docs/zpecs/prose.md) — how to write and organize prose
+- [Glossary](docs/zpecs/glossary.md) — terms used throughout these documents
 
 ## Agents
 
@@ -63,9 +63,13 @@ zpecs update --target claude
 zpecs update --target opencode
 ```
 
-Copy the standards docs into the target's `docs/specs/`, then point its `AGENTS.md` at them:
+Sync the standards docs into the target's `docs/zpecs/`, then point its `AGENTS.md` at them:
+
+```bash
+zpecs update docs
+```
 
 ```markdown
-Before writing any code, read [docs/specs/architecture.md](docs/specs/architecture.md).
+Before writing any code, read [docs/zpecs/architecture.md](docs/zpecs/architecture.md).
 ```
 

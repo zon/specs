@@ -21,7 +21,7 @@ The agent sees the selected requirement and the rest of the file, so write each 
 
 ## Version Bumps
 
-If the repo uses versioning, add an entry for the bump. Name the level, not the target version. The agent finds the current version and applies the bump. Each versioned resource is bumped on how its own interface changes:
+If the repo uses versioning, add an entry for the bump. Name the level, not the target version. The agent finds the current version and applies the bump. Each versioned resource is bumped according to how its own interface changes:
 
 - **patch** — bug fixes, refactoring, small internal changes
 - **minor** — new features added in a backwards-compatible way

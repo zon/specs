@@ -3,7 +3,22 @@
   orchestration: true
 
 - path: internal/source
-  description: Reads skill and agent definitions from a local source directory.
+  description: Reads skill, agent, and doc definitions from a local source directory.
 
 - path: internal/clone
   description: Clones a repository into a temp dir so a remote source reads like a local one.
+
+- path: internal/targetdir
+  description: Writes definitions into a repository's target directories under an ownership manifest.
+
+- path: internal/frontmatter
+  description: Parses the frontmatter block and body of definition files.
+
+- path: internal/render
+  description: Produces the text each definition renders to for its target, verbatim for skills and docs.
+
+- path: internal/report
+  description: Formats and prints the lines that report each update run.
+
+- path: internal/repo
+  description: Locates the repository root that contains the working directory.

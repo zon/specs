@@ -11,7 +11,7 @@ Write orchestration code in the feature's implementation language:
 - **Pass failures through.** Propagate failures from helpers directly using the language's idiomatic mechanism (returned errors, thrown exceptions, result types). Only introduce a named error value when it represents a distinct domain condition with no underlying cause (e.g. `CartError.Empty` is a state, not a failure).
 - **No debug code.** Remove all logger calls, debug statements, and diagnostic output.
 - **Delegate side effects.** Hand off database writes, network calls, and notifications to helpers rather than performing them in the orchestration body. How helpers are wired is the repo's policy.
-- **No infrastructure types.** Use domain nouns, not framework types like request contexts, HTTP writers, etc.
+- **No infrastructure types.** Use domain nouns, not framework types like request contexts or HTTP writers.
 - **Only write bodies that are pure orchestration.** Every line must be a domain condition, a named step call, or a return value. If writing the body would require literals, string construction, or format details, don't write it. Just call the function by name.
 
 Keep an orchestration short enough to read in one pass, typically under 20 lines. If it grows longer, split it into named sub-orchestrations.

@@ -1,6 +1,6 @@
 # CLI
 
-The `zpecs` CLI renders this repository's definitions into a project's `.claude` or `.opencode` directory.
+The `zpecs` CLI renders this repository's definitions into a project's `.claude` or `.opencode` directory, and syncs the standards docs into the project's `docs/zpecs/`.
 
 It is a Go program that parses arguments with [kong](https://github.com/alecthomas/kong).
 
@@ -11,8 +11,9 @@ One command takes an optional scope:
 - `update` — render skill and agent definitions
 - `update skills` — render skill definitions only
 - `update agents` — render agent definitions only
+- `update docs` — sync the standards docs from the source into the target's `docs/zpecs/`
 
-All three take the same flags:
+All four take the same flags, but `update docs` ignores `--target`:
 
 | Flag | Meaning |
 |---|---|---|
@@ -26,9 +27,10 @@ Definitions are the neutral source of truth. They live in the GitHub repository:
 ```
 skills/<name>/SKILL.md
 agents/<name>.md
+docs/zpecs/<name>.md
 ```
 
-Skills follow the [Agent Skills spec](https://agentskills.io/specification). Agents follow the [Agent Format](agent-format.md).
+Skills follow the [Agent Skills spec](https://agentskills.io/specification). Agents follow the [Agent Format](agent-format.md). Docs are copied verbatim, with no rendering.
 
 ## Source
 
@@ -40,6 +42,9 @@ The commands must run inside a git repository, locate the repo root, and write t
 
 - `claude` — `.claude/skills/<name>/SKILL.md` and `.claude/agents/<name>.md`
 - `opencode` — `.opencode/skills/<name>/SKILL.md` and `.opencode/agents/<name>.md`
+- `docs` — `docs/zpecs/<name>.md`. Docs are target-independent, so `--target` does not apply to `update docs`
+
+On a repo whose `docs/zpecs/` files were placed by copying (no `.zpecs` manifest), the first `update docs` run leaves those files alone. It uses the same owned-file semantics as the other targets.
 
 It creates missing directories and replaces the files it wrote, leaving other files alone. Stale definitions stop appearing.
 
