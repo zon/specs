@@ -2,4 +2,12 @@ workflow:
   namespace: ralph-specs
 model: deepseek/deepseek-v4-flash
 variant: high
+agent: code-architect
+before:
+  - name: install
+    command: just
+    args: [install]
+  - name: update
+    command: zpecs
+    args: [update]
 cleanup: true
