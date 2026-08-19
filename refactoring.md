@@ -1,9 +1,5 @@
 # Refactoring Plans
 
-## Split the fromAST state machine
-
-`internal/spec/spec.go:55` `fromAST` walks the AST, tracks title, purpose, and requirement state, and fills bodies and steps. It is nested four levels deep. Split it into `applyHeading` and `applyContent` over a small state struct.
-
 ## Drop the dead target case in Summary
 
 `internal/report/report.go:12` `Summary` handles an empty target, but every pair sets one. Keep only the docs case and remove the matching test row.

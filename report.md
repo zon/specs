@@ -1,8 +1,7 @@
-Extract shared temp-git-repo fixtures into internal/testutil
+Split the fromAST walk into applyHeading and applyContent
 
-- Add internal/testutil with GitRepo and RunGit helpers, and tests for them
-- Move cmd and internal tests onto the shared helpers
-- Add the new component to specs/architecture.yaml
+- Move heading and content handling out of the fromAST walk loop into
+  applyHeading and applyContent over a small state struct
 - Remove the completed plan from refactoring.md
 
-Ralph item 7 completed
+Ralph item 0 completed
