@@ -19,8 +19,7 @@ type ownedPath struct {
 }
 
 // manifestName is the file inside a target directory that records
-// ownership, one "kind path" line per written file. Lines without a
-// kind come from older manifests.
+// ownership, one "kind path" line per written file.
 const manifestName = ".zpecs"
 
 // Path returns the path under root where a definition writes, keyed by
@@ -82,36 +81,35 @@ func Owned(root, name string) (map[string]ownedPath, error) {
 
 // Write stores content at the definition's path under root, creating the
 // directories it needs. It replaces a file only when the system wrote it
-// before. A foreign file stays untouched. It records the written path in
-// owned and reports whether it wrote the file.
-func Write(root, name string, d source.Definition, content string, owned map[string]ownedPath) (bool, error) {
+// before. It records the written path in owned.
+func Write(root, name string, d source.Definition, content string, owned map[string]ownedPath) error {
 	p := Path(root, name, d)
 	rel := RelPath(name, d)
 	if _, err := os.Stat(p); err == nil {
 		if _, ok := owned[rel]; !ok {
-			return false, nil
+			return nil
 		}
 	}
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		return false, err
+		return err
 	}
 	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
-		return false, err
+		return err
 	}
 	owned[rel] = ownedPath{kind: d.Kind, known: true}
-	return true, nil
+	return nil
 }
 
 // WriteAll writes every definition in defs under root for target, using
 // content to produce each file's text. It follows the same owned-file
-// rules as Write and records what it writes in owned.
+// rules as Write.
 func WriteAll(root, name string, defs []source.Definition, content func(source.Definition) (string, error), owned map[string]ownedPath) error {
 	for _, d := range defs {
 		text, err := content(d)
 		if err != nil {
 			return err
 		}
-		if _, err := Write(root, name, d, text, owned); err != nil {
+		if err := Write(root, name, d, text, owned); err != nil {
 			return fmt.Errorf("writing %s: %w", Path(root, name, d), err)
 		}
 	}

@@ -4,13 +4,9 @@
 
 `internal/report/report.go:12` `Summary` handles an empty target, but every pair sets one. Keep only the docs case and remove the matching test row.
 
-## Drop the unused bool from Write
-
-`internal/targetdir/targetdir.go:87` `Write` returns whether it wrote the file, but `WriteAll` ignores it. Return only an error and always record the path in `owned`. Rewrite the tests that assert on the bool.
-
 ## State the legacy-manifest rule once
 
-`internal/targetdir/targetdir.go` explains how to handle a manifest without kinds in five comments: on `known`, `manifestName`, `Owned`, `SaveOwned`, and `RemoveStale`. State it once on `known` and shorten the rest.
+`internal/targetdir/targetdir.go` explains how to handle a manifest without kinds in four comments: on `known`, `Owned`, `SaveOwned`, and `RemoveStale`. State it once on `known` and shorten the rest.
 
 ## Remove the dead guard in frontmatter.parse
 
@@ -18,4 +14,4 @@
 
 ## Replace the kindName and parseKind switches with a map
 
-`internal/targetdir/targetdir.go:172` `kindName` and `parseKind` are mirror switches over the same words. Replace both with one map and two lookups.
+`internal/targetdir/targetdir.go:170` `kindName` and `parseKind` are mirror switches over the same words. Replace both with one map and two lookups.
