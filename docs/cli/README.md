@@ -1,6 +1,6 @@
 # CLI
 
-The `zpecs` CLI renders this repository's definitions into a project's `.claude` or `.opencode` directory, and syncs the standards docs into the project's `docs/zpecs/`.
+The `zpecs` CLI renders this repository's definitions into a project's `.claude` or `.opencode` directory. It syncs the standards docs into the project's `docs/zpecs/`.
 
 It is a Go program that parses arguments with [kong](https://github.com/alecthomas/kong).
 
@@ -16,9 +16,12 @@ One command takes an optional scope:
 All four take the same flags, but `update docs` ignores `--target`:
 
 | Flag | Meaning |
-|---|---|---|
+|---|---|
 | `--target` | Render for `opencode` (default) or `claude` |
-| `--source` | Path to a local directory. Omit it to read from GitHub |
+| `--source` | Path to a local directory, or a repository URL to clone. Omit it to read from GitHub |
+| `--version` | Print the version and quit |
+
+`ZPECS_SOURCE` sets the source when `--source` is absent.
 
 ## Definitions
 
@@ -30,7 +33,7 @@ agents/<name>.md
 docs/zpecs/<name>.md
 ```
 
-Skills follow the [Agent Skills spec](https://agentskills.io/specification). Agents follow the [Agent Format](agent-format.md). Docs are copied verbatim, with no rendering.
+Skills follow the [Agent Skills spec](https://agentskills.io/specification). Agents follow the [Agent Format](agent-format.md). Docs are copied verbatim.
 
 ## Source
 
@@ -42,9 +45,9 @@ The commands must run inside a git repository, locate the repo root, and write t
 
 - `claude` — `.claude/skills/<name>/SKILL.md` and `.claude/agents/<name>.md`
 - `opencode` — `.opencode/skills/<name>/SKILL.md` and `.opencode/agents/<name>.md`
-- `docs` — `docs/zpecs/<name>.md`. Docs are target-independent, so `--target` does not apply to `update docs`
+- `docs` — `docs/zpecs/<name>.md`. Docs are target-independent
 
-When a repo's `docs/zpecs/` files came from a copy, with no `.zpecs` manifest, the first `update docs` run leaves them alone. It uses the same owned-file semantics as the other targets.
+When a repo's `docs/zpecs/` files came from a copy, there is no `.zpecs` manifest. The first `update docs` run does not touch them. It uses the same owned-file semantics as the other targets.
 
 It creates missing directories and replaces the files it wrote, leaving other files alone. Stale definitions stop appearing.
 

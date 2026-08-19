@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -44,14 +45,25 @@ func TestBuildProducesRunnableCLIBinary(t *testing.T) {
 	}
 }
 
-func TestParseScope(t *testing.T) {
+func TestBinaryPrintsVersion(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	out, err := exec.Command(binary, "--version").CombinedOutput()
+	if err != nil {
+		t.Fatalf("zpecs --version failed: %v\n%s", err, out)
+	}
+	if got := strings.TrimSpace(string(out)); got != version {
+		t.Fatalf("zpecs --version = %q, want %q", got, version)
+	}
+}
+
+func TestUnmarshalScope(t *testing.T) {
 	cases := []struct {
 		name    string
 		s       string
 		want    scope
 		wantErr bool
 	}{
-		{name: "no scope", s: "", want: scopeAll},
+		{name: "all", s: "all", want: scopeAll},
 		{name: "skills", s: "skills", want: scopeSkills},
 		{name: "agents", s: "agents", want: scopeAgents},
 		{name: "docs", s: "docs", want: scopeDocs},
@@ -60,34 +72,31 @@ func TestParseScope(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := parseScope(tc.s)
+			var got scope
+			err := got.UnmarshalText([]byte(tc.s))
 			if (err != nil) != tc.wantErr {
-				t.Fatalf("parseScope(%q) error = %v, wantErr %v", tc.s, err, tc.wantErr)
+				t.Fatalf("UnmarshalText(%q) error = %v, wantErr %v", tc.s, err, tc.wantErr)
 			}
 			if err == nil && got != tc.want {
-				t.Fatalf("parseScope(%q) = %v, want %v", tc.s, got, tc.want)
+				t.Fatalf("UnmarshalText(%q) = %v, want %v", tc.s, got, tc.want)
 			}
 		})
 	}
 }
 
-// parseUpdateArgs parses `update <args>` with the same kong grammar run
-// uses, and returns the options it selects.
+// parseUpdateArgs parses `update <args>` with the same kong grammar
+// `run` uses. It returns the selected options.
 func parseUpdateArgs(t *testing.T, args ...string) (options, error) {
 	t.Helper()
 	var c cli
-	parser, err := kong.New(&c)
+	parser, err := kong.New(&c, cliVars)
 	if err != nil {
 		t.Fatalf("kong.New: %v", err)
 	}
 	if _, err := parser.Parse(append([]string{"update"}, args...)); err != nil {
 		return options{}, err
 	}
-	scope, err := parseScope(c.Update.Scope)
-	if err != nil {
-		return options{}, err
-	}
-	return options{scope: scope, source: c.Update.Source, target: target(c.Update.Target)}, nil
+	return options{scope: c.Update.Scope, source: c.Update.Source, target: c.Update.Target}, nil
 }
 
 func TestParseUpdate(t *testing.T) {
@@ -97,14 +106,16 @@ func TestParseUpdate(t *testing.T) {
 		want    options
 		wantErr bool
 	}{
-		{name: "defaults", args: nil, want: options{scope: scopeAll, target: targetOpencode}},
-		{name: "scope", args: []string{"skills"}, want: options{scope: scopeSkills, target: targetOpencode}},
-		{name: "docs scope", args: []string{"docs"}, want: options{scope: scopeDocs, target: targetOpencode}},
-		{name: "claude target", args: []string{"--target", "claude"}, want: options{scope: scopeAll, target: targetClaude}},
-		{name: "claude target equals", args: []string{"--target=claude"}, want: options{scope: scopeAll, target: targetClaude}},
+		{name: "defaults", args: nil, want: options{scope: scopeAll, target: targetOpencode, source: defaultSourceURL}},
+		{name: "all scope", args: []string{"all"}, want: options{scope: scopeAll, target: targetOpencode, source: defaultSourceURL}},
+		{name: "scope", args: []string{"skills"}, want: options{scope: scopeSkills, target: targetOpencode, source: defaultSourceURL}},
+		{name: "docs scope", args: []string{"docs"}, want: options{scope: scopeDocs, target: targetOpencode, source: defaultSourceURL}},
+		{name: "claude target", args: []string{"--target", "claude"}, want: options{scope: scopeAll, target: targetClaude, source: defaultSourceURL}},
+		{name: "claude target equals", args: []string{"--target=claude"}, want: options{scope: scopeAll, target: targetClaude, source: defaultSourceURL}},
 		{name: "source", args: []string{"--source", "/tmp/src"}, want: options{scope: scopeAll, target: targetOpencode, source: "/tmp/src"}},
 		{name: "source equals", args: []string{"--source=/tmp/src"}, want: options{scope: scopeAll, target: targetOpencode, source: "/tmp/src"}},
 		{name: "all together", args: []string{"agents", "--source", "/tmp/src", "--target", "claude"}, want: options{scope: scopeAgents, target: targetClaude, source: "/tmp/src"}},
+		{name: "unknown scope", args: []string{"vscode"}, wantErr: true},
 		{name: "unknown target", args: []string{"--target", "vscode"}, wantErr: true},
 		{name: "missing target value", args: []string{"--target"}, wantErr: true},
 		{name: "missing source value", args: []string{"--source"}, wantErr: true},
@@ -121,6 +132,18 @@ func TestParseUpdate(t *testing.T) {
 				t.Fatalf("parseUpdateArgs(%v) = %+v, want %+v", tc.args, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestParseUpdateEnvOverridesDefault(t *testing.T) {
+	t.Setenv("ZPECS_SOURCE", "/env/src")
+	got, err := parseUpdateArgs(t)
+	if err != nil {
+		t.Fatalf("parseUpdateArgs: %v", err)
+	}
+	want := options{scope: scopeAll, target: targetOpencode, source: "/env/src"}
+	if got != want {
+		t.Fatalf("parseUpdateArgs() = %+v, want %+v", got, want)
 	}
 }
 
@@ -155,6 +178,33 @@ func TestRunRecognizesCommands(t *testing.T) {
 				t.Fatalf("run(%v) error = %v, wantErr %v", tc.args, err, tc.wantErr)
 			}
 		})
+	}
+}
+
+func TestPrintErrorShowsUsageForParseErrors(t *testing.T) {
+	var c cli
+	parser, err := kong.New(&c, cliVars)
+	if err != nil {
+		t.Fatalf("kong.New: %v", err)
+	}
+	_, parseErr := parser.Parse([]string{"update", "--target", "vscode"})
+	if parseErr == nil {
+		t.Fatal("expected a parse error")
+	}
+
+	stderr := captureStderr(t)
+	printError(parseErr)
+	if out := string(stderr()); !strings.Contains(out, "Usage:") {
+		t.Fatalf("parse error did not print usage:\n%s", out)
+	}
+}
+
+func TestPrintErrorOmitsUsageForRuntimeErrors(t *testing.T) {
+	stderr := captureStderr(t)
+	printError(errors.New("update outside a repository"))
+	out := string(stderr())
+	if strings.Contains(out, "Usage:") {
+		t.Fatalf("runtime error printed usage:\n%s", out)
 	}
 }
 
@@ -1042,18 +1092,31 @@ func TestBinaryConvertPrintsTheSpecAsJSON(t *testing.T) {
 }
 
 // captureStdout redirects os.Stdout to a pipe. The returned func reads
-// everything written while captured. The test restores os.Stdout when it
-// finishes.
+// everything written during the capture. The test restores os.Stdout
+// when it finishes.
 func captureStdout(t *testing.T) func() []byte {
 	t.Helper()
-	old := os.Stdout
+	return capture(t, os.Stdout, func(f *os.File) { os.Stdout = f })
+}
+
+// captureStderr redirects os.Stderr to a pipe, mirroring captureStdout.
+func captureStderr(t *testing.T) func() []byte {
+	t.Helper()
+	return capture(t, os.Stderr, func(f *os.File) { os.Stderr = f })
+}
+
+// capture redirects a process stream to a pipe. The returned func reads
+// everything written during the capture. The test restores the stream
+// when it finishes.
+func capture(t *testing.T, old *os.File, set func(*os.File)) func() []byte {
+	t.Helper()
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
 	}
-	os.Stdout = w
+	set(w)
 	t.Cleanup(func() {
-		os.Stdout = old
+		set(old)
 		_ = w.Close()
 		_ = r.Close()
 	})

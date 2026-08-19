@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -14,6 +15,20 @@ import (
 	"github.com/zon/specs/internal/spec"
 	"github.com/zon/specs/internal/targetdir"
 )
+
+// version is the CLI version. Set it at build time with
+// -ldflags "-X main.version=...".
+var version = "dev"
+
+// defaultSourceURL is the repository the CLI reads when neither a
+// --source flag nor ZPECS_SOURCE names another source.
+const defaultSourceURL = "https://github.com/zon/specs"
+
+// cliVars feeds kong's ${...} interpolation in the grammar.
+var cliVars = kong.Vars{
+	"version":        version,
+	"default_source": defaultSourceURL,
+}
 
 type scope int
 
@@ -37,19 +52,20 @@ func (s scope) String() string {
 	}
 }
 
-func parseScope(s string) (scope, error) {
-	switch s {
-	case "":
-		return scopeAll, nil
+func (s *scope) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "all":
+		*s = scopeAll
 	case "skills":
-		return scopeSkills, nil
+		*s = scopeSkills
 	case "agents":
-		return scopeAgents, nil
+		*s = scopeAgents
 	case "docs":
-		return scopeDocs, nil
+		*s = scopeDocs
 	default:
-		return scopeAll, fmt.Errorf("unknown update scope %q", s)
+		return fmt.Errorf("unknown scope %q", string(text))
 	}
+	return nil
 }
 
 type target string
@@ -67,26 +83,23 @@ type options struct {
 
 // cli is the kong grammar for the whole application.
 type cli struct {
-	Update  updateCmd  `cmd:"" help:"renders skills and agents, or syncs docs"`
-	Convert convertCmd `cmd:"" help:"turns a spec markdown file into JSON"`
+	Version kong.VersionFlag `name:"version" help:"Print version information and quit"`
+	Update  updateCmd        `cmd:"" help:"renders skills and agents, or syncs docs"`
+	Convert convertCmd       `cmd:"" help:"turns a spec markdown file into JSON"`
 }
 
 // updateCmd is the kong grammar for `zpecs update`.
 type updateCmd struct {
-	Scope  string `arg:"" optional:"" default:"" help:"render skills or agents, or sync docs (default: skills and agents)"`
-	Source string `name:"source" help:"read definitions from the local directory DIR (default: GitHub)"`
-	Target string `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
+	Scope  scope  `arg:"" default:"all" help:"render skills or agents, or sync docs"`
+	Source string `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
+	Target target `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
 }
 
 func (u *updateCmd) Run() error {
-	s, err := parseScope(u.Scope)
-	if err != nil {
-		return err
-	}
 	return update(options{
-		scope:  s,
+		scope:  u.Scope,
 		source: u.Source,
-		target: target(u.Target),
+		target: u.Target,
 	})
 }
 
@@ -104,12 +117,12 @@ func (c *convertCmd) Run() error {
 }
 
 // usageText returns the help kong generates for the whole application.
-// The --help hook prints it and stops. With Exit overridden to a no-op,
+// The --help hook prints it and calls Exit. Here Exit is a no-op, so
 // Parse continues and fails on the missing command.
 func usageText() string {
 	var sb strings.Builder
 	var c cli
-	parser, err := kong.New(&c, kong.Writers(&sb, &sb), kong.Exit(func(int) {}))
+	parser, err := kong.New(&c, cliVars, kong.Writers(&sb, &sb), kong.Exit(func(int) {}))
 	if err != nil {
 		return ""
 	}
@@ -119,10 +132,19 @@ func usageText() string {
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, "zpecs:", err)
+		printError(err)
+		os.Exit(1)
+	}
+}
+
+// printError writes err to stderr, then the usage text when err is a
+// parse error. Runtime errors get no usage text.
+func printError(err error) {
+	fmt.Fprintln(os.Stderr, "zpecs:", err)
+	var parseErr *kong.ParseError
+	if errors.As(err, &parseErr) {
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprint(os.Stderr, usageText())
-		os.Exit(1)
 	}
 }
 
@@ -132,7 +154,7 @@ func run(args []string) error {
 		return nil
 	}
 	var c cli
-	parser, err := kong.New(&c)
+	parser, err := kong.New(&c, cliVars)
 	if err != nil {
 		return err
 	}
@@ -184,28 +206,20 @@ func update(opts options) error {
 	return nil
 }
 
-// defaultSource is the GitHub repository used without a --source flag.
-// ZPECS_SOURCE overrides it, mostly for tests.
-func defaultSource() string {
-	if v := os.Getenv("ZPECS_SOURCE"); v != "" {
-		return v
+// resolveSource returns the directory the definitions come from, the
+// label to report, and a cleanup func. Kong supplies the source: the
+// default repository URL, a ZPECS_SOURCE override, or a --source path.
+// A value with a scheme is a repository to clone. Anything else is a
+// local directory to read in place.
+func resolveSource(source string) (dir, label string, cleanup func(), err error) {
+	if strings.Contains(source, "://") {
+		dir, cleanup, err = clone.Clone(source)
+		if err != nil {
+			return "", "", nil, err
+		}
+		return dir, source, cleanup, nil
 	}
-	return "https://github.com/zon/specs"
-}
-
-// resolveSource returns the directory definitions come from, the label
-// to report, and a cleanup func. A --source flag names a local
-// directory. Without one, the default source is cloned into a temp dir.
-func resolveSource(flag string) (dir, label string, cleanup func(), err error) {
-	if flag != "" {
-		return flag, flag, func() {}, nil
-	}
-	url := defaultSource()
-	dir, cleanup, err = clone.Clone(url)
-	if err != nil {
-		return "", "", nil, err
-	}
-	return dir, url, cleanup, nil
+	return source, source, func() {}, nil
 }
 
 // readDefinitions returns the definitions a scope selects from the source.
