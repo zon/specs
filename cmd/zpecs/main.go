@@ -13,6 +13,7 @@ import (
 	"github.com/zon/specs/internal/report"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/spec"
+	"github.com/zon/specs/internal/target"
 	"github.com/zon/specs/internal/targetdir"
 )
 
@@ -68,17 +69,17 @@ func (s *scope) UnmarshalText(text []byte) error {
 	return nil
 }
 
-type target string
+type targetName string
 
 const (
-	targetClaude   target = targetdir.Claude
-	targetOpencode target = targetdir.Opencode
+	targetClaude   targetName = target.Claude
+	targetOpencode targetName = target.Opencode
 )
 
 type options struct {
 	scope  scope
 	source string
-	target target
+	target targetName
 }
 
 // cli is the kong grammar for the whole application.
@@ -90,9 +91,9 @@ type cli struct {
 
 // updateCmd is the kong grammar for `zpecs update`.
 type updateCmd struct {
-	Scope  scope  `arg:"" default:"all" help:"render skills, agents, and docs, or one of them"`
-	Source string `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
-	Target target `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
+	Scope  scope      `arg:"" default:"all" help:"render skills, agents, and docs, or one of them"`
+	Source string     `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
+	Target targetName `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
 }
 
 func (u *updateCmd) Run() error {
@@ -187,34 +188,34 @@ func update(opts options) error {
 // updateScope renders the definitions one scope selects into their target
 // under root and reports the run. Docs have no target: they always write
 // to docs/zpecs/.
-func updateScope(root, sourceDir, sourceLabel string, s scope, target string) error {
+func updateScope(root, sourceDir, sourceLabel string, s scope, targetName string) error {
 	if s == scopeDocs {
-		target = targetdir.Docs
+		targetName = target.Docs
 	}
 	defs, err := readDefinitions(s, sourceDir)
 	if err != nil {
 		return err
 	}
-	owned, err := targetdir.Owned(root, target)
+	owned, err := targetdir.Owned(root, targetName)
 	if err != nil {
 		return err
 	}
-	if _, err := targetdir.RemoveStale(root, target, owned, defs, scopeKinds(s)...); err != nil {
+	if _, err := targetdir.RemoveStale(root, targetName, owned, defs, scopeKinds(s)...); err != nil {
 		return fmt.Errorf("removing stale definitions: %w", err)
 	}
-	if err := targetdir.WriteAll(root, target, defs, func(d source.Definition) (string, error) {
-		return render.Definition(d, target)
+	if err := targetdir.WriteAll(root, targetName, defs, func(d source.Definition) (string, error) {
+		return render.Definition(d, targetName)
 	}, owned); err != nil {
 		return err
 	}
-	if err := targetdir.SaveOwned(root, target, owned); err != nil {
+	if err := targetdir.SaveOwned(root, targetName, owned); err != nil {
 		return err
 	}
 	if s == scopeDocs {
 		report.Summary(os.Stdout, s.String(), "", sourceLabel, len(defs))
 		return nil
 	}
-	report.Summary(os.Stdout, s.String(), target, sourceLabel, len(defs))
+	report.Summary(os.Stdout, s.String(), targetName, sourceLabel, len(defs))
 	return nil
 }
 

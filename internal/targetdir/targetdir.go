@@ -8,13 +8,7 @@ import (
 	"strings"
 
 	"github.com/zon/specs/internal/source"
-)
-
-// Target names.
-const (
-	Claude   = "claude"
-	Opencode = "opencode"
-	Docs     = "docs"
+	"github.com/zon/specs/internal/target"
 )
 
 // manifestName is the file inside a target directory that records
@@ -30,22 +24,22 @@ func Path(root, name string, d source.Definition) string {
 // RelPath returns the path of a definition's written file under its
 // target, relative to the repository root.
 func RelPath(name string, d source.Definition) string {
-	target := targetDir(name)
+	dir := targetDir(name)
 	if d.Kind == source.Skill {
-		return filepath.Join(target, "skills", d.Name, "SKILL.md")
+		return filepath.Join(dir, "skills", d.Name, "SKILL.md")
 	}
 	if d.Kind == source.Doc {
-		return filepath.Join(target, d.Name+".md")
+		return filepath.Join(dir, d.Name+".md")
 	}
-	return filepath.Join(target, "agents", d.Name+".md")
+	return filepath.Join(dir, "agents", d.Name+".md")
 }
 
 // targetDir returns the directory a target writes to.
 func targetDir(name string) string {
-	if name == Claude {
+	if name == target.Claude {
 		return ".claude"
 	}
-	if name == Docs {
+	if name == target.Docs {
 		return filepath.Join("docs", "zpecs")
 	}
 	return ".opencode"
@@ -54,8 +48,8 @@ func targetDir(name string) string {
 // Owned returns the set of paths the system wrote under root for a
 // target. It reads the target's manifest. A target without a manifest
 // owns nothing.
-func Owned(root, target string) (map[string]bool, error) {
-	data, err := os.ReadFile(filepath.Join(root, targetDir(target), manifestName))
+func Owned(root, name string) (map[string]bool, error) {
+	data, err := os.ReadFile(filepath.Join(root, targetDir(name), manifestName))
 	if os.IsNotExist(err) {
 		return map[string]bool{}, nil
 	}
@@ -108,13 +102,13 @@ func WriteAll(root, name string, defs []source.Definition, content func(source.D
 }
 
 // SaveOwned persists the owned paths for a target under root.
-func SaveOwned(root, target string, owned map[string]bool) error {
+func SaveOwned(root, name string, owned map[string]bool) error {
 	lines := make([]string, 0, len(owned))
 	for p := range owned {
 		lines = append(lines, p)
 	}
 	sort.Strings(lines)
-	dir := filepath.Join(root, targetDir(target))
+	dir := filepath.Join(root, targetDir(name))
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
@@ -122,12 +116,12 @@ func SaveOwned(root, target string, owned map[string]bool) error {
 }
 
 // RemoveStale deletes for target under root the files owned records that
-// no definition in current writes, limited to the kinds kinds selects. It
+// no definition in current writes, limited to the selected kinds. It
 // drops the removed paths from owned and returns them.
-func RemoveStale(root, target string, owned map[string]bool, current []source.Definition, kinds ...source.Kind) ([]string, error) {
+func RemoveStale(root, name string, owned map[string]bool, current []source.Definition, kinds ...source.Kind) ([]string, error) {
 	written := make(map[string]bool, len(current))
 	for _, d := range current {
-		written[RelPath(target, d)] = true
+		written[RelPath(name, d)] = true
 	}
 	selected := make(map[source.Kind]bool, len(kinds))
 	for _, k := range kinds {
@@ -138,7 +132,7 @@ func RemoveStale(root, target string, owned map[string]bool, current []source.De
 		if written[rel] {
 			continue
 		}
-		kind, ok := pathKind(target, rel)
+		kind, ok := pathKind(name, rel)
 		if !ok || !selected[kind] {
 			continue
 		}
@@ -153,8 +147,8 @@ func RemoveStale(root, target string, owned map[string]bool, current []source.De
 
 // pathKind returns the kind of a relative path under a target, reporting
 // false when the system would not write the path.
-func pathKind(target, rel string) (source.Kind, bool) {
-	dir := targetDir(target) + string(filepath.Separator)
+func pathKind(name, rel string) (source.Kind, bool) {
+	dir := targetDir(name) + string(filepath.Separator)
 	switch {
 	case strings.HasPrefix(rel, dir+"skills"+string(filepath.Separator)) &&
 		strings.HasSuffix(rel, string(filepath.Separator)+"SKILL.md"):

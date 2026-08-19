@@ -353,7 +353,7 @@ tools:
 Review prose.
 `)
 
-	cases := []target{targetClaude, targetOpencode}
+	cases := []targetName{targetClaude, targetOpencode}
 	for _, trgt := range cases {
 		t.Run(string(trgt), func(t *testing.T) {
 			err := run([]string{"update", "--source", dir, "--target", string(trgt)})
@@ -374,7 +374,7 @@ description: Reviews prose.
 Review prose.
 `)
 
-	cases := []target{targetClaude, targetOpencode}
+	cases := []targetName{targetClaude, targetOpencode}
 	for _, trgt := range cases {
 		t.Run(string(trgt), func(t *testing.T) {
 			err := run([]string{"update", "--source", dir, "--target", string(trgt)})

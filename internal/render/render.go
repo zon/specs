@@ -7,13 +7,13 @@ import (
 
 	"github.com/zon/specs/internal/frontmatter"
 	"github.com/zon/specs/internal/source"
-	"github.com/zon/specs/internal/targetdir"
+	"github.com/zon/specs/internal/target"
 )
 
 // Definition returns the text a definition renders to for a target.
 // Skills and docs return their file contents verbatim; agents are
 // parsed and rendered for the target.
-func Definition(d source.Definition, target string) (string, error) {
+func Definition(d source.Definition, targetName string) (string, error) {
 	if d.Kind == source.Skill || d.Kind == source.Doc {
 		raw, err := os.ReadFile(d.Path)
 		if err != nil {
@@ -25,7 +25,7 @@ func Definition(d source.Definition, target string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("reading %s: %w", d.Path, err)
 	}
-	if target == targetdir.Claude {
+	if targetName == target.Claude {
 		return ClaudeAgent(content.Fields, content.Body), nil
 	}
 	return OpencodeAgent(content.Fields, content.Body)

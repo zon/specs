@@ -41,14 +41,3 @@ Delete the `scopeAll` branch in `update` and the docs cases in
 
 Scope: `cmd/zpecs/main.go`.
 Verify: `go test ./...`.
-
-## Give target names a neutral home
-
-`render` imports `targetdir` only for the `targetdir.Claude` constant.
-Move the target name constants into a new `internal/target` package.
-Import it from `targetdir`, `render`, and `cmd/zpecs`. Record the
-package in `specs/architecture.yaml`.
-
-Scope: `internal/target/`, `internal/targetdir/`, `internal/render/`,
-`cmd/zpecs/main.go`, and `specs/architecture.yaml`.
-Verify: `go test ./...` and `just check`.
