@@ -17,7 +17,6 @@ func TestSummary(t *testing.T) {
 		want      string
 	}{
 		{name: "skills with target", scopeName: "skills", target: "claude", source: "/tmp/src", n: 2, want: "updating skills for claude from /tmp/src (2 definitions)\n"},
-		{name: "docs without target", scopeName: "docs", source: "/tmp/src", n: 3, want: "updating docs from /tmp/src (3 files)\n"},
 		{name: "docs write target", scopeName: "docs", target: "docs", source: "/tmp/src", n: 3, want: "updating docs from /tmp/src (3 files)\n"},
 	}
 

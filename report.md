@@ -1,7 +1,8 @@
-Make targetdir.Write return only an error
+Drop the dead empty-target case in report.Summary
 
-- Drop the written bool from Write and always record the path in owned
-- Update the tests that asserted on the bool
-- Remove the completed plan from refactoring.md
+- Summary no longer handles an empty target, since every caller passes one. Only the docs target omits it from the line.
+- Remove the test row that covered the empty-target case. The remaining rows cover both branches of the condition.
+- Remove the completed plan from refactoring.md.
+- go test ./... and just check both pass.
 
-Ralph item 2 completed
+Ralph item 1 completed

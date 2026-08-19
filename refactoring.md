@@ -1,12 +1,8 @@
 # Refactoring Plans
 
-## Drop the dead target case in Summary
-
-`internal/report/report.go:12` `Summary` handles an empty target, but every pair sets one. Keep only the docs case and remove the matching test row.
-
 ## State the legacy-manifest rule once
 
-`internal/targetdir/targetdir.go` explains how to handle a manifest without kinds in four comments: on `known`, `Owned`, `SaveOwned`, and `RemoveStale`. State it once on `known` and shorten the rest.
+`internal/targetdir/targetdir.go` explains how to handle a manifest without kinds in four comments: on `known`, `Owned`, `SaveOwned`, and `RemoveStale`. State it on `known` and shorten the rest.
 
 ## Remove the dead guard in frontmatter.parse
 
