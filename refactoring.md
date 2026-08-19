@@ -16,10 +16,6 @@
 
 `internal/frontmatter/frontmatter.go:40` checks `len(lines) == 0`, but `strings.Split` always returns one element. Delete the guard.
 
-## Move URL detection out of the orchestration module
-
-`cmd/zpecs/main.go:230` `resolveSource` checks for `"://"` inline. Add `IsRemote` to `internal/clone` and call it, keeping `main.go` pure delegation.
-
 ## Replace the kindName and parseKind switches with a map
 
 `internal/targetdir/targetdir.go:172` `kindName` and `parseKind` are mirror switches over the same words. Replace both with one map and two lookups.

@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -34,6 +35,19 @@ func TestGitRepoWithoutFilesHasNoCommit(t *testing.T) {
 
 	err := runGitErr(dir, "rev-parse", "HEAD")
 	require.Error(t, err)
+}
+
+func TestGitRepoURLReturnsCloneableURL(t *testing.T) {
+	url := GitRepoURL(t, map[string]string{"seed": "content\n"})
+
+	require.True(t, strings.HasPrefix(url, "file://"))
+
+	dir := t.TempDir()
+	RunGit(t, dir, "clone", url, filepath.Join(dir, "clone"))
+
+	content, err := os.ReadFile(filepath.Join(dir, "clone", "seed"))
+	require.NoError(t, err)
+	require.Equal(t, "content\n", string(content))
 }
 
 func runGitErr(dir string, args ...string) error {

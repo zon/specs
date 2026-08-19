@@ -1,7 +1,6 @@
-Split the fromAST walk into applyHeading and applyContent
+Wire resolveSource to clone.IsRemote
 
-- Move heading and content handling out of the fromAST walk loop into
-  applyHeading and applyContent over a small state struct
 - Remove the completed plan from refactoring.md
+- Add tests covering the remote and local branches of resolveSource
 
-Ralph item 0 completed
+Ralph item 5 completed

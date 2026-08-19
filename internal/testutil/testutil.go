@@ -37,3 +37,10 @@ func GitRepo(t *testing.T, files map[string]string) string {
 	}
 	return dir
 }
+
+// GitRepoURL creates a temp git repository with the given files and
+// returns its file:// URL.
+func GitRepoURL(t *testing.T, files map[string]string) string {
+	t.Helper()
+	return "file://" + GitRepo(t, files)
+}
