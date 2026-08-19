@@ -34,20 +34,15 @@ func Definition(d source.Definition, targetName string) (string, error) {
 // ClaudeAgent keeps the name, description, and tools, and uses the body as
 // the prompt.
 func ClaudeAgent(fields frontmatter.Fields, body string) string {
-	var out strings.Builder
-	out.WriteString("---\n")
-	fmt.Fprintf(&out, "name: %s\n", fields.Name)
-	fmt.Fprintf(&out, "description: %s\n", fields.Description)
+	var lines []string
+	lines = append(lines, "name: "+fields.Name, "description: "+fields.Description)
 	if len(fields.Tools) > 0 {
-		out.WriteString("tools:\n")
+		lines = append(lines, "tools:")
 		for _, tool := range fields.Tools {
-			fmt.Fprintf(&out, "  - %s\n", tool)
+			lines = append(lines, "  - "+tool)
 		}
 	}
-	out.WriteString("---\n\n")
-	out.WriteString(body)
-	out.WriteString("\n")
-	return out.String()
+	return frame(lines, body)
 }
 
 // OpencodeAgent writes the definition's mode, defaulting to subagent,
@@ -60,21 +55,30 @@ func OpencodeAgent(fields frontmatter.Fields, body string) (string, error) {
 	if !validModes[mode] {
 		return "", fmt.Errorf("unknown mode %q", mode)
 	}
+	var lines []string
+	lines = append(lines, "mode: "+mode, "description: "+fields.Description)
+	if len(fields.Tools) > 0 {
+		lines = append(lines, "permission:")
+		for _, tool := range deniedTools(fields.Tools) {
+			lines = append(lines, "  "+tool+": deny")
+		}
+	}
+	return frame(lines, body), nil
+}
+
+// frame wraps the frontmatter lines and body in an agent file: the `---`
+// delimiters, the lines, a blank line, and a trailing newline.
+func frame(lines []string, body string) string {
 	var out strings.Builder
 	out.WriteString("---\n")
-	fmt.Fprintf(&out, "mode: %s\n", mode)
-	fmt.Fprintf(&out, "description: %s\n", fields.Description)
-	if len(fields.Tools) > 0 {
-		denied := deniedTools(fields.Tools)
-		out.WriteString("permission:\n")
-		for _, tool := range denied {
-			fmt.Fprintf(&out, "  %s: deny\n", tool)
-		}
+	for _, line := range lines {
+		out.WriteString(line)
+		out.WriteString("\n")
 	}
 	out.WriteString("---\n\n")
 	out.WriteString(body)
 	out.WriteString("\n")
-	return out.String(), nil
+	return out.String()
 }
 
 // validModes are the mode values an opencode agent may take.
