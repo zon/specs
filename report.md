@@ -1,8 +1,8 @@
-State the legacy-manifest rule once in targetdir
+Drop the dead guard in frontmatter.parse
 
-Moved the legacy-manifest rule to the known field and shortened the
-other comments in internal/targetdir/targetdir.go. Removed the
-completed plan from refactoring.md. Existing tests cover the behavior,
-so none were needed.
+strings.Split always returns at least one line, so the len(lines) == 0
+check in parse can never fire. Remove it. Add a test that an empty
+file parses to zero fields and an empty body. Remove the completed
+plan from refactoring.md. Delete the file, since no plans remain.
 
-Ralph item 3 completed
+Ralph item 4 completed
