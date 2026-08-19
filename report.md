@@ -1,7 +1,8 @@
-Replace the kindName and parseKind switches with one map
+State the legacy-manifest rule once in targetdir
 
-- Back both lookups with a map from kinds to manifest words
-- Add a round-trip test that pins the kind-word contract
-- Remove the completed plan from refactoring.md
+Moved the legacy-manifest rule to the known field and shortened the
+other comments in internal/targetdir/targetdir.go. Removed the
+completed plan from refactoring.md. Existing tests cover the behavior,
+so none were needed.
 
-Ralph item 6 completed
+Ralph item 3 completed

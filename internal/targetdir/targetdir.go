@@ -11,10 +11,11 @@ import (
 	"github.com/zon/specs/internal/target"
 )
 
-// ownedPath records one written path and its kind. An entry read from a
-// manifest written before kinds were stored has known == false.
+// ownedPath records one written path and its kind.
 type ownedPath struct {
-	kind  source.Kind
+	kind source.Kind
+	// known is false for a path read from a manifest written before
+	// kinds were stored.
 	known bool
 }
 
@@ -54,8 +55,7 @@ func targetDir(name string) string {
 
 // Owned returns the paths the system wrote under root for a target,
 // with each path's kind. It reads the target's manifest. A target
-// without a manifest owns nothing. A line without a leading kind word
-// is a path from an older manifest, so its entry has known == false.
+// without a manifest owns nothing.
 func Owned(root, name string) (map[string]ownedPath, error) {
 	data, err := os.ReadFile(filepath.Join(root, targetDir(name), manifestName))
 	if os.IsNotExist(err) {
@@ -116,8 +116,7 @@ func WriteAll(root, name string, defs []source.Definition, content func(source.D
 	return nil
 }
 
-// SaveOwned persists the owned paths for a target under root, one
-// "kind path" line per known path and a bare path per unknown one.
+// SaveOwned persists the owned paths for a target under root.
 func SaveOwned(root, name string, owned map[string]ownedPath) error {
 	lines := make([]string, 0, len(owned))
 	for p, op := range owned {
@@ -137,10 +136,9 @@ func SaveOwned(root, name string, owned map[string]ownedPath) error {
 
 // RemoveStale deletes for target under root the files owned records that
 // no definition in current writes, limited to the selected kinds. An
-// entry whose kind is unknown stays, because an older manifest does
-// not record kinds, until a later write of the same path records its
-// kind. RemoveStale drops the removed paths from owned and returns
-// them.
+// entry whose kind is unknown stays until a later write of the same
+// path records its kind. RemoveStale drops the removed paths from owned
+// and returns them.
 func RemoveStale(root, name string, owned map[string]ownedPath, current []source.Definition, kinds ...source.Kind) ([]string, error) {
 	written := make(map[string]bool, len(current))
 	for _, d := range current {
