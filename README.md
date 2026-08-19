@@ -1,31 +1,44 @@
 # zpecs
 
-Document formats and standards for spec-driven development with AI coding agents, plus the skills that author them.
+Common standards, agents, and skills for spec-driven development with AI coding agents. Apply them to any repository with the `zpecs` CLI.
 
-Projects install it rather than depend on it, so a project gets a copy it can read, edit, and diff.
+Repositories install these rather than depend on them, so a repository gets a copy it can read, edit, and diff.
 
-## Install
+## Standards
 
-Run the [CLI](docs/cli/README.md) inside the target repository to render the skill and agent definitions into its `.claude` or `.opencode` directory:
+The formats and guidelines that shape how a repository writes and organizes its specs, architecture, and requirements. They install to the target's `docs/specs/`.
 
-```bash
-zpecs update --target claude
-zpecs update --target opencode
-```
+**Formats**
 
-Copy the standards docs into the target's `docs/specs/`, then point the target's `AGENTS.md` at them:
+- [Spec](docs/specs/specs.md) — behavior contracts: structured requirements and scenarios
+- [Architecture](docs/specs/architecture-outline.md) — the components of an application, in YAML
+- [Project](docs/specs/project.md) — a list of requirements for a coding agent to work through
 
-```markdown
-Before writing any code, read [docs/specs/architecture.md](docs/specs/architecture.md).
-```
+**Guidelines**
 
-## What's Inside
+- [Orchestration](docs/specs/orchestration.md) — separates coordination logic from implementation detail
+- [Architecture](docs/specs/architecture.md) — component placement, and what belongs in each component type
+- [Writing Requirements](docs/specs/requirements.md) — what makes a good unit of work
+- [Agent Prompts](docs/specs/prompts.md) — how to structure a single-task prompt
+- [Dependencies](docs/specs/dependencies.md) — when to use one instead of writing your own
+- [Prose Guidelines](docs/specs/prose.md) — how to write and organize prose
+- [Glossary](docs/specs/glossary.md) — terms used throughout these documents
 
-**Formats** — [spec](docs/specs/specs.md), [architecture](docs/specs/architecture-outline.md), [project](docs/specs/project.md). A spec defines what the system must do. The architecture records where the code lives. A project is a plain list of requirements, one per iteration.
+## Agents
 
-**Standards** — [orchestration](docs/specs/orchestration.md), [architecture guidelines](docs/specs/architecture.md), [writing requirements](docs/specs/requirements.md), [agent prompts](docs/specs/prompts.md), [glossary](docs/specs/glossary.md).
+Coding agents that plan, write, review, test, and polish code. `zpecs update agents` renders them into a repository's `.claude/agents/` or `.opencode/agents/`.
 
-**Skills** — five skills an agent invokes by name:
+| Agent | Does |
+|---|---|
+| `code-architect` | Plans implementation through writer and reviewer subagents |
+| `code-writer` | Writes the code and tests for one step |
+| `code-reviewer` | Reviews code against the repo's standards |
+| `code-tester` | Runs the test suite and reports results |
+| `prose-editor` | Reviews prose against the guidelines and fixes violations |
+
+## Skills
+
+Skills an agent invokes by name to write new specs, architecture, projects, and definitions. `zpecs update skills` renders them into a repository's `.claude/skills/` or `.opencode/skills/`.
 
 | Skill | Writes |
 |---|---|
@@ -35,18 +48,24 @@ Before writing any code, read [docs/specs/architecture.md](docs/specs/architectu
 | `write-skill` | `skills/<name>/SKILL.md` |
 | `write-agent` | `agents/<name>.md` |
 
-## Runners
+## Install and Use
 
-Nothing here executes a project. Running it is a runner's job. [ralph](https://github.com/zon/ralph) is one. It picks one requirement per iteration, drives a coding agent through it, and records completion in the branch's commit log.
-
-The formats stay runner-neutral.
-
-## Recipes
+Build and install the CLI from source:
 
 ```bash
-just check   # verify every relative markdown link resolves
+go install ./cmd/zpecs
 ```
 
-## License
+Run the [CLI](docs/cli/README.md) inside the target repository to render the skill and agent definitions into its `.claude` or `.opencode` directory:
 
-GPL-3.0
+```bash
+zpecs update --target claude
+zpecs update --target opencode
+```
+
+Copy the standards docs into the target's `docs/specs/`, then point its `AGENTS.md` at them:
+
+```markdown
+Before writing any code, read [docs/specs/architecture.md](docs/specs/architecture.md).
+```
+
