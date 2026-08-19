@@ -37,6 +37,16 @@ go test ./...
 
 `just check` verifies every relative markdown link in the docs and skills resolves. `go test ./...` builds the CLI and runs its tests. Run both after any change.
 
+## Versioning
+
+The `VERSION` file holds the CLI version. The `just build` and `just install` recipes pass it into the binary.
+
+Bump `VERSION` after you change code. Use semantic versioning:
+
+- **patch** — bug fixes and internal changes
+- **minor** — new features
+- **major** — breaking changes
+
 ## Keeping It Neutral
 
 These documents describe how to write specs, architecture, and projects, and how to apply the orchestration pattern to code, not how any particular tool consumes them. When a rule depends on runner behavior, state the rule and note that the runner decides, rather than documenting one runner's flags. Completion state in particular never belongs in a project file.

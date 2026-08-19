@@ -1,5 +1,6 @@
 docs_dir := "docs/zpecs"
 skills_dir := "skills"
+version := trim(`cat VERSION`)
 
 # List available recipes
 default:
@@ -7,11 +8,11 @@ default:
 
 # Build the zpecs CLI binary
 build:
-    go build -o zpecs ./cmd/zpecs
+    go build -ldflags "-X main.version={{version}}" -o zpecs ./cmd/zpecs
 
 # Install the zpecs CLI with go install
 install:
-    go install ./cmd/zpecs
+    go install -ldflags "-X main.version={{version}}" ./cmd/zpecs
 
 # Check that every relative markdown link in the docs and skills resolves
 check:
