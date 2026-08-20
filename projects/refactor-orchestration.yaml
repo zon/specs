@@ -1,2 +1,0 @@
-- "The update orchestration's body contains only named step calls, domain conditions, and return values: resolving the repository root no longer requires the working-directory literal \".\" from update.Run, and repo.Root resolves the process working directory itself"
-- Apply a semver patch bump to the app version

@@ -20,7 +20,7 @@ type Options struct {
 
 // Run renders the selected kinds from the source into the target.
 func Run(opts Options) error {
-	root, err := repo.Root(".")
+	root, err := repo.Root()
 	if err != nil {
 		return err
 	}
