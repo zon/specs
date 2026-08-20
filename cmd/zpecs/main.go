@@ -50,11 +50,7 @@ type convertCmd struct {
 }
 
 func (c *convertCmd) Run() error {
-	doc, err := spec.Read(c.Path)
-	if err != nil {
-		return err
-	}
-	return spec.Write(os.Stdout, doc)
+	return spec.Convert(c.Path, os.Stdout)
 }
 
 // usageText returns the help kong generates for the whole application.

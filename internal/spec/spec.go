@@ -1,4 +1,4 @@
-// Package spec parses and writes the spec markdown format.
+// Package spec parses a spec markdown file into a JSON document.
 package spec
 
 import (
@@ -33,8 +33,8 @@ type Scenario struct {
 	Steps []string `json:"steps"`
 }
 
-// Read parses the spec file at path.
-func Read(path string) (Document, error) {
+// read parses the spec file at path.
+func read(path string) (Document, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return Document{}, err
@@ -43,8 +43,17 @@ func Read(path string) (Document, error) {
 	return fromAST(root, content)
 }
 
-// Write prints doc as one indented JSON object.
-func Write(w io.Writer, doc Document) error {
+// Convert reads the spec file at path and writes it to w as JSON.
+func Convert(path string, w io.Writer) error {
+	doc, err := read(path)
+	if err != nil {
+		return err
+	}
+	return write(w, doc)
+}
+
+// write prints doc as one indented JSON object.
+func write(w io.Writer, doc Document) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(doc)
