@@ -147,3 +147,19 @@ func TestUnmarshalScope(t *testing.T) {
 		})
 	}
 }
+
+func TestTargetNames(t *testing.T) {
+	cases := []struct {
+		name string
+		got  string
+	}{
+		{name: "claude", got: Claude},
+		{name: "opencode", got: Opencode},
+		{name: "docs", got: Docs},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.name, tc.got)
+		})
+	}
+}

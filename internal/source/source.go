@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+// Target names the targets definitions write to.
+const (
+	Claude   = "claude"
+	Opencode = "opencode"
+	Docs     = "docs"
+)
+
 // Kind marks a definition as a skill, an agent, or a doc.
 type Kind int
 

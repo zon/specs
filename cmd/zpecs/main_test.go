@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/spec"
-	"github.com/zon/specs/internal/target"
 	"github.com/zon/specs/internal/testutil"
 	"github.com/zon/specs/internal/update"
 )
@@ -80,15 +79,15 @@ func TestParseUpdate(t *testing.T) {
 		want    update.Options
 		wantErr bool
 	}{
-		{name: "defaults", args: nil, want: update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: defaultSourceURL}},
-		{name: "all scope", args: []string{"all"}, want: update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: defaultSourceURL}},
-		{name: "scope", args: []string{"skills"}, want: update.Options{Scope: source.ScopeSkills, Target: target.Opencode, Source: defaultSourceURL}},
-		{name: "docs scope", args: []string{"docs"}, want: update.Options{Scope: source.ScopeDocs, Target: target.Opencode, Source: defaultSourceURL}},
-		{name: "claude target", args: []string{"--target", "claude"}, want: update.Options{Scope: source.ScopeAll, Target: target.Claude, Source: defaultSourceURL}},
-		{name: "claude target equals", args: []string{"--target=claude"}, want: update.Options{Scope: source.ScopeAll, Target: target.Claude, Source: defaultSourceURL}},
-		{name: "source", args: []string{"--source", "/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: "/tmp/src"}},
-		{name: "source equals", args: []string{"--source=/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: "/tmp/src"}},
-		{name: "all together", args: []string{"agents", "--source", "/tmp/src", "--target", "claude"}, want: update.Options{Scope: source.ScopeAgents, Target: target.Claude, Source: "/tmp/src"}},
+		{name: "defaults", args: nil, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "all scope", args: []string{"all"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "scope", args: []string{"skills"}, want: update.Options{Scope: source.ScopeSkills, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "docs scope", args: []string{"docs"}, want: update.Options{Scope: source.ScopeDocs, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "claude target", args: []string{"--target", "claude"}, want: update.Options{Scope: source.ScopeAll, Target: source.Claude, Source: defaultSourceURL}},
+		{name: "claude target equals", args: []string{"--target=claude"}, want: update.Options{Scope: source.ScopeAll, Target: source.Claude, Source: defaultSourceURL}},
+		{name: "source", args: []string{"--source", "/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: "/tmp/src"}},
+		{name: "source equals", args: []string{"--source=/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: "/tmp/src"}},
+		{name: "all together", args: []string{"agents", "--source", "/tmp/src", "--target", "claude"}, want: update.Options{Scope: source.ScopeAgents, Target: source.Claude, Source: "/tmp/src"}},
 		{name: "unknown scope", args: []string{"vscode"}, wantErr: true},
 		{name: "unknown target", args: []string{"--target", "vscode"}, wantErr: true},
 		{name: "missing target value", args: []string{"--target"}, wantErr: true},
@@ -111,7 +110,7 @@ func TestParseUpdateEnvOverridesDefault(t *testing.T) {
 	t.Setenv("ZPECS_SOURCE", "/env/src")
 	got, err := parseUpdateArgs(t)
 	require.NoError(t, err)
-	want := update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: "/env/src"}
+	want := update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: "/env/src"}
 	require.Equal(t, want, got)
 }
 

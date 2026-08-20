@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/source"
-	"github.com/zon/specs/internal/target"
 )
 
 func TestClaudeAgentKeepsName(t *testing.T) {
@@ -153,7 +152,7 @@ func TestOpencodeAgentOmitsDenyRulesWhenToolsEmpty(t *testing.T) {
 func TestDefinitionReturnsSkillVerbatim(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n\nReview prose.\n")
 
-	got, err := definition(source.Definition{Kind: source.Skill, Name: "prose-editor", Path: path}, target.Claude)
+	got, err := definition(source.Definition{Kind: source.Skill, Name: "prose-editor", Path: path}, source.Claude)
 	require.NoError(t, err)
 	want := "# prose-editor\n\nReview prose.\n"
 	require.Equal(t, want, got)
@@ -162,7 +161,7 @@ func TestDefinitionReturnsSkillVerbatim(t *testing.T) {
 func TestDefinitionReturnsDocVerbatim(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
 
-	got, err := definition(source.Definition{Kind: source.Doc, Name: "prose", Path: path}, target.Opencode)
+	got, err := definition(source.Definition{Kind: source.Doc, Name: "prose", Path: path}, source.Opencode)
 	require.NoError(t, err)
 	want := "# Prose guidelines\n"
 	require.Equal(t, want, got)
@@ -171,7 +170,7 @@ func TestDefinitionReturnsDocVerbatim(t *testing.T) {
 func TestDefinitionRendersAgentForClaude(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n")
 
-	got, err := definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, target.Claude)
+	got, err := definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, source.Claude)
 	require.NoError(t, err)
 	want := "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
 	require.Equal(t, want, got)
@@ -180,7 +179,7 @@ func TestDefinitionRendersAgentForClaude(t *testing.T) {
 func TestDefinitionRendersAgentForOpencode(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n")
 
-	got, err := definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, target.Opencode)
+	got, err := definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, source.Opencode)
 	require.NoError(t, err)
 	want := "---\nmode: subagent\ndescription: Reviews prose against the guidelines.\n---\n\nReview prose against the guidelines.\n"
 	require.Equal(t, want, got)
@@ -189,7 +188,7 @@ func TestDefinitionRendersAgentForOpencode(t *testing.T) {
 func TestDefinitionReportsUnreadableAgentFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "agents", "missing.md")
 
-	_, err := definition(source.Definition{Kind: source.Agent, Name: "missing", Path: path}, target.Opencode)
+	_, err := definition(source.Definition{Kind: source.Agent, Name: "missing", Path: path}, source.Opencode)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "reading")
 }
@@ -197,7 +196,7 @@ func TestDefinitionReportsUnreadableAgentFile(t *testing.T) {
 func TestDefinitionReportsUnreadableSkillFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "skills", "missing", "SKILL.md")
 
-	_, err := definition(source.Definition{Kind: source.Skill, Name: "missing", Path: path}, target.Opencode)
+	_, err := definition(source.Definition{Kind: source.Skill, Name: "missing", Path: path}, source.Opencode)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "reading")
 }
@@ -205,7 +204,7 @@ func TestDefinitionReportsUnreadableSkillFile(t *testing.T) {
 func TestDefinitionReportsInvalidAgentFrontmatter(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\ntools: [read, edit\n---\n")
 
-	_, err := definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, target.Claude)
+	_, err := definition(source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}, source.Claude)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "parsing")
 }
@@ -214,7 +213,7 @@ func TestForTargetRendersAgentForOpencode(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\ndescription: Reviews prose with style.\n---\n\nReview prose with style.\n")
 	d := source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}
 
-	got, err := ForTarget(target.Opencode)(d)
+	got, err := ForTarget(source.Opencode)(d)
 	require.NoError(t, err)
 	want := "---\nmode: subagent\ndescription: Reviews prose with style.\n---\n\nReview prose with style.\n"
 

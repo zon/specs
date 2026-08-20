@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/zon/specs/internal/source"
-	"github.com/zon/specs/internal/target"
 )
 
 // Out receives summary lines.
@@ -18,7 +17,7 @@ var Out io.Writer = os.Stdout
 func Summary(kinds []source.Kind, targetName, sourceLabel string, n int) error {
 	label := scopeLabel(kinds)
 	var err error
-	if targetName == target.Docs {
+	if targetName == source.Docs {
 		_, err = fmt.Fprintf(Out, "updating %s from %s (%d files)\n", label, sourceLabel, n)
 		return err
 	}

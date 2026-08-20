@@ -6,7 +6,6 @@ import (
 	"github.com/zon/specs/internal/repo"
 	"github.com/zon/specs/internal/report"
 	"github.com/zon/specs/internal/source"
-	"github.com/zon/specs/internal/target"
 	"github.com/zon/specs/internal/targetdir"
 )
 
@@ -53,11 +52,11 @@ func pairs(s source.Scope, targetName string) []pair {
 	case source.ScopeAgents:
 		return []pair{{target: targetName, kinds: []source.Kind{source.Agent}}}
 	case source.ScopeDocs:
-		return []pair{{target: target.Docs, kinds: []source.Kind{source.Doc}}}
+		return []pair{{target: source.Docs, kinds: []source.Kind{source.Doc}}}
 	default:
 		return []pair{
 			{target: targetName, kinds: []source.Kind{source.Skill, source.Agent}},
-			{target: target.Docs, kinds: []source.Kind{source.Doc}},
+			{target: source.Docs, kinds: []source.Kind{source.Doc}},
 		}
 	}
 }
