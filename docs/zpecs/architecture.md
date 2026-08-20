@@ -4,15 +4,9 @@
 
 If it exists, read `specs/architecture.yaml` before writing code. See [Architecture Format](architecture-outline.md).
 
-## Component Placement
-
-Every piece of code belongs in a specific component. Before writing, ask:
-
-1. **Does an existing component own this concern?** If so, add the code there rather than duplicating logic.
-2. **Does the orchestration pattern assign this code to a component type?** Coordination logic belongs in an [orchestration module](glossary.md#orchestration-module). Low-level work belongs in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
-3. **Is there no existing home?** If neither applies, expand an existing component's scope or create a new one. Add a new component to `specs/architecture.yaml` once the code is written.
-
 ## Component Structure
+
+Every piece of code belongs in a specific component. Before writing, ask whether an existing component owns the concern; if so, add the code there rather than duplicating logic.
 
 Keep the component set as small as it can be. Each component should earn its place by owning a distinct, substantial concern. Before adding, removing, or merging components, read the format guidance in [Architecture Format](architecture-outline.md).
 
@@ -32,7 +26,9 @@ Look for one-to-one component relationships: a component whose only caller is on
 
 ## Component Types
 
-Each component is an [implementation module](glossary.md#implementation-module) unless `specs/architecture.yaml` sets `orchestration: true`. The flag makes it an [orchestration module](glossary.md#orchestration-module). A component with no code is neither.
+`specs/architecture.yaml` sets each component's type: [implementation module](glossary.md#implementation-module) by default, [orchestration module](glossary.md#orchestration-module) when it sets `orchestration: true`. A component with no code is neither.
+
+Follow the orchestration pattern when it assigns code to a component type. Coordination logic belongs in an [orchestration module](glossary.md#orchestration-module), low-level work in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
 
 ### Orchestration Modules
 
