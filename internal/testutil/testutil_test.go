@@ -10,6 +10,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/report"
+	"github.com/zon/specs/internal/source"
+	"github.com/zon/specs/internal/target"
+	"github.com/zon/specs/internal/targetdir"
 )
 
 func TestGitRepoCreatesRepoWithFiles(t *testing.T) {
@@ -68,6 +71,75 @@ func TestSkillSourceCreatesSkill(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join(dir, "skills", "seed", "SKILL.md"))
 	require.NoError(t, err)
 	require.Equal(t, "# seed\n", string(content))
+}
+
+func TestAgentSourceCreatesAgent(t *testing.T) {
+	dir := AgentSource(t, "seed")
+
+	content, err := os.ReadFile(filepath.Join(dir, "agents", "seed.md"))
+	require.NoError(t, err)
+	require.Equal(t, "---\nname: seed\n---\n\nseed.\n", string(content))
+}
+
+func TestWriteAgentBodyWritesTheBody(t *testing.T) {
+	dir := t.TempDir()
+
+	WriteAgentBody(t, dir, "seed", "body\n")
+
+	content, err := os.ReadFile(filepath.Join(dir, "agents", "seed.md"))
+	require.NoError(t, err)
+	require.Contains(t, string(content), "body\n")
+}
+
+func TestDocSourceCreatesDoc(t *testing.T) {
+	dir := DocSource(t, "seed")
+
+	content, err := os.ReadFile(filepath.Join(dir, "docs", "zpecs", "seed.md"))
+	require.NoError(t, err)
+	require.Equal(t, "# seed\n", string(content))
+}
+
+func TestWriteDocBodyWritesTheContent(t *testing.T) {
+	dir := t.TempDir()
+
+	WriteDocBody(t, dir, "seed", "content\n")
+
+	content, err := os.ReadFile(filepath.Join(dir, "docs", "zpecs", "seed.md"))
+	require.NoError(t, err)
+	require.Equal(t, "content\n", string(content))
+}
+
+func TestRequireWrittenPassesForWrittenFile(t *testing.T) {
+	root := t.TempDir()
+	rel := targetdir.RelPath(target.Opencode, source.Definition{Kind: source.Skill, Name: "seed"})
+	writeFile(t, root, rel, "content\n")
+
+	RequireWritten(t, root, target.Opencode, "seed", source.Skill)
+}
+
+func TestRequireNotWrittenPassesForMissingFile(t *testing.T) {
+	root := t.TempDir()
+
+	RequireNotWritten(t, root, target.Opencode, "seed", source.Skill)
+}
+
+func TestWrittenContentReturnsTheText(t *testing.T) {
+	root := t.TempDir()
+	rel := targetdir.RelPath(target.Opencode, source.Definition{Kind: source.Skill, Name: "seed"})
+	writeFile(t, root, rel, "content\n")
+
+	require.Equal(t, "content\n", WrittenContent(t, root, target.Opencode, "seed", source.Skill))
+}
+
+func TestSeedForeignFileWritesAtTargetPath(t *testing.T) {
+	dir := t.TempDir()
+
+	SeedForeignFile(t, dir, target.Claude, "seed", source.Agent, "manual content\n")
+
+	rel := targetdir.RelPath(target.Claude, source.Definition{Kind: source.Agent, Name: "seed"})
+	content, err := os.ReadFile(filepath.Join(dir, rel))
+	require.NoError(t, err)
+	require.Equal(t, "manual content\n", string(content))
 }
 
 func TestRequireFilePassesForExistingFile(t *testing.T) {

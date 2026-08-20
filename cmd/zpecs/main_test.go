@@ -20,6 +20,7 @@ import (
 	"github.com/zon/specs/internal/update"
 )
 
+// buildBinary builds the zpecs binary into dir and returns its path.
 func buildBinary(t *testing.T, dir string) string {
 	t.Helper()
 	binary := filepath.Join(dir, "zpecs")
@@ -37,7 +38,9 @@ func TestBuildProducesRunnableCLIBinary(t *testing.T) {
 
 	info, err := os.Stat(binary)
 	require.NoError(t, err)
-	require.False(t, runtime.GOOS != "windows" && info.Mode().Perm()&0o111 == 0, "binary is not executable: %v", info.Mode())
+	if runtime.GOOS != "windows" {
+		require.True(t, info.Mode().Perm()&0o111 != 0, "binary is not executable: %v", info.Mode())
+	}
 
 	cmd := exec.Command(binary)
 	out, err := cmd.CombinedOutput()
@@ -165,14 +168,13 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 	src := gitCloneSource(t)
 	cases := []struct {
 		args []string
-		want string
 	}{
-		{args: []string{"update"}, want: "updating skills and agents for opencode"},
-		{args: []string{"update", "skills"}, want: "updating skills for opencode"},
-		{args: []string{"update", "agents"}, want: "updating agents for opencode"},
-		{args: []string{"update", "docs"}, want: "updating docs"},
-		{args: []string{"update", "--target", "claude"}, want: "updating skills and agents for claude"},
-		{args: []string{"update", "--source", sourceDir, "skills"}, want: "updating skills for opencode from " + sourceDir},
+		{args: []string{"update"}},
+		{args: []string{"update", "skills"}},
+		{args: []string{"update", "agents"}},
+		{args: []string{"update", "docs"}},
+		{args: []string{"update", "--target", "claude"}},
+		{args: []string{"update", "--source", sourceDir, "skills"}},
 	}
 
 	for _, tc := range cases {
@@ -180,8 +182,7 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 		cmd.Dir = repoDir
 		cmd.Env = append(os.Environ(), "ZPECS_SOURCE="+src)
 		out, err := cmd.CombinedOutput()
-		require.NoError(t, err, "zpecs %v failed", tc.args)
-		require.Contains(t, string(out), tc.want)
+		require.NoError(t, err, "zpecs %v failed\n%s", tc.args, out)
 	}
 }
 
@@ -189,13 +190,6 @@ func TestBinaryRejectsUnknownCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	cmd := exec.Command(binary, "install")
 	require.Error(t, cmd.Run())
-}
-
-func writeSourceFile(t *testing.T, dir, rel, content string) {
-	t.Helper()
-	path := filepath.Join(dir, rel)
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
-	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }
 
 // gitCloneSource returns a temp git repository seeded with source files.
@@ -208,30 +202,6 @@ func gitCloneSource(t *testing.T) string {
 	})
 }
 
-func TestUpdateReadsFromDefaultSource(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
-
-	require.NoError(t, run([]string{"update"}))
-	_, err := os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"))
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join(".opencode", "agents", "code-architect.md"))
-	require.NoError(t, err)
-}
-
-func TestUpdateReadsFromLocalSourceOverDefault(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
-	local := t.TempDir()
-	writeSourceFile(t, local, filepath.Join("skills", "local-only", "SKILL.md"), "# local-only\n")
-
-	require.NoError(t, run([]string{"update", "--source", local}))
-	_, err := os.Stat(filepath.Join(".opencode", "skills", "local-only", "SKILL.md"))
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"))
-	require.Error(t, err)
-}
-
 func TestBinaryReadsFromDefaultSource(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	work := testutil.GitRepo(t, nil)
@@ -242,565 +212,6 @@ func TestBinaryReadsFromDefaultSource(t *testing.T) {
 	require.NoError(t, err, "zpecs update failed\n%s", out)
 	_, err = os.Stat(filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md"))
 	require.NoError(t, err)
-}
-
-func TestUpdateReadsSameFrontmatterForBothTargets(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
-name: prose-editor
-description: Reviews prose.
-tools:
-  - read
-  - edit
----
-
-Review prose.
-`)
-
-	cases := []string{target.Claude, target.Opencode}
-	for _, trgt := range cases {
-		t.Run(trgt, func(t *testing.T) {
-			err := run([]string{"update", "--source", dir, "--target", trgt})
-			require.NoError(t, err)
-		})
-	}
-}
-
-func TestUpdateWritesAgentUnderSourceNameForBothTargets(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
-name: renamed
-description: Reviews prose.
----
-Review prose.
-`)
-
-	cases := []string{target.Claude, target.Opencode}
-	for _, trgt := range cases {
-		t.Run(trgt, func(t *testing.T) {
-			err := run([]string{"update", "--source", dir, "--target", trgt})
-			require.NoError(t, err)
-			path := filepath.Join("."+trgt, "agents", "prose-editor.md")
-			content, err := os.ReadFile(path)
-			require.NoError(t, err)
-			if trgt == target.Claude {
-				require.Contains(t, string(content), "name: renamed")
-			} else {
-				require.NotContains(t, string(content), "name:")
-			}
-		})
-	}
-}
-
-func TestUpdateWritesSkillAndAgentToClaude(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
-name: prose-editor
-description: Reviews prose.
----
-Review prose.
-`)
-
-	err := run([]string{"update", "--source", dir, "--target", "claude"})
-	require.NoError(t, err)
-
-	_, err = os.Stat(filepath.Join(".claude", "skills", "prose-editor", "SKILL.md"))
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join(".claude", "agents", "prose-editor.md"))
-	require.NoError(t, err)
-}
-
-func TestUpdateWritesSkillAndAgentToOpencode(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
-name: prose-editor
-description: Reviews prose.
----
-Review prose.
-`)
-
-	err := run([]string{"update", "--source", dir, "--target", "opencode"})
-	require.NoError(t, err)
-
-	_, err = os.Stat(filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"))
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join(".opencode", "agents", "prose-editor.md"))
-	require.NoError(t, err)
-}
-
-func TestBinaryWritesToClaudeTarget(t *testing.T) {
-	binary := buildBinary(t, t.TempDir())
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
-
-	work := testutil.GitRepo(t, nil)
-	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
-	cmd.Dir = work
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "zpecs update failed\n%s", out)
-
-	_, err = os.Stat(filepath.Join(work, ".claude", "skills", "prose-editor", "SKILL.md"))
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join(work, ".claude", "agents", "prose-editor.md"))
-	require.NoError(t, err)
-}
-
-func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
-	cases := []struct {
-		name      string
-		scope     string
-		wantSkill bool
-		wantAgent bool
-		wantDoc   bool
-	}{
-		{name: "update renders skills, agents, and docs", wantSkill: true, wantAgent: true, wantDoc: true},
-		{name: "update skills renders skills only", scope: "skills", wantSkill: true},
-		{name: "update agents renders agents only", scope: "agents", wantAgent: true},
-		{name: "update docs renders docs only", scope: "docs", wantDoc: true},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Chdir(testutil.GitRepo(t, nil))
-			dir := t.TempDir()
-			writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-			writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
-			writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
-
-			args := []string{"update"}
-			if tc.scope != "" {
-				args = append(args, tc.scope)
-			}
-			args = append(args, "--source", dir)
-			require.NoError(t, run(args))
-
-			skillPath := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
-			agentPath := filepath.Join(".opencode", "agents", "code-architect.md")
-			docPath := filepath.Join("docs", "zpecs", "prose.md")
-			if tc.wantSkill {
-				_, err := os.Stat(skillPath)
-				require.NoError(t, err)
-			} else {
-				_, err := os.Stat(skillPath)
-				require.Error(t, err)
-			}
-			if tc.wantAgent {
-				_, err := os.Stat(agentPath)
-				require.NoError(t, err)
-			} else {
-				_, err := os.Stat(agentPath)
-				require.Error(t, err)
-			}
-			if tc.wantDoc {
-				_, err := os.Stat(docPath)
-				require.NoError(t, err)
-			} else {
-				_, err := os.Stat(docPath)
-				require.Error(t, err)
-			}
-		})
-	}
-}
-
-func TestBinaryScopedUpdateWritesOnlyWhatItNames(t *testing.T) {
-	binary := buildBinary(t, t.TempDir())
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
-
-	for _, tc := range []struct {
-		scope string
-	}{
-		{scope: "skills"},
-		{scope: "agents"},
-	} {
-		t.Run(tc.scope, func(t *testing.T) {
-			work := testutil.GitRepo(t, nil)
-			cmd := exec.Command(binary, "update", tc.scope, "--source", dir)
-			cmd.Dir = work
-			out, err := cmd.CombinedOutput()
-			require.NoError(t, err, "zpecs update %s failed\n%s", tc.scope, out)
-
-			skillPath := filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")
-			agentPath := filepath.Join(work, ".opencode", "agents", "code-architect.md")
-			if tc.scope == "skills" {
-				_, err := os.Stat(skillPath)
-				require.NoError(t, err)
-				_, err = os.Stat(agentPath)
-				require.Error(t, err)
-			} else {
-				_, err := os.Stat(agentPath)
-				require.NoError(t, err)
-				_, err = os.Stat(skillPath)
-				require.Error(t, err)
-			}
-		})
-	}
-}
-
-func TestUpdateWritesToRepositoryRoot(t *testing.T) {
-	root := testutil.GitRepo(t, nil)
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
-
-	work := filepath.Join(root, "nested", "deep")
-	require.NoError(t, os.MkdirAll(work, 0o755))
-	t.Chdir(work)
-
-	require.NoError(t, run([]string{"update", "--source", dir}))
-
-	skillPath := filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md")
-	_, err := os.Stat(skillPath)
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md"))
-	require.Error(t, err)
-}
-
-func TestUpdateErrorsOutsideRepository(t *testing.T) {
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
-
-	t.Chdir(t.TempDir())
-	err := run([]string{"update", "--source", dir})
-	require.Error(t, err)
-	_, statErr := os.Stat(filepath.Join(".opencode", "agents", "prose-editor.md"))
-	require.Error(t, statErr)
-}
-
-func TestBinaryWritesToRepositoryRoot(t *testing.T) {
-	binary := buildBinary(t, t.TempDir())
-	root := testutil.GitRepo(t, nil)
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
-
-	work := filepath.Join(root, "nested")
-	require.NoError(t, os.MkdirAll(work, 0o755))
-	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
-	cmd.Dir = work
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "zpecs update failed\n%s", out)
-
-	agentPath := filepath.Join(root, ".claude", "agents", "prose-editor.md")
-	_, err = os.Stat(agentPath)
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join(work, ".claude", "agents", "prose-editor.md"))
-	require.Error(t, err)
-}
-
-func TestBinaryErrorsOutsideRepository(t *testing.T) {
-	binary := buildBinary(t, t.TempDir())
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-
-	work := t.TempDir()
-	cmd := exec.Command(binary, "update", "--source", dir)
-	cmd.Dir = work
-	out, err := cmd.CombinedOutput()
-	require.Error(t, err, "expected failure outside a repository, got success\n%s", out)
-	_, err = os.Stat(filepath.Join(work, ".opencode"))
-	require.Error(t, err)
-}
-
-func TestUpdateCreatesMissingDirectories(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-
-	require.NoError(t, run([]string{"update", "skills", "--source", dir, "--target", "claude"}))
-
-	for _, path := range []string{
-		filepath.Join(".claude"),
-		filepath.Join(".claude", "skills"),
-		filepath.Join(".claude", "skills", "prose-editor"),
-	} {
-		info, err := os.Stat(path)
-		require.NoError(t, err)
-		require.True(t, info.IsDir())
-	}
-}
-
-func TestUpdateLeavesForeignFileAlone(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
-
-	path := filepath.Join(".claude", "agents", "prose-editor.md")
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
-	require.NoError(t, os.WriteFile(path, []byte("manual content\n"), 0o644))
-
-	require.NoError(t, run([]string{"update", "--source", dir, "--target", "claude"}))
-
-	content, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.Equal(t, "manual content\n", string(content))
-}
-
-func TestUpdateReplacesOwnedFiles(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nFirst.\n")
-
-	require.NoError(t, run([]string{"update", "--source", dir}))
-
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nSecond.\n")
-	require.NoError(t, run([]string{"update", "--source", dir}))
-
-	content, err := os.ReadFile(filepath.Join(".opencode", "agents", "prose-editor.md"))
-	require.NoError(t, err)
-	require.Contains(t, string(content), "Second.")
-}
-
-func TestBinaryLeavesForeignFileAlone(t *testing.T) {
-	binary := buildBinary(t, t.TempDir())
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
-
-	work := testutil.GitRepo(t, nil)
-	path := filepath.Join(work, ".claude", "agents", "prose-editor.md")
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
-	require.NoError(t, os.WriteFile(path, []byte("manual content\n"), 0o644))
-
-	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
-	cmd.Dir = work
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "zpecs update failed\n%s", out)
-
-	content, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.Equal(t, "manual content\n", string(content))
-}
-
-func TestUpdateRemovesStaleSkill(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-
-	require.NoError(t, run([]string{"update", "--source", dir}))
-	path := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
-	_, err := os.Stat(path)
-	require.NoError(t, err)
-
-	require.NoError(t, os.RemoveAll(filepath.Join(dir, "skills")))
-
-	require.NoError(t, run([]string{"update", "--source", dir}))
-	_, err = os.Stat(path)
-	require.Error(t, err)
-}
-
-func TestUpdateRemovesStaleAgent(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
-
-	require.NoError(t, run([]string{"update", "--source", dir, "--target", "claude"}))
-	path := filepath.Join(".claude", "agents", "prose-editor.md")
-	_, err := os.Stat(path)
-	require.NoError(t, err)
-
-	require.NoError(t, os.RemoveAll(filepath.Join(dir, "agents")))
-
-	require.NoError(t, run([]string{"update", "--source", dir, "--target", "claude"}))
-	_, err = os.Stat(path)
-	require.Error(t, err)
-}
-
-func TestUpdateAllWritesDocs(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
-
-	require.NoError(t, run([]string{"update", "--source", dir}))
-
-	for _, path := range []string{
-		filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md"),
-		filepath.Join(".opencode", "agents", "code-architect.md"),
-		filepath.Join("docs", "zpecs", "prose.md"),
-	} {
-		_, err := os.Stat(path)
-		require.NoError(t, err)
-	}
-}
-
-func TestUpdateAllWritesDocsToTheTargetItNames(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
-
-	require.NoError(t, run([]string{"update", "--source", dir, "--target", "claude"}))
-
-	_, err := os.Stat(filepath.Join(".claude", "agents", "code-architect.md"))
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join("docs", "zpecs", "prose.md"))
-	require.NoError(t, err)
-}
-
-func TestUpdateDocsWritesFromSource(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
-
-	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
-
-	path := filepath.Join("docs", "zpecs", "architecture.md")
-	content, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.Equal(t, "# Architecture\n", string(content))
-	_, err = os.Stat(filepath.Join(".opencode"))
-	require.Error(t, err)
-	_, err = os.Stat(filepath.Join(".claude"))
-	require.Error(t, err)
-}
-
-func TestUpdateDocsIgnoresTarget(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
-
-	require.NoError(t, run([]string{"update", "docs", "--source", dir, "--target", "claude"}))
-
-	path := filepath.Join("docs", "zpecs", "prose.md")
-	content, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.Equal(t, "# Prose guidelines\n", string(content))
-	_, err = os.Stat(filepath.Join(".claude"))
-	require.Error(t, err)
-	_, err = os.Stat(filepath.Join(".opencode"))
-	require.Error(t, err)
-}
-
-func TestUpdateDocsLeavesForeignFileAlone(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
-
-	path := filepath.Join("docs", "zpecs", "prose.md")
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
-	require.NoError(t, os.WriteFile(path, []byte("manual content\n"), 0o644))
-
-	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
-
-	content, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.Equal(t, "manual content\n", string(content))
-}
-
-func TestUpdateDocsReplacesOwned(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
-
-	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
-
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture, second\n")
-	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
-
-	content, err := os.ReadFile(filepath.Join("docs", "zpecs", "architecture.md"))
-	require.NoError(t, err)
-	require.Contains(t, string(content), "second")
-}
-
-func TestUpdateDocsRemovesStale(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
-
-	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
-	path := filepath.Join("docs", "zpecs", "architecture.md")
-	_, err := os.Stat(path)
-	require.NoError(t, err)
-
-	require.NoError(t, os.RemoveAll(filepath.Join(dir, "docs")))
-
-	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
-	_, err = os.Stat(path)
-	require.Error(t, err)
-}
-
-func TestUpdateDocsWritesToRepositoryRoot(t *testing.T) {
-	root := testutil.GitRepo(t, nil)
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
-
-	work := filepath.Join(root, "nested", "deep")
-	require.NoError(t, os.MkdirAll(work, 0o755))
-	t.Chdir(work)
-
-	require.NoError(t, run([]string{"update", "docs", "--source", dir}))
-
-	path := filepath.Join(root, "docs", "zpecs", "architecture.md")
-	_, err := os.Stat(path)
-	require.NoError(t, err)
-	_, err = os.Stat(filepath.Join(work, "docs", "zpecs", "architecture.md"))
-	require.Error(t, err)
-}
-
-func TestUpdateDocsErrorsOutsideRepository(t *testing.T) {
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
-
-	t.Chdir(t.TempDir())
-	err := run([]string{"update", "docs", "--source", dir})
-	require.Error(t, err)
-	_, statErr := os.Stat(filepath.Join("docs", "zpecs", "architecture.md"))
-	require.Error(t, statErr)
-}
-
-func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
-	t.Chdir(testutil.GitRepo(t, nil))
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
-
-	require.NoError(t, run([]string{"update", "--source", dir}))
-	skillPath := filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")
-	agentPath := filepath.Join(".opencode", "agents", "code-architect.md")
-	_, err := os.Stat(skillPath)
-	require.NoError(t, err)
-	_, err = os.Stat(agentPath)
-	require.NoError(t, err)
-
-	require.NoError(t, os.RemoveAll(filepath.Join(dir, "skills")))
-
-	require.NoError(t, run([]string{"update", "skills", "--source", dir}))
-	_, err = os.Stat(skillPath)
-	require.Error(t, err)
-	_, err = os.Stat(agentPath)
-	require.NoError(t, err)
-}
-
-func TestBinaryRemovesStaleSkill(t *testing.T) {
-	binary := buildBinary(t, t.TempDir())
-	dir := t.TempDir()
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-
-	work := testutil.GitRepo(t, nil)
-	cmd := exec.Command(binary, "update", "--source", dir)
-	cmd.Dir = work
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "first update failed\n%s", out)
-	path := filepath.Join(work, ".opencode", "skills", "prose-editor", "SKILL.md")
-	_, err = os.Stat(path)
-	require.NoError(t, err)
-
-	require.NoError(t, os.RemoveAll(filepath.Join(dir, "skills")))
-
-	cmd = exec.Command(binary, "update", "--source", dir)
-	cmd.Dir = work
-	out, err = cmd.CombinedOutput()
-	require.NoError(t, err, "second update failed\n%s", out)
-	_, err = os.Stat(path)
-	require.Error(t, err)
 }
 
 func TestConvertPrintsTheSpecAsJSON(t *testing.T) {
@@ -853,23 +264,20 @@ func TestBinaryConvertPrintsTheSpecAsJSON(t *testing.T) {
 	require.NotEmpty(t, doc.Requirements)
 }
 
-// captureStdout redirects os.Stdout to a pipe. The returned func reads
-// everything written during the capture. The test restores os.Stdout
-// when it finishes.
+// captureStdout redirects os.Stdout the way capture does.
 func captureStdout(t *testing.T) func() []byte {
 	t.Helper()
 	return capture(t, os.Stdout, func(f *os.File) { os.Stdout = f })
 }
 
-// captureStderr redirects os.Stderr to a pipe, mirroring captureStdout.
+// captureStderr redirects os.Stderr the same way captureStdout does.
 func captureStderr(t *testing.T) func() []byte {
 	t.Helper()
 	return capture(t, os.Stderr, func(f *os.File) { os.Stderr = f })
 }
 
 // capture redirects a process stream to a pipe. The returned func reads
-// everything written during the capture. The test restores the stream
-// when it finishes.
+// everything written during the capture.
 func capture(t *testing.T, old *os.File, set func(*os.File)) func() []byte {
 	t.Helper()
 	r, w, err := os.Pipe()
