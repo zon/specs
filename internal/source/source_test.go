@@ -103,6 +103,25 @@ func TestReadKindsErrorsOnUnknownKind(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestRelPathReturnsKindLayout(t *testing.T) {
+	cases := []struct {
+		name string
+		d    Definition
+		want string
+	}{
+		{name: "skill", d: Definition{Kind: Skill, Name: "prose-editor"}, want: filepath.Join("skills", "prose-editor", "SKILL.md")},
+		{name: "agent", d: Definition{Kind: Agent, Name: "code-architect"}, want: filepath.Join("agents", "code-architect.md")},
+		{name: "doc", d: Definition{Kind: Doc, Name: "architecture"}, want: filepath.Join("docs", "zpecs", "architecture.md")},
+		{name: "unknown kind", d: Definition{Kind: Kind(99), Name: "x"}, want: filepath.Join("agents", "x.md")},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, RelPath(tc.d))
+		})
+	}
+}
+
 func TestUnmarshalScope(t *testing.T) {
 	cases := []struct {
 		name    string

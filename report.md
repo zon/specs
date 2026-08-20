@@ -1,8 +1,10 @@
-Bump the app version to 0.1.12
+Move the per-kind file layout into internal/source
 
-Apply the semver patch bump that versions the frontmatter fold. The
-just build and install recipes pass the VERSION file into the binary.
+RelPath returns a definition's path in its kind's layout:
+skills/<name>/SKILL.md for skills, agents/<name>.md for agents, and
+docs/zpecs/<name>.md for docs. Unknown kinds fall back to the agent
+path. The architecture entry for internal/source now records the layout.
 
-A test asserts the version file holds a valid semver value.
+Tests for RelPath cover the skill, agent, and doc paths.
 
-Ralph item 1 completed
+Ralph item 0 completed
