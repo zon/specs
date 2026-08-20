@@ -6,7 +6,7 @@ If it exists, read `specs/architecture.yaml` before writing code. See [Architect
 
 ## Component Structure
 
-Every piece of code belongs in a specific component. Before writing, ask whether an existing component owns the concern; if so, add the code there rather than duplicating logic.
+Every piece of code belongs in a specific component. Before writing, ask whether an existing component owns the concern. If it does, add the code there rather than duplicating logic.
 
 Keep the component set as small as it can be. Each component should earn its place by owning a distinct, substantial concern. Before adding, removing, or merging components, read the format guidance in [Architecture Format](architecture-outline.md).
 

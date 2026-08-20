@@ -1,6 +1,6 @@
 # Code Guidelines
 
-We want clear, minimal code that is easy to understand and replace. Code should meet our requirements and standards but in the simplest possible way.
+We want clear, minimal code that is easy to understand and replace.
 
 ## Writing
 
