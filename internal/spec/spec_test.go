@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func write(t *testing.T, content string) string {
+func writeSpec(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "spec.md")
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
@@ -18,7 +18,7 @@ func write(t *testing.T, content string) string {
 }
 
 func TestReadParsesTitlePurposeRequirementsAndScenarios(t *testing.T) {
-	path := write(t, "# Convert\n\n## Purpose\nTurn a spec markdown file into a JSON document.\n\n### Requirement: Command Form\nThe system SHALL accept a path to a spec file as its only argument.\n\n#### Scenario: Path argument\n- GIVEN the path `specs/cli/sync.md`\n- WHEN the command runs\n- THEN it reads the spec at that path\n\n### Requirement: Output\nThe system SHALL print one JSON object to stdout.\n\n#### Scenario: Whole spec\n- GIVEN a spec file with a title, a purpose, and one requirement\n- WHEN the command runs\n- THEN it prints one JSON object\n- AND the object carries the title, purpose, and requirements\n")
+	path := writeSpec(t, "# Convert\n\n## Purpose\nTurn a spec markdown file into a JSON document.\n\n### Requirement: Command Form\nThe system SHALL accept a path to a spec file as its only argument.\n\n#### Scenario: Path argument\n- GIVEN the path `specs/cli/sync.md`\n- WHEN the command runs\n- THEN it reads the spec at that path\n\n### Requirement: Output\nThe system SHALL print one JSON object to stdout.\n\n#### Scenario: Whole spec\n- GIVEN a spec file with a title, a purpose, and one requirement\n- WHEN the command runs\n- THEN it prints one JSON object\n- AND the object carries the title, purpose, and requirements\n")
 	want := Document{
 		Title:   "Convert",
 		Purpose: "Turn a spec markdown file into a JSON document.",
@@ -55,14 +55,14 @@ func TestReadParsesTitlePurposeRequirementsAndScenarios(t *testing.T) {
 		},
 	}
 
-	got, err := Read(path)
+	got, err := read(path)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
 
 func TestRequirementWithoutScenariosHasEmptyNonNilSlice(t *testing.T) {
-	path := write(t, "# Title\n\n### Requirement: One\nBody.\n")
-	got, err := Read(path)
+	path := writeSpec(t, "# Title\n\n### Requirement: One\nBody.\n")
+	got, err := read(path)
 	require.NoError(t, err)
 	req := got.Requirements[0]
 	require.NotNil(t, req.Scenarios)
@@ -70,8 +70,8 @@ func TestRequirementWithoutScenariosHasEmptyNonNilSlice(t *testing.T) {
 }
 
 func TestStepLineKeepsInlineCodeBackticks(t *testing.T) {
-	path := write(t, "# Convert\n\n### Requirement: Command Form\nBody.\n\n#### Scenario: Path argument\n- GIVEN the path `specs/cli/sync.md`\n")
-	got, err := Read(path)
+	path := writeSpec(t, "# Convert\n\n### Requirement: Command Form\nBody.\n\n#### Scenario: Path argument\n- GIVEN the path `specs/cli/sync.md`\n")
+	got, err := read(path)
 	require.NoError(t, err)
 	steps := got.Requirements[0].Scenarios[0].Steps
 	require.Len(t, steps, 1)
@@ -107,8 +107,8 @@ func TestReadErrorsOnMalformedContent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			path := write(t, tt.content)
-			_, err := Read(path)
+			path := writeSpec(t, tt.content)
+			_, err := read(path)
 			require.Error(t, err)
 			require.Equal(t, tt.wantErr, err.Error())
 		})
@@ -116,7 +116,7 @@ func TestReadErrorsOnMalformedContent(t *testing.T) {
 }
 
 func TestReadErrorsOnMissingFile(t *testing.T) {
-	_, err := Read(filepath.Join(t.TempDir(), "missing.md"))
+	_, err := read(filepath.Join(t.TempDir(), "missing.md"))
 	require.Error(t, err)
 }
 
@@ -143,7 +143,7 @@ func TestWriteRoundTripsTheDocument(t *testing.T) {
 		},
 	}
 	var buf bytes.Buffer
-	require.NoError(t, Write(&buf, doc))
+	require.NoError(t, write(&buf, doc))
 	var got Document
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	require.Equal(t, doc, got)
@@ -169,8 +169,36 @@ func TestWritePrintsEmptyArrays(t *testing.T) {
 		},
 	}
 	var buf bytes.Buffer
-	require.NoError(t, Write(&buf, doc))
+	require.NoError(t, write(&buf, doc))
 	for _, want := range []string{`"scenarios": []`, `"steps": []`} {
 		require.Contains(t, buf.String(), want)
 	}
+}
+
+func TestConvertWritesTheSpecAsJSON(t *testing.T) {
+	path := writeSpec(t, "# Convert\n\n## Purpose\nTurn a spec markdown file into a JSON document.\n\n### Requirement: Command Form\nThe system SHALL accept a path to a spec file as its only argument.\n")
+	var buf bytes.Buffer
+	require.NoError(t, Convert(path, &buf))
+	var got Document
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got), "convert output is not one JSON object\n%s", buf.String())
+	require.Equal(t, "Convert", got.Title)
+	require.Equal(t, "Turn a spec markdown file into a JSON document.", got.Purpose)
+	require.Len(t, got.Requirements, 1)
+	require.Equal(t, "Command Form", got.Requirements[0].Name)
+}
+
+func TestConvertErrorsOnMalformedContentAndWritesNothing(t *testing.T) {
+	path := writeSpec(t, "## Purpose\nNothing.\n")
+	var buf bytes.Buffer
+	err := Convert(path, &buf)
+	require.Error(t, err)
+	require.Equal(t, "no top-level heading", err.Error())
+	require.Empty(t, buf.Bytes())
+}
+
+func TestConvertErrorsOnMissingFileAndWritesNothing(t *testing.T) {
+	var buf bytes.Buffer
+	err := Convert(filepath.Join(t.TempDir(), "missing.md"), &buf)
+	require.Error(t, err)
+	require.Empty(t, buf.Bytes())
 }
