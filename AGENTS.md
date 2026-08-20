@@ -10,8 +10,6 @@ Read the [code guidelines](docs/zpecs/code.md) before writing code.
 
 Read the [prose guidelines](docs/zpecs/prose.md) before writing any kind of prose. This includes docs, code comments, git descriptions, and agent communication.
 
-After writing or editing prose, invoke the `prose-editor` subagent to review it. Pass the files you touched as the scope.
-
 ## Editing Docs
 
 Documents live in [docs/zpecs/](docs/zpecs/README.md) and install to `docs/zpecs/` in the target repository. The path is identical in both places, so relative links work everywhere.
@@ -49,4 +47,4 @@ Bump `VERSION` after you change code. Use semantic versioning:
 
 ## Keeping It Neutral
 
-These documents describe how to write specs, architecture, and projects, and how to apply the orchestration pattern to code, not how any particular tool consumes them. When a rule depends on runner behavior, state the rule and note that the runner decides, rather than documenting one runner's flags. Completion state in particular never belongs in a project file.
+These documents describe how to write specs, architecture, and projects, and how to apply the orchestration pattern to code. They do not describe how any particular tool consumes them. When a rule depends on runner behavior, state the rule and note that the runner decides, rather than documenting one runner's flags. Completion state in particular never belongs in a project file.

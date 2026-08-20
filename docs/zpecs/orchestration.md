@@ -73,15 +73,13 @@ test("payment declined", () => {
 
 The orchestration function lives in an [orchestration module](glossary.md#orchestration-module). Each helper lives in an [implementation module](glossary.md#implementation-module).
 
-Entry points such as a `main` function typically handle input and routing, not domain logic. Treat them as implementation modules rather than orchestration modules.
-
 Orchestration modules must not contain helper methods that perform or test implementation details. Test helpers such as HTTP client wiring, fixture builders, and assertion utilities belong in or beside their implementation modules. The orchestration module's test file contains only test functions that exercise orchestration logic. It calls helpers imported from implementation modules, never defines them.
 
-Fixture builders for input types (e.g. a struct passed into the orchestration by the caller) belong with the module that owns the type, not the orchestration module. When drafting test helpers, identify every input type in the orchestration signature and place its fixture builder with that module.
+Fixture builders for input types (e.g. a struct the caller passes into the orchestration) belong with the module that owns the type, not the orchestration module. When drafting test helpers, identify every input type in the orchestration signature and place its fixture builder with that module.
 
 Record orchestration modules in `specs/architecture.yaml`. See [Architecture Format](architecture-outline.md).
 
 ## What Orchestrations Are Not
 
 - **Not a spec.** Orchestrations do not define behavioral guarantees. Put those in a [spec](specs.md).
-- **Not a branching tree.** Orchestrations should be exhaustive but designed to minimize paths. If an orchestration has many branches, that is a signal to simplify the design, not to add more cases.
+- **Not a branching tree.** Orchestrations should be exhaustive but minimize paths. If an orchestration has many branches, that is a signal to simplify the design, not to add more cases.

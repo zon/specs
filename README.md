@@ -31,8 +31,9 @@ Coding agents that plan, write, review, test, and polish code. `zpecs update age
 | Agent | Does |
 |---|---|
 | `code-architect` | Plans implementation through writer and reviewer subagents |
+| `architecture-reviewer` | Reviews the repo's architecture against the standards |
 | `code-writer` | Writes the code and tests for one step |
-| `code-reviewer` | Reviews code against the repo's standards |
+| `component-reviewer` | Reviews a single component against the repo's standards |
 | `code-tester` | Runs the test suite and reports results |
 | `prose-editor` | Reviews prose against the guidelines and fixes violations |
 
