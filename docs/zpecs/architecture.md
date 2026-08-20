@@ -8,20 +8,27 @@ If it exists, read `specs/architecture.yaml` before writing code. See [Architect
 
 Every piece of code belongs in a specific component. Before writing, ask:
 
-1. **Does an existing component own this concern?** Check `specs/architecture.yaml`. If so, add the code there rather than duplicating logic.
+1. **Does an existing component own this concern?** If so, add the code there rather than duplicating logic.
 2. **Does the orchestration pattern assign this code to a component type?** Coordination logic belongs in an [orchestration module](glossary.md#orchestration-module). Low-level work belongs in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
 3. **Is there no existing home?** If neither applies, expand an existing component's scope or create a new one. Add a new component to `specs/architecture.yaml` once the code is written.
 
-## When to Create Components
+## Component Structure
 
-Keep components to a minimum. Create a new component for one of these reasons:
+Keep the component set as small as it can be. Each component should earn its place by owning a distinct, substantial concern. Before adding, removing, or merging components, read the format guidance in [Architecture Format](architecture-outline.md).
+
+### When to Create Components
+
+Create a new component only for one of these reasons:
 
 - **Separate orchestration from implementation.** Create one component for coordination and one for the low-level work it delegates. See [Orchestration Pattern](orchestration.md).
 - **Separate major concerns.** Give each major concern its own [deep module](glossary.md#deep-module): a simple interface over a complex implementation.
 - **Share common logic.** Move logic that several major concerns use into a shared component.
-- **Avoid passthrough components.** A component that only forwards calls to another component owns no concern. Fold the work into the component that does it. This includes entry points: an entry point whose only concern is passing through to another module is a passthrough.
 
 When none of these apply, add the code to an existing component.
+
+### When to Remove Components
+
+Look for one-to-one component relationships: a component whose only caller is one other component. When two components relate this way, combine them into a single deeper concern. The calling component absorbs the callee's work, or the callee folds into its only caller, whichever keeps the interface smaller.
 
 ## Component Types
 
