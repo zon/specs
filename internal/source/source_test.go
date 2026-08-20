@@ -53,13 +53,13 @@ func TestReadKindsSelectsSingleKind(t *testing.T) {
 	defs, err := ReadKinds([]Kind{Doc}, dir)
 	require.NoError(t, err)
 
-	require.Equal(t, 1, len(defs))
+	require.Len(t, defs, 1)
 	require.Equal(t, []string{"architecture"}, namesOfKind(defs, Doc))
 }
 
 func TestReadKindsErrorsOnMissingSource(t *testing.T) {
 	_, err := ReadKinds([]Kind{Skill}, filepath.Join(t.TempDir(), "missing"))
-	require.Error(t, err)
+	require.ErrorIs(t, err, os.ErrNotExist)
 }
 
 func TestReadKindsDoesNotReadMisplacedFiles(t *testing.T) {
