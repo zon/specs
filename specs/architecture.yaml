@@ -2,7 +2,7 @@
   description: Parses the command line and runs each command's work.
 
 - path: internal/source
-  description: Reads and selects skill, agent, and doc definitions from a local source directory.
+  description: Reads and selects skill, agent, and doc definitions from a local source directory and owns the per-kind file layout.
 
 - path: internal/clone
   description: Clones a repository into a temp dir so a remote source reads like a local one.

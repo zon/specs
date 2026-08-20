@@ -58,6 +58,27 @@ func TestPathDocsDoc(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestRelPathComposesTargetDirAndSourceLayout(t *testing.T) {
+	cases := []struct {
+		name   string
+		target string
+		d      source.Definition
+		want   string
+	}{
+		{name: "claude skill", target: target.Claude, d: skill("prose-editor"), want: filepath.Join(".claude", "skills", "prose-editor", "SKILL.md")},
+		{name: "claude agent", target: target.Claude, d: agent("prose-editor"), want: filepath.Join(".claude", "agents", "prose-editor.md")},
+		{name: "opencode skill", target: target.Opencode, d: skill("prose-editor"), want: filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")},
+		{name: "opencode agent", target: target.Opencode, d: agent("prose-editor"), want: filepath.Join(".opencode", "agents", "prose-editor.md")},
+		{name: "docs doc", target: target.Docs, d: doc("architecture"), want: filepath.Join("docs", "zpecs", "architecture.md")},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, RelPath(tc.target, tc.d))
+		})
+	}
+}
+
 func TestWriteCreatesDirectoriesAndFile(t *testing.T) {
 	root := t.TempDir()
 

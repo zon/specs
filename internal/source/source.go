@@ -70,6 +70,19 @@ var kindSpecs = map[Kind]kindSpec{
 	Doc:   {pattern: filepath.Join("docs", "zpecs", "*.md"), name: baseName},
 }
 
+// RelPath returns a definition's path in its kind's layout.
+// Unknown kinds fall back to the agent path.
+func RelPath(d Definition) string {
+	switch d.Kind {
+	case Skill:
+		return filepath.Join("skills", d.Name, "SKILL.md")
+	case Doc:
+		return filepath.Join("docs", "zpecs", d.Name+".md")
+	default:
+		return filepath.Join("agents", d.Name+".md")
+	}
+}
+
 // ReadKinds reads the listed kinds from a local source, in that order.
 func ReadKinds(kinds []Kind, dir string) ([]Definition, error) {
 	if _, err := os.Stat(dir); err != nil {
