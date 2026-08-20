@@ -1,0 +1,4 @@
+- "internal/source, which already owns the Kind type, also owns the per-kind file layout: one function returns a definition's relative path — a skill at skills/<name>/SKILL.md, an agent at agents/<name>.md, a doc at docs/zpecs/<name>.md"
+- internal/targetdir composes its target directory with the source-owned layout instead of re-encoding the per-kind paths
+- internal/testutil builds its WriteSkill, WriteAgent, and WriteDoc fixtures from the source-owned layout
+- Apply a semver patch bump to the app version

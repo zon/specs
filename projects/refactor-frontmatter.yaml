@@ -1,0 +1,2 @@
+- "internal/frontmatter folds into internal/render, its only caller: agents are parsed and rendered in one component, the frontmatter tests move into render's test file, and internal/frontmatter is removed from specs/architecture.yaml and the filesystem"
+- Apply a semver patch bump to the app version
