@@ -73,6 +73,8 @@ test("payment declined", () => {
 
 The orchestration function lives in an [orchestration module](glossary.md#orchestration-module). Each helper lives in an [implementation module](glossary.md#implementation-module).
 
+Entry points such as a `main` function typically handle input and routing, not domain logic. Treat them as implementation modules rather than orchestration modules.
+
 Orchestration modules must not contain helper methods that perform or test implementation details. Test helpers such as HTTP client wiring, fixture builders, and assertion utilities belong in or beside their implementation modules. The orchestration module's test file contains only test functions that exercise orchestration logic. It calls helpers imported from implementation modules, never defines them.
 
 Fixture builders for input types (e.g. a struct passed into the orchestration by the caller) belong with the module that owns the type, not the orchestration module. When drafting test helpers, identify every input type in the orchestration signature and place its fixture builder with that module.
