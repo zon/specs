@@ -8,10 +8,6 @@
 
 `internal/frontmatter/frontmatter.go:43` finds the closing `---`. It derives the body start as `i + 2` and slices `lines[1:bodyAt-1]`. Track the closing delimiter's index and slice the block and body around it.
 
-## Keep orchestration bodies free of format details
-
-The orchestration in `internal/update` still has `updatePair` wrapping `RemoveStale` with `fmt.Errorf("removing stale definitions: %w", ...)` and passing `os.Stdout` to `report.Summary`. `pairs` still embeds the display names as literals. Let `targetdir` wrap its own error, let the report module own the output sink and scope labels, and drop `os.Stdout` from orchestration calls.
-
 ## Move CLI tests out of the orchestration module's test file
 
 `cmd/zpecs/main_test.go` defines implementation test helpers (`buildBinary`, `parseUpdateArgs`, `writeSourceFile`, `gitCloneSource`, `captureStdout`, `captureStderr`) and tests CLI plumbing (`TestUnmarshalScope`, `TestParseUpdate`, `TestPrintError*`, `TestBuildProducesRunnableCLIBinary`, `TestBinaryPrintsVersion`). These belong beside the `internal/cli` entry point once the split lands. Keep only tests of `update`, `updatePair`, and `resolveSource` decisions in the orchestration module's test file.

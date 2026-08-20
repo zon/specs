@@ -2,9 +2,6 @@
 package update
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/zon/specs/internal/clone"
 	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/repo"
@@ -25,10 +22,10 @@ type Options struct {
 	Target string
 }
 
-// pair is one run of the sync pipeline: the name to report, the target
-// to write to, and the kinds it selects.
+// pair is one run of the sync pipeline: the scope word to report, the
+// target to write to, and the kinds it selects.
 type pair struct {
-	name   string
+	scope  string
 	target string
 	kinds  []source.Kind
 }
@@ -38,15 +35,15 @@ type pair struct {
 func pairs(scope, runner string) []pair {
 	switch scope {
 	case "skills":
-		return []pair{{name: "skills", target: runner, kinds: []source.Kind{source.Skill}}}
+		return []pair{{scope: "skills", target: runner, kinds: []source.Kind{source.Skill}}}
 	case "agents":
-		return []pair{{name: "agents", target: runner, kinds: []source.Kind{source.Agent}}}
+		return []pair{{scope: "agents", target: runner, kinds: []source.Kind{source.Agent}}}
 	case "docs":
-		return []pair{{name: "docs", target: target.Docs, kinds: []source.Kind{source.Doc}}}
+		return []pair{{scope: "docs", target: target.Docs, kinds: []source.Kind{source.Doc}}}
 	default:
 		return []pair{
-			{name: "skills and agents", target: runner, kinds: []source.Kind{source.Skill, source.Agent}},
-			{name: "docs", target: target.Docs, kinds: []source.Kind{source.Doc}},
+			{scope: "all", target: runner, kinds: []source.Kind{source.Skill, source.Agent}},
+			{scope: "docs", target: target.Docs, kinds: []source.Kind{source.Doc}},
 		}
 	}
 }
@@ -83,7 +80,7 @@ func updatePair(root, sourceDir, sourceLabel string, p pair) error {
 		return err
 	}
 	if _, err := targetdir.RemoveStale(root, p.target, owned, defs, p.kinds...); err != nil {
-		return fmt.Errorf("removing stale definitions: %w", err)
+		return err
 	}
 	if err := targetdir.WriteAll(root, p.target, defs, func(d source.Definition) (string, error) {
 		return render.Definition(d, p.target)
@@ -93,7 +90,7 @@ func updatePair(root, sourceDir, sourceLabel string, p pair) error {
 	if err := targetdir.SaveOwned(root, p.target, owned); err != nil {
 		return err
 	}
-	report.Summary(os.Stdout, p.name, p.target, sourceLabel, len(defs))
+	report.Summary(p.scope, p.target, sourceLabel, len(defs))
 	return nil
 }
 

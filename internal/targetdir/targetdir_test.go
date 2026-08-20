@@ -482,6 +482,21 @@ func TestRemoveStaleSkipsUnknownKindEntry(t *testing.T) {
 	require.Len(t, owned, 1)
 }
 
+func TestRemoveStaleWrapsRemoveErrorWithPath(t *testing.T) {
+	root := t.TempDir()
+	rel := RelPath(target.Claude, skill("prose-editor"))
+	err := os.MkdirAll(filepath.Join(root, rel, "subdir"), 0o755)
+	require.NoError(t, err)
+	owned := map[string]ownedPath{
+		rel: {kind: source.Skill, known: true},
+	}
+
+	removed, err := RemoveStale(root, target.Claude, owned, nil, source.Skill)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "removing stale "+filepath.Join(root, rel))
+	require.Nil(t, removed)
+}
+
 func TestLegacyManifestUpgradedByNextRun(t *testing.T) {
 	root := t.TempDir()
 	dir := filepath.Join(root, ".opencode")

@@ -157,7 +157,7 @@ func RemoveStale(root, name string, owned map[string]ownedPath, current []source
 			continue
 		}
 		if err := os.Remove(filepath.Join(root, rel)); err != nil && !os.IsNotExist(err) {
-			return nil, err
+			return nil, fmt.Errorf("removing stale %s: %w", filepath.Join(root, rel), err)
 		}
 		delete(owned, rel)
 		removed = append(removed, rel)

@@ -1,11 +1,10 @@
-Drop the targetName wrapper type
+Move format details out of the update orchestration
 
-Removed the targetName type and its targetClaude and targetOpencode
-constants from internal/cli. The update command's target flag is now a
-plain string that kong validates against the enum, and the grammar's
-enum and default values come from the target package constants.
-Updated the CLI parsing tests to expect the target package constants.
-Removed the completed plan from refactoring.md. Bumped VERSION to
-0.1.8.
+internal/targetdir now wraps its RemoveStale error. internal/report
+owns the output sink and the scope labels. The update orchestration
+carries scope words instead of display labels and no longer passes
+os.Stdout. Added a test for the wrapped RemoveStale error and one for
+the "all" scope label. Removed the completed plan from refactoring.md.
+Bumped VERSION to 0.1.9.
 
-Ralph item 2 completed
+Ralph item 4 completed
