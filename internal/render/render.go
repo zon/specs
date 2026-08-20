@@ -11,8 +11,8 @@ import (
 )
 
 // Definition returns the text a definition renders to for a target.
-// Skills and docs return their file contents verbatim; agents are
-// parsed and rendered for the target.
+// Skills and docs return their file contents verbatim. The target
+// parses and renders agents.
 func Definition(d source.Definition, targetName string) (string, error) {
 	if d.Kind == source.Skill || d.Kind == source.Doc {
 		raw, err := os.ReadFile(d.Path)

@@ -2,7 +2,7 @@
 
 Orchestration is a pattern for structuring domain logic. An orchestration sequences steps, enforces domain conditions, and delegates the actual work to other modules. It says what should happen and when, never how.
 
-A coding agent writes the orchestration code while implementing a feature. Decide during planning whether a feature needs orchestration, and apply that decision when writing the code.
+A coding agent writes the orchestration code while implementing a feature. Decide during planning whether a feature needs orchestration.
 
 ## Writing Orchestrations
 
@@ -75,7 +75,7 @@ The orchestration function lives in an [orchestration module](glossary.md#orches
 
 Orchestration modules must not contain helper methods that perform or test implementation details. Test helpers such as HTTP client wiring, fixture builders, and assertion utilities belong in or beside their implementation modules. The orchestration module's test file contains only test functions that exercise orchestration logic. It calls helpers imported from implementation modules, never defines them.
 
-Fixture builders for input types (e.g. a struct the caller passes into the orchestration) belong with the module that owns the type, not the orchestration module. When drafting test helpers, identify every input type in the orchestration signature and place its fixture builder with that module.
+Fixture builders for input types (e.g. a struct the caller passes into the orchestration) belong with the module that owns the type.
 
 Record orchestration modules in `specs/architecture.yaml`. See [Architecture Format](architecture-outline.md).
 

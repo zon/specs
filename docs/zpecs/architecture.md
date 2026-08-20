@@ -22,7 +22,7 @@ When none of these apply, add the code to an existing component.
 
 ### When to Remove Components
 
-Look for one-to-one component relationships: a component whose only caller is one other component. When two components relate this way, combine them into a single deeper concern. The calling component absorbs the callee's work, or the callee folds into its only caller, whichever keeps the interface smaller.
+Look for a component whose only caller is one other component. When two components relate this way, combine them into a single deeper concern. The calling component absorbs the callee's work, or the callee folds into its only caller, whichever keeps the interface smaller.
 
 ## Component Types
 

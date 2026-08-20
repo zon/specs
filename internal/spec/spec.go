@@ -174,8 +174,8 @@ func stepsBlock(n ast.Node, src []byte) []string {
 }
 
 // renderNode renders an AST node as text. Containers concatenate their
-// children. Strong, emph, and link drop their markers. Code spans get
-// wrapped in backticks.
+// children. Strong, emph, and link drop their markers. Wrap code spans
+// in backticks.
 func renderNode(n ast.Node, src []byte) string {
 	switch n.Kind() {
 	case ast.KindText:
