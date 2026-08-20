@@ -24,7 +24,7 @@ Author skills in the central `skills/<name>/SKILL.md` directory. Use the `write-
 
 - The frontmatter `name` must match the directory name.
 - Reference documents with markdown links at their installed path: `[docs/zpecs/architecture.md](docs/zpecs/architecture.md)`. Never a bare path, never a code span.
-- Reference documentation rather than restating it. A skill that repeats a format goes stale when the format changes.
+- Reference documentation rather than restating it. See the `write-skill` and `write-agent` skills.
 
 ## Before Committing
 
@@ -39,11 +39,7 @@ go test ./...
 
 The `VERSION` file holds the CLI version. The `just build` and `just install` recipes pass it into the binary.
 
-Bump `VERSION` after you change code. Use semantic versioning:
-
-- **patch** — bug fixes and internal changes
-- **minor** — new features
-- **major** — breaking changes
+Bump `VERSION` after you change code. Use semantic versioning. See [Version Bumps](docs/zpecs/project.md) for the levels.
 
 ## Keeping It Neutral
 

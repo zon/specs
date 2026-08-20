@@ -7,8 +7,8 @@ import (
 )
 
 // Root returns the root of the git repository containing dir. It walks
-// up until a .git entry appears, and errors at the filesystem root
-// first.
+// up until a .git entry appears, and errors when it reaches the
+// filesystem root without finding one.
 func Root(dir string) (string, error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {

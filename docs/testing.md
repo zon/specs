@@ -12,7 +12,7 @@ Examples below are Go.
 
 ### Assertions
 
-Use one assertion library across the whole suite for every assertion: `github.com/stretchr/testify` (`assert` and `require`).
+Use one assertion library for every assertion: `github.com/stretchr/testify` (`assert` and `require`).
 
 ### Test structure
 
@@ -22,7 +22,7 @@ Use table-driven tests with named subtests (`t.Run()`). Use a managed temporary 
 
 Unit tests may run code with real side effects.
 
-Invoke a real dependency in a test only when it is safe, local, and cheap. Version control and local CLI tools qualify, but only against an isolated temporary directory, **never** against the real repository. Create the directory with the temp-directory helper and initialise a fresh repo inside it before the test runs.
+Invoke a real dependency in a test only when it is safe, local, and cheap. Version control and local CLI tools qualify, but only against an isolated temporary directory, **never** against the real repository. Create the directory with the temp-directory helper and initialize a fresh repo inside it before the test runs.
 
 Never invoke a real dependency in a test when it:
 
@@ -41,7 +41,7 @@ Unit tests for real external dependencies must be small, focused, and cheap. The
 
 ### Module boundaries
 
-Only implementation modules may hold real dependency implementations. See [Architecture Guidelines](architecture.md).
+Only implementation modules may hold real dependency implementations. See [Architecture Guidelines](zpecs/architecture.md).
 
 | Module type | May contain |
 |---|---|

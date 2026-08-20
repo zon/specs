@@ -10,7 +10,7 @@ import (
 	"github.com/zon/specs/internal/target"
 )
 
-// Definition returns the text a definition renders to for a target.
+// Definition returns the text a definition renders for a target.
 // Skills and docs return their file contents verbatim. The target
 // parses and renders agents.
 func Definition(d source.Definition, targetName string) (string, error) {
