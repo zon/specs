@@ -1,8 +1,10 @@
-Inline the checkDir helper in internal/source
+Fold frontmatter into render
 
-ReadKinds calls os.Stat directly and the one-line helper is gone.
-The matching plan leaves refactoring.md. VERSION bumps to 0.1.11.
+Merge the frontmatter parsing code into internal/render, its only
+caller, so one component parses and renders agents. Move the frontmatter
+tests into render's test file. Remove internal/frontmatter from
+specs/architecture.yaml and the filesystem.
 
-Tests: TestReadKindsErrorsOnMissingSource now asserts os.ErrNotExist. TestReadKindsSelectsSingleKind uses require.Len.
+The tests cover parsing fields, bodies, and errors.
 
 Ralph item 0 completed

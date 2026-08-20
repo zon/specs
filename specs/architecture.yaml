@@ -13,11 +13,8 @@
 - path: internal/targetdir
   description: Writes definitions into a repository's target directories under an ownership manifest.
 
-- path: internal/frontmatter
-  description: Parses the frontmatter block and body of definition files.
-
 - path: internal/render
-  description: Produces each definition's text for its target, verbatim for skills and docs.
+  description: Parses definition files and produces each one's text for its target, verbatim for skills and docs.
 
 - path: internal/report
   description: Formats and prints the lines that report each update run.
