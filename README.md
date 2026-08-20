@@ -6,23 +6,7 @@ Repositories install these rather than depend on them, so a repository gets a co
 
 ## Standards
 
-The formats and guidelines that shape how a repository writes and organizes its specs, architecture, and requirements. They install to the target's `docs/zpecs/`.
-
-**Formats**
-
-- [Spec](docs/zpecs/specs.md) — behavior contracts: structured requirements and scenarios
-- [Architecture](docs/zpecs/architecture-outline.md) — the components of an application, in YAML
-- [Project](docs/zpecs/project.md) — a list of requirements for a coding agent to work through
-
-**Guidelines**
-
-- [Orchestration](docs/zpecs/orchestration.md) — separates coordination logic from implementation detail
-- [Architecture](docs/zpecs/architecture.md) — component placement, and what belongs in each component type
-- [Writing Requirements](docs/zpecs/requirements.md) — what makes a good unit of work
-- [Agent Prompts](docs/zpecs/prompts.md) — how to structure a single-task prompt
-- [Dependencies](docs/zpecs/dependencies.md) — when to use one instead of writing your own
-- [Prose Guidelines](docs/zpecs/prose.md) — how to write and organize prose
-- [Glossary](docs/zpecs/glossary.md) — terms used throughout these documents
+The formats and guidelines that shape how a repository writes and organizes its specs, architecture, and requirements. They install to the target's `docs/zpecs/`. See [Specs](docs/zpecs/README.md) for the full list of formats and guidelines.
 
 ## Agents
 

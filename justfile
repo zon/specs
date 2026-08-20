@@ -19,18 +19,15 @@ check:
     #!/usr/bin/env bash
     set -euo pipefail
     status=0
-    for file in {{docs_dir}}/*.md {{skills_dir}}/*/SKILL.md; do
+    for file in {{docs_dir}}/*.md docs/*.md docs/cli/*.md {{skills_dir}}/*/SKILL.md; do
+        dir=$(dirname "$file")
         while read -r link; do
             case "$link" in
                 http*|"#"*|"") continue ;;
             esac
             path="${link%%#*}"
             [ -z "$path" ] && continue
-            case "$file" in
-                {{docs_dir}}/*) resolved="{{docs_dir}}/$path" ;;
-                *) resolved="$path" ;;
-            esac
-            if [ ! -f "$resolved" ]; then
+            if [ ! -f "$dir/$path" ] && [ ! -f "$path" ]; then
                 echo "$file: broken link: $link" >&2
                 status=1
             fi
