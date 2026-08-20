@@ -1,10 +1,8 @@
-Compose target directory with source-owned layout in targetdir
+Build testutil fixtures from the source-owned layout
 
-RelPath builds each path from the target's directory and the source's
-per-kind layout. Docs write as-is, since the doc layout already names
-the docs directory. All paths, ownership manifests, and removal
-behavior are unchanged.
+WriteSkill, WriteAgent, WriteAgentBody, WriteDoc, and WriteDocBody now
+build their paths from source.RelPath instead of re-encoding each kind's
+layout. The existing fixture tests already pin the written paths and
+contents, so no new tests were needed.
 
-A test pins the composition for every target and kind.
-
-Ralph item 1 completed
+Ralph item 2 completed

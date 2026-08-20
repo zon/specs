@@ -60,37 +60,37 @@ func WriteSourceFile(t *testing.T, dir, rel, content string) {
 	writeFile(t, dir, rel, content)
 }
 
-// WriteSkill writes one skill at skills/<name>/SKILL.md under dir.
+// WriteSkill writes one skill at its layout path under dir.
 func WriteSkill(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, filepath.Join("skills", name, "SKILL.md"), "# "+name+"\n")
+	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Skill, Name: name}), "# "+name+"\n")
 }
 
-// WriteAgent writes one agent at agents/<name>.md under dir.
+// WriteAgent writes one agent at its layout path under dir.
 func WriteAgent(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, filepath.Join("agents", name+".md"), "---\nname: "+name+"\n---\n\n"+name+".\n")
+	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+name+".\n")
 }
 
-// WriteAgentBody writes one agent at agents/<name>.md with the given body.
+// WriteAgentBody writes one agent at its layout path with the given body.
 func WriteAgentBody(t *testing.T, dir, name, body string) {
 	t.Helper()
-	WriteSourceFile(t, dir, filepath.Join("agents", name+".md"), "---\nname: "+name+"\n---\n\n"+body)
+	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+body)
 }
 
-// WriteDoc writes one doc at docs/zpecs/<name>.md under dir.
+// WriteDoc writes one doc at its layout path under dir.
 func WriteDoc(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, filepath.Join("docs", "zpecs", name+".md"), "# "+name+"\n")
+	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), "# "+name+"\n")
 }
 
-// WriteDocBody writes one doc at docs/zpecs/<name>.md with the given content.
+// WriteDocBody writes one doc at its layout path with the given content.
 func WriteDocBody(t *testing.T, dir, name, content string) {
 	t.Helper()
-	WriteSourceFile(t, dir, filepath.Join("docs", "zpecs", name+".md"), content)
+	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), content)
 }
 
-// SkillSource returns a temp dir with one skill at skills/<name>/SKILL.md.
+// SkillSource returns a temp dir with one skill.
 func SkillSource(t *testing.T, name string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -98,7 +98,7 @@ func SkillSource(t *testing.T, name string) string {
 	return dir
 }
 
-// AgentSource returns a temp dir with one agent at agents/<name>.md.
+// AgentSource returns a temp dir with one agent.
 func AgentSource(t *testing.T, name string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -106,7 +106,7 @@ func AgentSource(t *testing.T, name string) string {
 	return dir
 }
 
-// DocSource returns a temp dir with one doc at docs/zpecs/<name>.md.
+// DocSource returns a temp dir with one doc.
 func DocSource(t *testing.T, name string) string {
 	t.Helper()
 	dir := t.TempDir()
