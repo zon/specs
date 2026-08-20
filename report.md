@@ -1,8 +1,7 @@
-Build testutil fixtures from the source-owned layout
+Bump the app version to 0.1.13
 
-WriteSkill, WriteAgent, WriteAgentBody, WriteDoc, and WriteDocBody now
-build their paths from source.RelPath instead of re-encoding each kind's
-layout. The existing fixture tests already pin the written paths and
-contents, so no new tests were needed.
+The bump covers the layout refactoring. The version-format test
+already covers the file's format, so we needed no new tests. Both
+check and the test suite pass.
 
-Ralph item 2 completed
+Ralph item 3 completed
