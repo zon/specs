@@ -1,8 +1,8 @@
-Inline the checkDir helper in internal/source
+Simplify the delimiter search in frontmatter.parse
 
-ReadKinds now calls os.Stat directly, and the checkDir helper is gone.
-The existing TestReadKindsErrorsOnMissingSource already covers the
-error behavior, so no new tests were added. Removed the completed plan
-from refactoring.md. Bumped VERSION to 0.1.10.
+parse now tracks the closing delimiter's index and slices the block and
+body around it. The existing frontmatter tests cover the behavior, so no
+new tests were added. Removed the completed plan from refactoring.md.
+Bumped VERSION to 0.1.11.
 
-Ralph item 0 completed
+Ralph item 1 completed

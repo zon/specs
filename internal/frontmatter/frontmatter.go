@@ -40,21 +40,21 @@ func parse(content string) (Content, error) {
 	if strings.TrimSpace(lines[0]) != "---" {
 		return Content{Body: strings.TrimSpace(content)}, nil
 	}
-	bodyAt := -1
+	end := -1
 	for i, line := range lines[1:] {
 		if strings.TrimSpace(line) == "---" {
-			bodyAt = i + 2
+			end = i + 1
 			break
 		}
 	}
-	if bodyAt < 0 {
+	if end < 0 {
 		return Content{}, fmt.Errorf("unterminated frontmatter")
 	}
-	block := strings.Join(lines[1:bodyAt-1], "\n")
+	block := strings.Join(lines[1:end], "\n")
 	var fields Fields
 	if err := yaml.Unmarshal([]byte(block), &fields); err != nil {
 		return Content{}, err
 	}
-	body := strings.TrimSpace(strings.Join(lines[bodyAt:], "\n"))
+	body := strings.TrimSpace(strings.Join(lines[end+1:], "\n"))
 	return Content{Fields: fields, Body: body}, nil
 }
