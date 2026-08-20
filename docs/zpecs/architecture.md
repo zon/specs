@@ -19,6 +19,7 @@ Keep components to a minimum. Create a new component for one of these reasons:
 - **Separate orchestration from implementation.** Create one component for coordination and one for the low-level work it delegates. See [Orchestration Pattern](orchestration.md).
 - **Separate major concerns.** Give each major concern its own [deep module](glossary.md#deep-module): a simple interface over a complex implementation.
 - **Share common logic.** Move logic that several major concerns use into a shared component.
+- **Avoid passthrough components.** A component that only forwards calls to another component owns no concern. Fold the work into the component that does it. This includes entry points: an entry point whose only concern is passing through to another module is a passthrough.
 
 When none of these apply, add the code to an existing component.
 

@@ -1,6 +1,6 @@
 - Inline the checkDir helper in internal/source so ReadKinds calls os.Stat directly and the helper is gone. Remove the matching plan from refactoring.md
 - Simplify the delimiter search in frontmatter.parse so it tracks the closing delimiter's index and slices the block and body around it. Remove the matching plan from refactoring.md
 - Replace the targetName type and its constants in cmd/zpecs with the target package constants and a plain string field, updating the tests that use the type. Remove the matching plan from refactoring.md
-- Split cmd/zpecs into an internal/cli implementation module holding the entry point, kong grammar, and argument parsing, and an internal/update orchestration module holding the update pipeline, recording both in specs/architecture.yaml. Remove the matching plan from refactoring.md
+- Move the update orchestration out of cmd/zpecs into an internal/update orchestration module, keeping the entry point, kong grammar, and argument parsing in cmd/zpecs, and record the module in specs/architecture.yaml. Remove the matching plan from refactoring.md
 - Move format details out of the update orchestration so targetdir wraps its RemoveStale error, report owns the output sink and scope labels, and orchestration calls stop passing os.Stdout. Remove the matching plan from refactoring.md
-- Relocate the CLI test helpers and parser tests from cmd/zpecs/main_test.go beside the new internal/cli module, keeping only orchestration tests in the update module's test file. Remove the matching plan from refactoring.md
+- Move the orchestration tests into the internal/update module's test file, keeping the CLI test helpers and parser tests in cmd/zpecs/main_test.go. Remove the matching plan from refactoring.md

@@ -12,14 +12,14 @@
 
 `cmd/zpecs/main.go:59` `targetName` and the constants `targetClaude` and `targetOpencode` repeat `target.Claude` and `target.Opencode`. kong validates a plain string against `enum`, so the type only adds conversions. Use the target package constants and a string field. Update the tests that use the type.
 
-## Split the CLI entry point from the orchestration
+## Split the update orchestration from the entry point
 
-`cmd/zpecs` mixes entry-point code with orchestration. The kong grammar, `main`, `run`, `usageText`, `printError`, `scope`, and `cliVars` are an implementation concern (architecture.md:42), while `update`, `updatePair`, `resolveSource`, and `pairs` are coordination. Move the entry point into an implementation module (e.g. `internal/cli`) and move the coordination into an orchestration module (e.g. `internal/update`). Record both in `specs/architecture.yaml`.
+`cmd/zpecs` mixes entry-point code with orchestration. The kong grammar, `main`, `run`, `usageText`, `printError`, `scope`, and `cliVars` are an implementation concern (architecture.md:42). They stay in `cmd/zpecs`, which keeps a real concern rather than passing through to another module. `update`, `updatePair`, `resolveSource`, and `pairs` are coordination. Move the coordination into an orchestration module (e.g. `internal/update`) and record it in `specs/architecture.yaml`.
 
 ## Keep orchestration bodies free of format details
 
 The orchestration in `cmd/zpecs` builds strings and passes infrastructure values: `main.go:211` wraps `RemoveStale` with `fmt.Errorf("removing stale definitions: %w", ...)`, `main.go:221` passes `os.Stdout` to `report.Summary`, and `pairs` at `main.go:82` embeds the display names as literals. Let `targetdir` wrap its own error, let the report module own the output sink and scope labels, and drop `os.Stdout` from orchestration calls.
 
-## Move CLI tests out of the orchestration module's test file
+## Move the orchestration tests into the update module's test file
 
-`cmd/zpecs/main_test.go` defines implementation test helpers (`buildBinary`, `parseUpdateArgs`, `writeSourceFile`, `gitCloneSource`, `captureStdout`, `captureStderr`) and tests CLI plumbing (`TestUnmarshalScope`, `TestParseUpdate`, `TestPrintError*`, `TestBuildProducesRunnableCLIBinary`, `TestBinaryPrintsVersion`). These belong beside the `internal/cli` entry point once the split lands. Keep only tests of `update`, `updatePair`, and `resolveSource` decisions in the orchestration module's test file.
+`cmd/zpecs/main_test.go` defines implementation test helpers (`buildBinary`, `parseUpdateArgs`, `writeSourceFile`, `gitCloneSource`, `captureStdout`, `captureStderr`) and tests CLI plumbing (`TestUnmarshalScope`, `TestParseUpdate`, `TestPrintError*`, `TestBuildProducesRunnableCLIBinary`, `TestBinaryPrintsVersion`). These stay beside the `cmd/zpecs` entry point. Move only the tests of `update`, `updatePair`, and `resolveSource` decisions into the orchestration module's test file.
