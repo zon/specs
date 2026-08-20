@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/zon/specs/internal/source"
-	"github.com/zon/specs/internal/target"
 )
 
 // ownedPath records one written path and its kind.
@@ -41,10 +40,10 @@ func RelPath(name string, d source.Definition) string {
 
 // targetDir returns the directory a target writes to.
 func targetDir(name string) string {
-	if name == target.Claude {
+	if name == source.Claude {
 		return ".claude"
 	}
-	if name == target.Docs {
+	if name == source.Docs {
 		return filepath.Join("docs", "zpecs")
 	}
 	return ".opencode"

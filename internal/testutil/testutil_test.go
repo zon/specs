@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/report"
 	"github.com/zon/specs/internal/source"
-	"github.com/zon/specs/internal/target"
 	"github.com/zon/specs/internal/targetdir"
 )
 
@@ -111,32 +110,32 @@ func TestWriteDocBodyWritesTheContent(t *testing.T) {
 
 func TestRequireWrittenPassesForWrittenFile(t *testing.T) {
 	root := t.TempDir()
-	rel := targetdir.RelPath(target.Opencode, source.Definition{Kind: source.Skill, Name: "seed"})
+	rel := targetdir.RelPath(source.Opencode, source.Definition{Kind: source.Skill, Name: "seed"})
 	writeFile(t, root, rel, "content\n")
 
-	RequireWritten(t, root, target.Opencode, "seed", source.Skill)
+	RequireWritten(t, root, source.Opencode, "seed", source.Skill)
 }
 
 func TestRequireNotWrittenPassesForMissingFile(t *testing.T) {
 	root := t.TempDir()
 
-	RequireNotWritten(t, root, target.Opencode, "seed", source.Skill)
+	RequireNotWritten(t, root, source.Opencode, "seed", source.Skill)
 }
 
 func TestWrittenContentReturnsTheText(t *testing.T) {
 	root := t.TempDir()
-	rel := targetdir.RelPath(target.Opencode, source.Definition{Kind: source.Skill, Name: "seed"})
+	rel := targetdir.RelPath(source.Opencode, source.Definition{Kind: source.Skill, Name: "seed"})
 	writeFile(t, root, rel, "content\n")
 
-	require.Equal(t, "content\n", WrittenContent(t, root, target.Opencode, "seed", source.Skill))
+	require.Equal(t, "content\n", WrittenContent(t, root, source.Opencode, "seed", source.Skill))
 }
 
 func TestSeedForeignFileWritesAtTargetPath(t *testing.T) {
 	dir := t.TempDir()
 
-	SeedForeignFile(t, dir, target.Claude, "seed", source.Agent, "manual content\n")
+	SeedForeignFile(t, dir, source.Claude, "seed", source.Agent, "manual content\n")
 
-	rel := targetdir.RelPath(target.Claude, source.Definition{Kind: source.Agent, Name: "seed"})
+	rel := targetdir.RelPath(source.Claude, source.Definition{Kind: source.Agent, Name: "seed"})
 	content, err := os.ReadFile(filepath.Join(dir, rel))
 	require.NoError(t, err)
 	require.Equal(t, "manual content\n", string(content))

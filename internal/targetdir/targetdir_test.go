@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/source"
-	"github.com/zon/specs/internal/target"
 )
 
 func skill(name string) source.Definition {
@@ -26,35 +25,35 @@ func doc(name string) source.Definition {
 func TestPathClaudeSkill(t *testing.T) {
 	root := t.TempDir()
 	want := filepath.Join(root, ".claude", "skills", "prose-editor", "SKILL.md")
-	got := Path(root, target.Claude, skill("prose-editor"))
+	got := Path(root, source.Claude, skill("prose-editor"))
 	require.Equal(t, want, got)
 }
 
 func TestPathClaudeAgent(t *testing.T) {
 	root := t.TempDir()
 	want := filepath.Join(root, ".claude", "agents", "prose-editor.md")
-	got := Path(root, target.Claude, agent("prose-editor"))
+	got := Path(root, source.Claude, agent("prose-editor"))
 	require.Equal(t, want, got)
 }
 
 func TestPathOpencodeSkill(t *testing.T) {
 	root := t.TempDir()
 	want := filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md")
-	got := Path(root, target.Opencode, skill("prose-editor"))
+	got := Path(root, source.Opencode, skill("prose-editor"))
 	require.Equal(t, want, got)
 }
 
 func TestPathOpencodeAgent(t *testing.T) {
 	root := t.TempDir()
 	want := filepath.Join(root, ".opencode", "agents", "prose-editor.md")
-	got := Path(root, target.Opencode, agent("prose-editor"))
+	got := Path(root, source.Opencode, agent("prose-editor"))
 	require.Equal(t, want, got)
 }
 
 func TestPathDocsDoc(t *testing.T) {
 	root := t.TempDir()
 	want := filepath.Join(root, "docs", "zpecs", "architecture.md")
-	got := Path(root, target.Docs, doc("architecture"))
+	got := Path(root, source.Docs, doc("architecture"))
 	require.Equal(t, want, got)
 }
 
@@ -65,11 +64,11 @@ func TestRelPathComposesTargetDirAndSourceLayout(t *testing.T) {
 		d      source.Definition
 		want   string
 	}{
-		{name: "claude skill", target: target.Claude, d: skill("prose-editor"), want: filepath.Join(".claude", "skills", "prose-editor", "SKILL.md")},
-		{name: "claude agent", target: target.Claude, d: agent("prose-editor"), want: filepath.Join(".claude", "agents", "prose-editor.md")},
-		{name: "opencode skill", target: target.Opencode, d: skill("prose-editor"), want: filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")},
-		{name: "opencode agent", target: target.Opencode, d: agent("prose-editor"), want: filepath.Join(".opencode", "agents", "prose-editor.md")},
-		{name: "docs doc", target: target.Docs, d: doc("architecture"), want: filepath.Join("docs", "zpecs", "architecture.md")},
+		{name: "claude skill", target: source.Claude, d: skill("prose-editor"), want: filepath.Join(".claude", "skills", "prose-editor", "SKILL.md")},
+		{name: "claude agent", target: source.Claude, d: agent("prose-editor"), want: filepath.Join(".claude", "agents", "prose-editor.md")},
+		{name: "opencode skill", target: source.Opencode, d: skill("prose-editor"), want: filepath.Join(".opencode", "skills", "prose-editor", "SKILL.md")},
+		{name: "opencode agent", target: source.Opencode, d: agent("prose-editor"), want: filepath.Join(".opencode", "agents", "prose-editor.md")},
+		{name: "docs doc", target: source.Docs, d: doc("architecture"), want: filepath.Join("docs", "zpecs", "architecture.md")},
 	}
 
 	for _, tc := range cases {
@@ -82,7 +81,7 @@ func TestRelPathComposesTargetDirAndSourceLayout(t *testing.T) {
 func TestWriteCreatesDirectoriesAndFile(t *testing.T) {
 	root := t.TempDir()
 
-	err := Write(root, target.Claude, agent("prose-editor"), "Review prose.\n", map[string]ownedPath{})
+	err := Write(root, source.Claude, agent("prose-editor"), "Review prose.\n", map[string]ownedPath{})
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(filepath.Join(root, ".claude", "agents", "prose-editor.md"))
@@ -93,7 +92,7 @@ func TestWriteCreatesDirectoriesAndFile(t *testing.T) {
 func TestWriteCreatesMissingDirectoriesForASkill(t *testing.T) {
 	root := t.TempDir()
 
-	err := Write(root, target.Claude, skill("prose-editor"), "# prose-editor\n", map[string]ownedPath{})
+	err := Write(root, source.Claude, skill("prose-editor"), "# prose-editor\n", map[string]ownedPath{})
 	require.NoError(t, err)
 
 	for _, dir := range []string{
@@ -110,7 +109,7 @@ func TestWriteCreatesMissingDirectoriesForASkill(t *testing.T) {
 func TestWriteCreatesMissingDirectoriesForAnAgent(t *testing.T) {
 	root := t.TempDir()
 
-	err := Write(root, target.Opencode, agent("code-architect"), "Architect code.\n", map[string]ownedPath{})
+	err := Write(root, source.Opencode, agent("code-architect"), "Architect code.\n", map[string]ownedPath{})
 	require.NoError(t, err)
 
 	for _, dir := range []string{
@@ -126,7 +125,7 @@ func TestWriteCreatesMissingDirectoriesForAnAgent(t *testing.T) {
 func TestWriteDocsCreatesDirectoryAndFile(t *testing.T) {
 	root := t.TempDir()
 
-	err := Write(root, target.Docs, doc("architecture"), "# Architecture\n", map[string]ownedPath{})
+	err := Write(root, source.Docs, doc("architecture"), "# Architecture\n", map[string]ownedPath{})
 	require.NoError(t, err)
 
 	p := filepath.Join(root, "docs", "zpecs", "architecture.md")
@@ -138,8 +137,8 @@ func TestWriteDocsCreatesDirectoryAndFile(t *testing.T) {
 func TestSaveOwnedCreatesMissingTargetDirectory(t *testing.T) {
 	root := t.TempDir()
 
-	err := SaveOwned(root, target.Opencode, map[string]ownedPath{
-		RelPath(target.Opencode, agent("prose-editor")): {kind: source.Agent, known: true},
+	err := SaveOwned(root, source.Opencode, map[string]ownedPath{
+		RelPath(source.Opencode, agent("prose-editor")): {kind: source.Agent, known: true},
 	})
 	require.NoError(t, err)
 
@@ -155,7 +154,7 @@ func TestWriteWritesUnderRootNotWorkingDirectory(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(t.TempDir())
 
-	err := Write(root, target.Opencode, skill("prose-editor"), "# prose-editor\n", map[string]ownedPath{})
+	err := Write(root, source.Opencode, skill("prose-editor"), "# prose-editor\n", map[string]ownedPath{})
 	require.NoError(t, err)
 
 	path := filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md")
@@ -174,9 +173,9 @@ func TestWriteLeavesForeignFileAlone(t *testing.T) {
 	require.NoError(t, err)
 
 	owned := map[string]ownedPath{}
-	err = Write(root, target.Claude, agent("prose-editor"), "rendered\n", owned)
+	err = Write(root, source.Claude, agent("prose-editor"), "rendered\n", owned)
 	require.NoError(t, err)
-	require.NotContains(t, owned, RelPath(target.Claude, agent("prose-editor")))
+	require.NotContains(t, owned, RelPath(source.Claude, agent("prose-editor")))
 
 	content, err := os.ReadFile(p)
 	require.NoError(t, err)
@@ -187,10 +186,10 @@ func TestWriteReplacesOwnedFile(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
 
-	err := Write(root, target.Claude, agent("prose-editor"), "first\n", owned)
+	err := Write(root, source.Claude, agent("prose-editor"), "first\n", owned)
 	require.NoError(t, err)
 
-	err = Write(root, target.Claude, agent("prose-editor"), "second\n", owned)
+	err = Write(root, source.Claude, agent("prose-editor"), "second\n", owned)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(filepath.Join(root, ".claude", "agents", "prose-editor.md"))
@@ -201,7 +200,7 @@ func TestWriteReplacesOwnedFile(t *testing.T) {
 func TestOwnedEmptyWithoutManifest(t *testing.T) {
 	root := t.TempDir()
 
-	owned, err := Owned(root, target.Claude)
+	owned, err := Owned(root, source.Claude)
 	require.NoError(t, err)
 	require.Empty(t, owned)
 }
@@ -209,28 +208,28 @@ func TestOwnedEmptyWithoutManifest(t *testing.T) {
 func TestSaveOwnedPersistsWrittenPaths(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Claude, agent("prose-editor"), "content\n", owned)
+	err := Write(root, source.Claude, agent("prose-editor"), "content\n", owned)
 	require.NoError(t, err)
-	err = Write(root, target.Claude, skill("prose-editor"), "# prose-editor\n", owned)
+	err = Write(root, source.Claude, skill("prose-editor"), "# prose-editor\n", owned)
 	require.NoError(t, err)
-	err = SaveOwned(root, target.Claude, owned)
+	err = SaveOwned(root, source.Claude, owned)
 	require.NoError(t, err)
 
-	got, err := Owned(root, target.Claude)
+	got, err := Owned(root, source.Claude)
 	require.NoError(t, err)
-	require.Contains(t, got, RelPath(target.Claude, agent("prose-editor")))
-	require.Contains(t, got, RelPath(target.Claude, skill("prose-editor")))
+	require.Contains(t, got, RelPath(source.Claude, agent("prose-editor")))
+	require.Contains(t, got, RelPath(source.Claude, skill("prose-editor")))
 }
 
 func TestManifestSeparatePerTarget(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Claude, agent("prose-editor"), "content\n", owned)
+	err := Write(root, source.Claude, agent("prose-editor"), "content\n", owned)
 	require.NoError(t, err)
-	err = SaveOwned(root, target.Claude, owned)
+	err = SaveOwned(root, source.Claude, owned)
 	require.NoError(t, err)
 
-	got, err := Owned(root, target.Opencode)
+	got, err := Owned(root, source.Opencode)
 	require.NoError(t, err)
 	require.Empty(t, got)
 }
@@ -238,31 +237,31 @@ func TestManifestSeparatePerTarget(t *testing.T) {
 func TestManifestSeparateForDocs(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Docs, doc("architecture"), "# Architecture\n", owned)
+	err := Write(root, source.Docs, doc("architecture"), "# Architecture\n", owned)
 	require.NoError(t, err)
-	err = SaveOwned(root, target.Docs, owned)
+	err = SaveOwned(root, source.Docs, owned)
 	require.NoError(t, err)
 
 	_, err = os.Stat(filepath.Join(root, "docs", "zpecs", manifestName))
 	require.NoError(t, err)
 
-	got, err := Owned(root, target.Opencode)
+	got, err := Owned(root, source.Opencode)
 	require.NoError(t, err)
 	require.Empty(t, got)
 
-	got, err = Owned(root, target.Docs)
+	got, err = Owned(root, source.Docs)
 	require.NoError(t, err)
-	require.Contains(t, got, RelPath(target.Docs, doc("architecture")))
+	require.Contains(t, got, RelPath(source.Docs, doc("architecture")))
 }
 
 func TestWriteRecordedInOwned(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
 
-	err := Write(root, target.Opencode, agent("prose-editor"), "content\n", owned)
+	err := Write(root, source.Opencode, agent("prose-editor"), "content\n", owned)
 	require.NoError(t, err)
 
-	require.Contains(t, owned, RelPath(target.Opencode, agent("prose-editor")))
+	require.Contains(t, owned, RelPath(source.Opencode, agent("prose-editor")))
 }
 
 func TestWriteAllWritesSeveralDefinitions(t *testing.T) {
@@ -274,16 +273,16 @@ func TestWriteAllWritesSeveralDefinitions(t *testing.T) {
 		doc("architecture"),
 	}
 
-	err := WriteAll(root, target.Claude, defs, func(d source.Definition) (string, error) {
+	err := WriteAll(root, source.Claude, defs, func(d source.Definition) (string, error) {
 		return d.Name + "\n", nil
 	}, owned)
 	require.NoError(t, err)
 
 	for _, d := range defs {
-		content, err := os.ReadFile(Path(root, target.Claude, d))
+		content, err := os.ReadFile(Path(root, source.Claude, d))
 		require.NoError(t, err)
 		require.Equal(t, d.Name+"\n", string(content))
-		require.Contains(t, owned, RelPath(target.Claude, d))
+		require.Contains(t, owned, RelPath(source.Claude, d))
 	}
 }
 
@@ -295,13 +294,13 @@ func TestWriteAllSkipsForeignFile(t *testing.T) {
 		skill("code-architect"),
 	}
 
-	foreign := Path(root, target.Opencode, agent("prose-editor"))
+	foreign := Path(root, source.Opencode, agent("prose-editor"))
 	err := os.MkdirAll(filepath.Dir(foreign), 0o755)
 	require.NoError(t, err)
 	err = os.WriteFile(foreign, []byte("manual\n"), 0o644)
 	require.NoError(t, err)
 
-	err = WriteAll(root, target.Opencode, defs, func(d source.Definition) (string, error) {
+	err = WriteAll(root, source.Opencode, defs, func(d source.Definition) (string, error) {
 		return "rendered\n", nil
 	}, owned)
 	require.NoError(t, err)
@@ -309,22 +308,22 @@ func TestWriteAllSkipsForeignFile(t *testing.T) {
 	content, err := os.ReadFile(foreign)
 	require.NoError(t, err)
 	require.Equal(t, "manual\n", string(content))
-	require.NotContains(t, owned, RelPath(target.Opencode, agent("prose-editor")))
+	require.NotContains(t, owned, RelPath(source.Opencode, agent("prose-editor")))
 
-	skillPath := Path(root, target.Opencode, skill("code-architect"))
+	skillPath := Path(root, source.Opencode, skill("code-architect"))
 	content, err = os.ReadFile(skillPath)
 	require.NoError(t, err)
 	require.Equal(t, "rendered\n", string(content))
-	require.Contains(t, owned, RelPath(target.Opencode, skill("code-architect")))
+	require.Contains(t, owned, RelPath(source.Opencode, skill("code-architect")))
 }
 
 func TestRemoveStaleRemovesFileNoLongerWritten(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Claude, skill("prose-editor"), "# prose-editor\n", owned)
+	err := Write(root, source.Claude, skill("prose-editor"), "# prose-editor\n", owned)
 	require.NoError(t, err)
 
-	removed, err := RemoveStale(root, target.Claude, owned, nil, source.Skill)
+	removed, err := RemoveStale(root, source.Claude, owned, nil, source.Skill)
 	require.NoError(t, err)
 	require.Len(t, removed, 1)
 
@@ -336,10 +335,10 @@ func TestRemoveStaleRemovesFileNoLongerWritten(t *testing.T) {
 func TestRemoveStaleDocsRemovesStaleDoc(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Docs, doc("architecture"), "# Architecture\n", owned)
+	err := Write(root, source.Docs, doc("architecture"), "# Architecture\n", owned)
 	require.NoError(t, err)
 
-	removed, err := RemoveStale(root, target.Docs, owned, nil, source.Doc)
+	removed, err := RemoveStale(root, source.Docs, owned, nil, source.Doc)
 	require.NoError(t, err)
 	require.Len(t, removed, 1)
 
@@ -351,11 +350,11 @@ func TestRemoveStaleDocsRemovesStaleDoc(t *testing.T) {
 func TestRemoveStaleKeepsCurrentDefinition(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Claude, agent("prose-editor"), "content\n", owned)
+	err := Write(root, source.Claude, agent("prose-editor"), "content\n", owned)
 	require.NoError(t, err)
 	current := []source.Definition{agent("prose-editor")}
 
-	removed, err := RemoveStale(root, target.Claude, owned, current, source.Agent)
+	removed, err := RemoveStale(root, source.Claude, owned, current, source.Agent)
 	require.NoError(t, err)
 	require.Empty(t, removed)
 	_, err = os.Stat(filepath.Join(root, ".claude", "agents", "prose-editor.md"))
@@ -365,12 +364,12 @@ func TestRemoveStaleKeepsCurrentDefinition(t *testing.T) {
 func TestRemoveStaleScopedLeavesOtherKinds(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Claude, skill("prose-editor"), "# prose-editor\n", owned)
+	err := Write(root, source.Claude, skill("prose-editor"), "# prose-editor\n", owned)
 	require.NoError(t, err)
-	err = Write(root, target.Claude, agent("code-architect"), "content\n", owned)
+	err = Write(root, source.Claude, agent("code-architect"), "content\n", owned)
 	require.NoError(t, err)
 
-	removed, err := RemoveStale(root, target.Claude, owned, nil, source.Skill)
+	removed, err := RemoveStale(root, source.Claude, owned, nil, source.Skill)
 	require.NoError(t, err)
 	require.Len(t, removed, 1)
 
@@ -381,12 +380,12 @@ func TestRemoveStaleScopedLeavesOtherKinds(t *testing.T) {
 func TestRemoveStaleAllKinds(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Opencode, skill("prose-editor"), "# prose-editor\n", owned)
+	err := Write(root, source.Opencode, skill("prose-editor"), "# prose-editor\n", owned)
 	require.NoError(t, err)
-	err = Write(root, target.Opencode, agent("code-architect"), "content\n", owned)
+	err = Write(root, source.Opencode, agent("code-architect"), "content\n", owned)
 	require.NoError(t, err)
 
-	removed, err := RemoveStale(root, target.Opencode, owned, nil, source.Skill, source.Agent)
+	removed, err := RemoveStale(root, source.Opencode, owned, nil, source.Skill, source.Agent)
 	require.NoError(t, err)
 	require.Len(t, removed, 2)
 	_, err = os.Stat(filepath.Join(root, ".opencode", "skills", "prose-editor", "SKILL.md"))
@@ -399,10 +398,10 @@ func TestRemoveStaleAllKinds(t *testing.T) {
 func TestRemoveStaleHandlesMissingFile(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{
-		RelPath(target.Claude, skill("prose-editor")): {kind: source.Skill, known: true},
+		RelPath(source.Claude, skill("prose-editor")): {kind: source.Skill, known: true},
 	}
 
-	removed, err := RemoveStale(root, target.Claude, owned, nil, source.Skill)
+	removed, err := RemoveStale(root, source.Claude, owned, nil, source.Skill)
 	require.NoError(t, err)
 	require.Len(t, removed, 1)
 	require.Empty(t, owned)
@@ -410,7 +409,7 @@ func TestRemoveStaleHandlesMissingFile(t *testing.T) {
 
 func TestRemoveStaleWrapsRemovalError(t *testing.T) {
 	root := t.TempDir()
-	rel := RelPath(target.Claude, skill("prose-editor"))
+	rel := RelPath(source.Claude, skill("prose-editor"))
 	owned := map[string]ownedPath{
 		rel: {kind: source.Skill, known: true},
 	}
@@ -419,7 +418,7 @@ func TestRemoveStaleWrapsRemovalError(t *testing.T) {
 	err = os.WriteFile(filepath.Join(root, rel, "file.txt"), []byte("x\n"), 0o644)
 	require.NoError(t, err)
 
-	_, err = RemoveStale(root, target.Claude, owned, nil, source.Skill)
+	_, err = RemoveStale(root, source.Claude, owned, nil, source.Skill)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "removing stale definitions")
 	var pathErr *fs.PathError
@@ -430,17 +429,17 @@ func TestManifestRoundTripStoresKinds(t *testing.T) {
 	root := t.TempDir()
 
 	claude := map[string]ownedPath{}
-	err := Write(root, target.Claude, agent("prose-editor"), "content\n", claude)
+	err := Write(root, source.Claude, agent("prose-editor"), "content\n", claude)
 	require.NoError(t, err)
-	err = Write(root, target.Claude, skill("prose-editor"), "# prose-editor\n", claude)
+	err = Write(root, source.Claude, skill("prose-editor"), "# prose-editor\n", claude)
 	require.NoError(t, err)
-	err = SaveOwned(root, target.Claude, claude)
+	err = SaveOwned(root, source.Claude, claude)
 	require.NoError(t, err)
 
 	docs := map[string]ownedPath{}
-	err = Write(root, target.Docs, doc("architecture"), "# Architecture\n", docs)
+	err = Write(root, source.Docs, doc("architecture"), "# Architecture\n", docs)
 	require.NoError(t, err)
-	err = SaveOwned(root, target.Docs, docs)
+	err = SaveOwned(root, source.Docs, docs)
 	require.NoError(t, err)
 
 	manifest, err := os.ReadFile(filepath.Join(root, ".claude", manifestName))
@@ -452,27 +451,27 @@ func TestManifestRoundTripStoresKinds(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "doc docs/zpecs/architecture.md\n", string(manifest))
 
-	owned, err := Owned(root, target.Claude)
+	owned, err := Owned(root, source.Claude)
 	require.NoError(t, err)
-	agentRel := RelPath(target.Claude, agent("prose-editor"))
+	agentRel := RelPath(source.Claude, agent("prose-editor"))
 	require.Equal(t, ownedPath{kind: source.Agent, known: true}, owned[agentRel])
-	skillRel := RelPath(target.Claude, skill("prose-editor"))
+	skillRel := RelPath(source.Claude, skill("prose-editor"))
 	require.Equal(t, ownedPath{kind: source.Skill, known: true}, owned[skillRel])
 
-	removed, err := RemoveStale(root, target.Claude, owned, nil, source.Skill)
+	removed, err := RemoveStale(root, source.Claude, owned, nil, source.Skill)
 	require.NoError(t, err)
 	require.Equal(t, []string{skillRel}, removed)
-	_, err = os.Stat(Path(root, target.Claude, agent("prose-editor")))
+	_, err = os.Stat(Path(root, source.Claude, agent("prose-editor")))
 	require.NoError(t, err)
 
-	removed, err = RemoveStale(root, target.Claude, owned, nil, source.Agent)
+	removed, err = RemoveStale(root, source.Claude, owned, nil, source.Agent)
 	require.NoError(t, err)
 	require.Equal(t, []string{agentRel}, removed)
 
-	owned, err = Owned(root, target.Docs)
+	owned, err = Owned(root, source.Docs)
 	require.NoError(t, err)
-	require.Equal(t, ownedPath{kind: source.Doc, known: true}, owned[RelPath(target.Docs, doc("architecture"))])
-	removed, err = RemoveStale(root, target.Docs, owned, nil, source.Doc)
+	require.Equal(t, ownedPath{kind: source.Doc, known: true}, owned[RelPath(source.Docs, doc("architecture"))])
+	removed, err = RemoveStale(root, source.Docs, owned, nil, source.Doc)
 	require.NoError(t, err)
 	require.Len(t, removed, 1)
 }
@@ -480,7 +479,7 @@ func TestManifestRoundTripStoresKinds(t *testing.T) {
 func TestSaveOwnedSkipsManifestWhenNothingOwned(t *testing.T) {
 	root := t.TempDir()
 
-	err := SaveOwned(root, target.Docs, map[string]ownedPath{})
+	err := SaveOwned(root, source.Docs, map[string]ownedPath{})
 	require.NoError(t, err)
 	_, err = os.Stat(filepath.Join(root, "docs", "zpecs", manifestName))
 	require.Error(t, err)
@@ -489,16 +488,16 @@ func TestSaveOwnedSkipsManifestWhenNothingOwned(t *testing.T) {
 func TestSaveOwnedRemovesEmptyManifest(t *testing.T) {
 	root := t.TempDir()
 	owned := map[string]ownedPath{}
-	err := Write(root, target.Docs, doc("architecture"), "# Architecture\n", owned)
+	err := Write(root, source.Docs, doc("architecture"), "# Architecture\n", owned)
 	require.NoError(t, err)
-	err = SaveOwned(root, target.Docs, owned)
+	err = SaveOwned(root, source.Docs, owned)
 	require.NoError(t, err)
 	_, err = os.Stat(filepath.Join(root, "docs", "zpecs", manifestName))
 	require.NoError(t, err)
 
-	_, err = RemoveStale(root, target.Docs, owned, nil, source.Doc)
+	_, err = RemoveStale(root, source.Docs, owned, nil, source.Doc)
 	require.NoError(t, err)
-	err = SaveOwned(root, target.Docs, owned)
+	err = SaveOwned(root, source.Docs, owned)
 	require.NoError(t, err)
 	_, err = os.Stat(filepath.Join(root, "docs", "zpecs", manifestName))
 	require.Error(t, err)
@@ -509,11 +508,11 @@ func TestOwnedReadsLegacyManifest(t *testing.T) {
 	dir := filepath.Join(root, ".opencode")
 	err := os.MkdirAll(dir, 0o755)
 	require.NoError(t, err)
-	rel := RelPath(target.Opencode, agent("prose-editor"))
+	rel := RelPath(source.Opencode, agent("prose-editor"))
 	err = os.WriteFile(filepath.Join(dir, manifestName), []byte(rel+"\n"), 0o644)
 	require.NoError(t, err)
 
-	owned, err := Owned(root, target.Opencode)
+	owned, err := Owned(root, source.Opencode)
 	require.NoError(t, err)
 	require.Contains(t, owned, rel)
 	require.False(t, owned[rel].known)
@@ -528,7 +527,7 @@ func TestOwnedReadsLegacyPathWithSpace(t *testing.T) {
 	err = os.WriteFile(filepath.Join(dir, manifestName), []byte(rel+"\n"), 0o644)
 	require.NoError(t, err)
 
-	owned, err := Owned(root, target.Opencode)
+	owned, err := Owned(root, source.Opencode)
 	require.NoError(t, err)
 	require.Contains(t, owned, rel)
 	require.False(t, owned[rel].known)
@@ -536,14 +535,14 @@ func TestOwnedReadsLegacyPathWithSpace(t *testing.T) {
 
 func TestRemoveStaleSkipsUnknownKindEntry(t *testing.T) {
 	root := t.TempDir()
-	rel := RelPath(target.Claude, agent("prose-editor"))
+	rel := RelPath(source.Claude, agent("prose-editor"))
 	owned := map[string]ownedPath{rel: {}}
 	err := os.MkdirAll(filepath.Join(root, filepath.Dir(rel)), 0o755)
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(root, rel), []byte("old\n"), 0o644)
 	require.NoError(t, err)
 
-	removed, err := RemoveStale(root, target.Claude, owned, nil, source.Agent)
+	removed, err := RemoveStale(root, source.Claude, owned, nil, source.Agent)
 	require.NoError(t, err)
 	require.Empty(t, removed)
 	_, err = os.Stat(filepath.Join(root, rel))
@@ -556,22 +555,22 @@ func TestLegacyManifestUpgradedByNextRun(t *testing.T) {
 	dir := filepath.Join(root, ".opencode")
 	err := os.MkdirAll(dir, 0o755)
 	require.NoError(t, err)
-	rel := RelPath(target.Opencode, agent("prose-editor"))
+	rel := RelPath(source.Opencode, agent("prose-editor"))
 	err = os.WriteFile(filepath.Join(dir, manifestName), []byte(rel+"\n"), 0o644)
 	require.NoError(t, err)
 
-	owned, err := Owned(root, target.Opencode)
+	owned, err := Owned(root, source.Opencode)
 	require.NoError(t, err)
 
-	removed, err := RemoveStale(root, target.Opencode, owned, nil, source.Agent)
+	removed, err := RemoveStale(root, source.Opencode, owned, nil, source.Agent)
 	require.NoError(t, err)
 	require.Empty(t, removed)
 
-	err = Write(root, target.Opencode, agent("prose-editor"), "content\n", owned)
+	err = Write(root, source.Opencode, agent("prose-editor"), "content\n", owned)
 	require.NoError(t, err)
 	require.Equal(t, ownedPath{kind: source.Agent, known: true}, owned[rel])
 
-	err = SaveOwned(root, target.Opencode, owned)
+	err = SaveOwned(root, source.Opencode, owned)
 	require.NoError(t, err)
 	manifest, err := os.ReadFile(filepath.Join(dir, manifestName))
 	require.NoError(t, err)
@@ -580,10 +579,10 @@ func TestLegacyManifestUpgradedByNextRun(t *testing.T) {
 
 func TestSaveOwnedKeepsUnknownEntryAsBarePath(t *testing.T) {
 	root := t.TempDir()
-	rel := RelPath(target.Claude, agent("prose-editor"))
+	rel := RelPath(source.Claude, agent("prose-editor"))
 	owned := map[string]ownedPath{rel: {}}
 
-	err := SaveOwned(root, target.Claude, owned)
+	err := SaveOwned(root, source.Claude, owned)
 	require.NoError(t, err)
 
 	manifest, err := os.ReadFile(filepath.Join(root, ".claude", manifestName))

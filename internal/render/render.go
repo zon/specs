@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/zon/specs/internal/source"
-	"github.com/zon/specs/internal/target"
 )
 
 // definition returns a definition's text for a target. Skills and docs
@@ -23,7 +22,7 @@ func definition(d source.Definition, targetName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if targetName == target.Claude {
+	if targetName == source.Claude {
 		return claudeAgent(content.fields, content.body), nil
 	}
 	return opencodeAgent(content.fields, content.body)
