@@ -1,3 +1,0 @@
-- The target names (claude, opencode, docs) are defined once in internal/source, and the internal/target package no longer exists
-- specs/architecture.yaml no longer lists internal/target
-- Apply a semver patch bump to the app version
