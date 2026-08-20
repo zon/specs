@@ -1,7 +1,8 @@
-Relocate the CLI tests beside internal/cli
+Inline the checkDir helper in internal/source
 
-The CLI test helpers and parser tests now live in internal/cli's test
-file, and the update module's test file keeps only orchestration tests.
-Removed the completed plan from refactoring.md.
+ReadKinds now calls os.Stat directly, and the checkDir helper is gone.
+The existing TestReadKindsErrorsOnMissingSource already covers the
+error behavior, so no new tests were added. Removed the completed plan
+from refactoring.md. Bumped VERSION to 0.1.10.
 
-Ralph item 5 completed
+Ralph item 0 completed
