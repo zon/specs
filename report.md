@@ -1,10 +1,8 @@
-Fold frontmatter into render
+Bump the app version to 0.1.12
 
-Merge the frontmatter parsing code into internal/render, its only
-caller, so one component parses and renders agents. Move the frontmatter
-tests into render's test file. Remove internal/frontmatter from
-specs/architecture.yaml and the filesystem.
+Apply the semver patch bump that versions the frontmatter fold. The
+just build and install recipes pass the VERSION file into the binary.
 
-The tests cover parsing fields, bodies, and errors.
+A test asserts the version file holds a valid semver value.
 
-Ralph item 0 completed
+Ralph item 1 completed

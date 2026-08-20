@@ -54,6 +54,12 @@ func TestBinaryPrintsVersion(t *testing.T) {
 	require.Equal(t, version, strings.TrimSpace(string(out)))
 }
 
+func TestVersionFileHoldsSemver(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "VERSION"))
+	require.NoError(t, err)
+	require.Regexp(t, `^\d+\.\d+\.\d+$`, strings.TrimSpace(string(data)))
+}
+
 // parseUpdateArgs parses `update <args>` with the same kong grammar
 // `run` uses. It returns the selected options.
 func parseUpdateArgs(t *testing.T, args ...string) (update.Options, error) {
