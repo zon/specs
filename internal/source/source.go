@@ -19,6 +19,37 @@ const (
 	Doc
 )
 
+// Scope selects the kinds of definitions to read from a source.
+type Scope int
+
+const (
+	// ScopeAll selects every kind of definition.
+	ScopeAll Scope = iota
+	// ScopeSkills selects skill definitions.
+	ScopeSkills
+	// ScopeAgents selects agent definitions.
+	ScopeAgents
+	// ScopeDocs selects doc definitions.
+	ScopeDocs
+)
+
+// UnmarshalText maps a scope token to its constant.
+func (s *Scope) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "all":
+		*s = ScopeAll
+	case "skills":
+		*s = ScopeSkills
+	case "agents":
+		*s = ScopeAgents
+	case "docs":
+		*s = ScopeDocs
+	default:
+		return fmt.Errorf("unknown scope %q", string(text))
+	}
+	return nil
+}
+
 // Definition is one skill, agent, or doc found in a source.
 type Definition struct {
 	Kind Kind
@@ -41,7 +72,7 @@ var kindSpecs = map[Kind]kindSpec{
 
 // ReadKinds reads the listed kinds from a local source, in that order.
 func ReadKinds(kinds []Kind, dir string) ([]Definition, error) {
-	if err := checkDir(dir); err != nil {
+	if _, err := os.Stat(dir); err != nil {
 		return nil, err
 	}
 	var defs []Definition
@@ -57,11 +88,6 @@ func ReadKinds(kinds []Kind, dir string) ([]Definition, error) {
 		defs = append(defs, got...)
 	}
 	return defs, nil
-}
-
-func checkDir(dir string) error {
-	_, err := os.Stat(dir)
-	return err
 }
 
 // readKind finds the definitions matching a pattern in a source and names

@@ -1,9 +1,8 @@
 - path: cmd/zpecs
-  description: Parses the command line and orchestrates each command's work.
-  orchestration: true
+  description: Parses the command line and runs each command's work.
 
 - path: internal/source
-  description: Reads skill, agent, and doc definitions from a local source directory.
+  description: Reads and selects skill, agent, and doc definitions from a local source directory.
 
 - path: internal/clone
   description: Clones a repository into a temp dir so a remote source reads like a local one.
@@ -30,4 +29,8 @@
   description: Parses a spec markdown file into a JSON document.
 
 - path: internal/testutil
-  description: Builds temp git repositories for tests.
+  description: Provides shared fixtures and helpers for tests.
+
+- path: internal/update
+  description: Orchestrates update runs: resolving the source, rendering definitions into their targets, and reporting each run.
+  orchestration: true

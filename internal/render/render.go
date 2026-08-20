@@ -10,9 +10,8 @@ import (
 	"github.com/zon/specs/internal/target"
 )
 
-// Definition returns the text a definition renders for a target.
-// Skills and docs return their file contents verbatim. The target
-// parses and renders agents.
+// Definition returns a definition's text for a target. Skills and docs
+// return their contents verbatim. Agents are parsed and rendered.
 func Definition(d source.Definition, targetName string) (string, error) {
 	if d.Kind == source.Skill || d.Kind == source.Doc {
 		raw, err := os.ReadFile(d.Path)
@@ -31,8 +30,15 @@ func Definition(d source.Definition, targetName string) (string, error) {
 	return OpencodeAgent(content.Fields, content.Body)
 }
 
-// ClaudeAgent keeps the name, description, and tools, and uses the body as
-// the prompt.
+// ForTarget returns the function that renders each definition for a target.
+func ForTarget(targetName string) func(source.Definition) (string, error) {
+	return func(d source.Definition) (string, error) {
+		return Definition(d, targetName)
+	}
+}
+
+// ClaudeAgent keeps the name, description, and tools. It uses the body
+// as the prompt.
 func ClaudeAgent(fields frontmatter.Fields, body string) string {
 	var lines []string
 	lines = append(lines, "name: "+fields.Name, "description: "+fields.Description)
@@ -45,8 +51,9 @@ func ClaudeAgent(fields frontmatter.Fields, body string) string {
 	return frame(lines, body)
 }
 
-// OpencodeAgent writes the definition's mode, defaulting to subagent,
-// drops the name, and denies every tool the definition does not list.
+// OpencodeAgent writes the definition's mode, defaulting to subagent.
+// It drops the name and denies every tool the definition does not
+// list.
 func OpencodeAgent(fields frontmatter.Fields, body string) (string, error) {
 	mode := fields.Mode
 	if mode == "" {
@@ -66,8 +73,7 @@ func OpencodeAgent(fields frontmatter.Fields, body string) (string, error) {
 	return frame(lines, body), nil
 }
 
-// frame wraps the frontmatter lines and body in an agent file: the `---`
-// delimiters, the lines, a blank line, and a trailing newline.
+// frame wraps the frontmatter lines and body between `---` delimiters.
 func frame(lines []string, body string) string {
 	var out strings.Builder
 	out.WriteString("---\n")

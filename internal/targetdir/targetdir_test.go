@@ -1,6 +1,7 @@
 package targetdir
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -384,6 +385,24 @@ func TestRemoveStaleHandlesMissingFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, removed, 1)
 	require.Empty(t, owned)
+}
+
+func TestRemoveStaleWrapsRemovalError(t *testing.T) {
+	root := t.TempDir()
+	rel := RelPath(target.Claude, skill("prose-editor"))
+	owned := map[string]ownedPath{
+		rel: {kind: source.Skill, known: true},
+	}
+	err := os.MkdirAll(filepath.Join(root, rel), 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(root, rel, "file.txt"), []byte("x\n"), 0o644)
+	require.NoError(t, err)
+
+	_, err = RemoveStale(root, target.Claude, owned, nil, source.Skill)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "removing stale definitions")
+	var pathErr *fs.PathError
+	require.ErrorAs(t, err, &pathErr)
 }
 
 func TestManifestRoundTripStoresKinds(t *testing.T) {

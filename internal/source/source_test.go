@@ -53,13 +53,13 @@ func TestReadKindsSelectsSingleKind(t *testing.T) {
 	defs, err := ReadKinds([]Kind{Doc}, dir)
 	require.NoError(t, err)
 
-	require.Equal(t, 1, len(defs))
+	require.Len(t, defs, 1)
 	require.Equal(t, []string{"architecture"}, namesOfKind(defs, Doc))
 }
 
 func TestReadKindsErrorsOnMissingSource(t *testing.T) {
 	_, err := ReadKinds([]Kind{Skill}, filepath.Join(t.TempDir(), "missing"))
-	require.Error(t, err)
+	require.ErrorIs(t, err, os.ErrNotExist)
 }
 
 func TestReadKindsDoesNotReadMisplacedFiles(t *testing.T) {
@@ -101,4 +101,30 @@ func TestReadKindsReturnsSourcePaths(t *testing.T) {
 func TestReadKindsErrorsOnUnknownKind(t *testing.T) {
 	_, err := ReadKinds([]Kind{Kind(99)}, t.TempDir())
 	require.Error(t, err)
+}
+
+func TestUnmarshalScope(t *testing.T) {
+	cases := []struct {
+		name    string
+		s       string
+		want    Scope
+		wantErr bool
+	}{
+		{name: "all", s: "all", want: ScopeAll},
+		{name: "skills", s: "skills", want: ScopeSkills},
+		{name: "agents", s: "agents", want: ScopeAgents},
+		{name: "docs", s: "docs", want: ScopeDocs},
+		{name: "unknown scope", s: "vscode", wantErr: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var got Scope
+			err := got.UnmarshalText([]byte(tc.s))
+			require.Equal(t, tc.wantErr, err != nil)
+			if err == nil {
+				require.Equal(t, tc.want, got)
+			}
+		})
+	}
 }

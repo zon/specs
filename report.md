@@ -1,8 +1,8 @@
-Drop the dead guard in frontmatter.parse
+Inline the checkDir helper in internal/source
 
-strings.Split always returns at least one line, so the len(lines) == 0
-check in parse can never fire. Remove it. Add a test that an empty
-file parses to zero fields and an empty body. Remove the completed
-plan from refactoring.md. Delete the file, since no plans remain.
+ReadKinds calls os.Stat directly and the one-line helper is gone.
+The matching plan leaves refactoring.md. VERSION bumps to 0.1.11.
 
-Ralph item 4 completed
+Tests: TestReadKindsErrorsOnMissingSource now asserts os.ErrNotExist. TestReadKindsSelectsSingleKind uses require.Len.
+
+Ralph item 0 completed
