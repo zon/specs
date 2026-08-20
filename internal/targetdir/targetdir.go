@@ -29,17 +29,14 @@ func Path(root, name string, d source.Definition) string {
 	return filepath.Join(root, RelPath(name, d))
 }
 
-// RelPath returns the path of a definition's written file under its
-// target, relative to the repository root.
+// RelPath returns a definition's path relative to the repository root,
+// joining the target's directory with the source's layout. A doc writes
+// as-is, since the doc layout already names the docs directory.
 func RelPath(name string, d source.Definition) string {
-	dir := targetDir(name)
-	if d.Kind == source.Skill {
-		return filepath.Join(dir, "skills", d.Name, "SKILL.md")
-	}
 	if d.Kind == source.Doc {
-		return filepath.Join(dir, d.Name+".md")
+		return source.RelPath(d)
 	}
-	return filepath.Join(dir, "agents", d.Name+".md")
+	return filepath.Join(targetDir(name), source.RelPath(d))
 }
 
 // targetDir returns the directory a target writes to.

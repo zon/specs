@@ -1,10 +1,10 @@
-Move the per-kind file layout into internal/source
+Compose target directory with source-owned layout in targetdir
 
-RelPath returns a definition's path in its kind's layout:
-skills/<name>/SKILL.md for skills, agents/<name>.md for agents, and
-docs/zpecs/<name>.md for docs. Unknown kinds fall back to the agent
-path. The architecture entry for internal/source now records the layout.
+RelPath builds each path from the target's directory and the source's
+per-kind layout. Docs write as-is, since the doc layout already names
+the docs directory. All paths, ownership manifests, and removal
+behavior are unchanged.
 
-Tests for RelPath cover the skill, agent, and doc paths.
+A test pins the composition for every target and kind.
 
-Ralph item 0 completed
+Ralph item 1 completed
