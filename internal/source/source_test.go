@@ -102,3 +102,29 @@ func TestReadKindsErrorsOnUnknownKind(t *testing.T) {
 	_, err := ReadKinds([]Kind{Kind(99)}, t.TempDir())
 	require.Error(t, err)
 }
+
+func TestUnmarshalScope(t *testing.T) {
+	cases := []struct {
+		name    string
+		s       string
+		want    Scope
+		wantErr bool
+	}{
+		{name: "all", s: "all", want: ScopeAll},
+		{name: "skills", s: "skills", want: ScopeSkills},
+		{name: "agents", s: "agents", want: ScopeAgents},
+		{name: "docs", s: "docs", want: ScopeDocs},
+		{name: "unknown scope", s: "vscode", wantErr: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var got Scope
+			err := got.UnmarshalText([]byte(tc.s))
+			require.Equal(t, tc.wantErr, err != nil)
+			if err == nil {
+				require.Equal(t, tc.want, got)
+			}
+		})
+	}
+}

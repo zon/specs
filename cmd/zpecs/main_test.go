@@ -13,9 +13,11 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/stretchr/testify/require"
+	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/spec"
 	"github.com/zon/specs/internal/target"
 	"github.com/zon/specs/internal/testutil"
+	"github.com/zon/specs/internal/update"
 )
 
 func buildBinary(t *testing.T, dir string) string {
@@ -49,61 +51,35 @@ func TestBinaryPrintsVersion(t *testing.T) {
 	require.Equal(t, version, strings.TrimSpace(string(out)))
 }
 
-func TestUnmarshalScope(t *testing.T) {
-	cases := []struct {
-		name    string
-		s       string
-		want    scope
-		wantErr bool
-	}{
-		{name: "all", s: "all", want: scopeAll},
-		{name: "skills", s: "skills", want: scopeSkills},
-		{name: "agents", s: "agents", want: scopeAgents},
-		{name: "docs", s: "docs", want: scopeDocs},
-		{name: "unknown scope", s: "vscode", wantErr: true},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			var got scope
-			err := got.UnmarshalText([]byte(tc.s))
-			require.Equal(t, tc.wantErr, err != nil)
-			if err == nil {
-				require.Equal(t, tc.want, got)
-			}
-		})
-	}
-}
-
 // parseUpdateArgs parses `update <args>` with the same kong grammar
 // `run` uses. It returns the selected options.
-func parseUpdateArgs(t *testing.T, args ...string) (options, error) {
+func parseUpdateArgs(t *testing.T, args ...string) (update.Options, error) {
 	t.Helper()
 	var c cli
 	parser, err := kong.New(&c, cliVars)
 	require.NoError(t, err)
 	if _, err := parser.Parse(append([]string{"update"}, args...)); err != nil {
-		return options{}, err
+		return update.Options{}, err
 	}
-	return options{scope: c.Update.Scope, source: c.Update.Source, target: c.Update.Target}, nil
+	return update.Options{Scope: c.Update.Scope, Source: c.Update.Source, Target: c.Update.Target}, nil
 }
 
 func TestParseUpdate(t *testing.T) {
 	cases := []struct {
 		name    string
 		args    []string
-		want    options
+		want    update.Options
 		wantErr bool
 	}{
-		{name: "defaults", args: nil, want: options{scope: scopeAll, target: target.Opencode, source: defaultSourceURL}},
-		{name: "all scope", args: []string{"all"}, want: options{scope: scopeAll, target: target.Opencode, source: defaultSourceURL}},
-		{name: "scope", args: []string{"skills"}, want: options{scope: scopeSkills, target: target.Opencode, source: defaultSourceURL}},
-		{name: "docs scope", args: []string{"docs"}, want: options{scope: scopeDocs, target: target.Opencode, source: defaultSourceURL}},
-		{name: "claude target", args: []string{"--target", "claude"}, want: options{scope: scopeAll, target: target.Claude, source: defaultSourceURL}},
-		{name: "claude target equals", args: []string{"--target=claude"}, want: options{scope: scopeAll, target: target.Claude, source: defaultSourceURL}},
-		{name: "source", args: []string{"--source", "/tmp/src"}, want: options{scope: scopeAll, target: target.Opencode, source: "/tmp/src"}},
-		{name: "source equals", args: []string{"--source=/tmp/src"}, want: options{scope: scopeAll, target: target.Opencode, source: "/tmp/src"}},
-		{name: "all together", args: []string{"agents", "--source", "/tmp/src", "--target", "claude"}, want: options{scope: scopeAgents, target: target.Claude, source: "/tmp/src"}},
+		{name: "defaults", args: nil, want: update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: defaultSourceURL}},
+		{name: "all scope", args: []string{"all"}, want: update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: defaultSourceURL}},
+		{name: "scope", args: []string{"skills"}, want: update.Options{Scope: source.ScopeSkills, Target: target.Opencode, Source: defaultSourceURL}},
+		{name: "docs scope", args: []string{"docs"}, want: update.Options{Scope: source.ScopeDocs, Target: target.Opencode, Source: defaultSourceURL}},
+		{name: "claude target", args: []string{"--target", "claude"}, want: update.Options{Scope: source.ScopeAll, Target: target.Claude, Source: defaultSourceURL}},
+		{name: "claude target equals", args: []string{"--target=claude"}, want: update.Options{Scope: source.ScopeAll, Target: target.Claude, Source: defaultSourceURL}},
+		{name: "source", args: []string{"--source", "/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: "/tmp/src"}},
+		{name: "source equals", args: []string{"--source=/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: "/tmp/src"}},
+		{name: "all together", args: []string{"agents", "--source", "/tmp/src", "--target", "claude"}, want: update.Options{Scope: source.ScopeAgents, Target: target.Claude, Source: "/tmp/src"}},
 		{name: "unknown scope", args: []string{"vscode"}, wantErr: true},
 		{name: "unknown target", args: []string{"--target", "vscode"}, wantErr: true},
 		{name: "missing target value", args: []string{"--target"}, wantErr: true},
@@ -126,32 +102,8 @@ func TestParseUpdateEnvOverridesDefault(t *testing.T) {
 	t.Setenv("ZPECS_SOURCE", "/env/src")
 	got, err := parseUpdateArgs(t)
 	require.NoError(t, err)
-	want := options{scope: scopeAll, target: target.Opencode, source: "/env/src"}
+	want := update.Options{Scope: source.ScopeAll, Target: target.Opencode, Source: "/env/src"}
 	require.Equal(t, want, got)
-}
-
-func TestResolveSourceClonesRemote(t *testing.T) {
-	src := testutil.GitRepoURL(t, map[string]string{"seed": "content\n"})
-
-	dir, label, cleanup, err := resolveSource(src)
-	require.NoError(t, err)
-	defer cleanup()
-	require.Equal(t, src, label)
-	require.DirExists(t, dir)
-	require.FileExists(t, filepath.Join(dir, "seed"))
-	cleanup()
-	require.NoFileExists(t, dir)
-}
-
-func TestResolveSourceReadsLocalInPlace(t *testing.T) {
-	dir := t.TempDir()
-
-	gotDir, label, cleanup, err := resolveSource(dir)
-	require.NoError(t, err)
-	require.Equal(t, dir, gotDir)
-	require.Equal(t, dir, label)
-	cleanup()
-	require.DirExists(t, dir)
 }
 
 func TestRunRecognizesCommands(t *testing.T) {
