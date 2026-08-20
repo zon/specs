@@ -5,14 +5,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zon/specs/internal/frontmatter"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/target"
 )
 
-// Definition returns a definition's text for a target. Skills and docs
-// return their contents verbatim. Agents are parsed and rendered.
-func Definition(d source.Definition, targetName string) (string, error) {
+// definition returns a definition's text for a target. Skills and docs
+// return their contents verbatim. It parses and renders agents.
+func definition(d source.Definition, targetName string) (string, error) {
 	if d.Kind == source.Skill || d.Kind == source.Doc {
 		raw, err := os.ReadFile(d.Path)
 		if err != nil {
@@ -20,26 +19,26 @@ func Definition(d source.Definition, targetName string) (string, error) {
 		}
 		return string(raw), nil
 	}
-	content, err := frontmatter.Read(d.Path)
+	content, err := read(d.Path)
 	if err != nil {
-		return "", fmt.Errorf("reading %s: %w", d.Path, err)
+		return "", err
 	}
 	if targetName == target.Claude {
-		return ClaudeAgent(content.Fields, content.Body), nil
+		return claudeAgent(content.fields, content.body), nil
 	}
-	return OpencodeAgent(content.Fields, content.Body)
+	return opencodeAgent(content.fields, content.body)
 }
 
 // ForTarget returns the function that renders each definition for a target.
 func ForTarget(targetName string) func(source.Definition) (string, error) {
 	return func(d source.Definition) (string, error) {
-		return Definition(d, targetName)
+		return definition(d, targetName)
 	}
 }
 
-// ClaudeAgent keeps the name, description, and tools. It uses the body
+// claudeAgent keeps the name, description, and tools. It uses the body
 // as the prompt.
-func ClaudeAgent(fields frontmatter.Fields, body string) string {
+func claudeAgent(fields fields, body string) string {
 	var lines []string
 	lines = append(lines, "name: "+fields.Name, "description: "+fields.Description)
 	if len(fields.Tools) > 0 {
@@ -51,10 +50,9 @@ func ClaudeAgent(fields frontmatter.Fields, body string) string {
 	return frame(lines, body)
 }
 
-// OpencodeAgent writes the definition's mode, defaulting to subagent.
-// It drops the name and denies every tool the definition does not
-// list.
-func OpencodeAgent(fields frontmatter.Fields, body string) (string, error) {
+// opencodeAgent writes the definition's mode, defaulting to subagent.
+// It drops the name and denies every unlisted tool.
+func opencodeAgent(fields fields, body string) (string, error) {
 	mode := fields.Mode
 	if mode == "" {
 		mode = "subagent"

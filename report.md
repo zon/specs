@@ -1,8 +1,8 @@
-Inline the checkDir helper in internal/source
+Bump the app version to 0.1.12
 
-ReadKinds calls os.Stat directly and the one-line helper is gone.
-The matching plan leaves refactoring.md. VERSION bumps to 0.1.11.
+Apply the semver patch bump that versions the frontmatter fold. The
+just build and install recipes pass the VERSION file into the binary.
 
-Tests: TestReadKindsErrorsOnMissingSource now asserts os.ErrNotExist. TestReadKindsSelectsSingleKind uses require.Len.
+A test asserts the version file holds a valid semver value.
 
-Ralph item 0 completed
+Ralph item 1 completed
