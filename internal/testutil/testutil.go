@@ -1,4 +1,4 @@
-// Package testutil provides shared git fixtures for tests.
+// Package testutil builds temp git repositories and source trees for tests.
 package testutil
 
 import (
@@ -27,9 +27,7 @@ func GitRepo(t *testing.T, files map[string]string) string {
 	RunGit(t, dir, "config", "user.email", "test@example.com")
 	RunGit(t, dir, "config", "user.name", "test")
 	for path, content := range files {
-		full := filepath.Join(dir, path)
-		require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o755))
-		require.NoError(t, os.WriteFile(full, []byte(content), 0o644))
+		WriteSourceFile(t, dir, path, content)
 	}
 	if len(files) > 0 {
 		RunGit(t, dir, "add", "-A")
@@ -43,4 +41,13 @@ func GitRepo(t *testing.T, files map[string]string) string {
 func GitRepoURL(t *testing.T, files map[string]string) string {
 	t.Helper()
 	return "file://" + GitRepo(t, files)
+}
+
+// WriteSourceFile writes content to dir/rel, creating parent
+// directories, and fails the test on error.
+func WriteSourceFile(t *testing.T, dir, rel, content string) {
+	t.Helper()
+	path := filepath.Join(dir, rel)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }

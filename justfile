@@ -8,11 +8,11 @@ default:
 
 # Build the zpecs CLI binary
 build:
-    go build -ldflags "-X main.version={{version}}" -o zpecs ./cmd/zpecs
+    go build -ldflags "-X github.com/zon/specs/internal/cli.version={{version}}" -o zpecs ./cmd/zpecs
 
 # Install the zpecs CLI with go install
 install:
-    go install -ldflags "-X main.version={{version}}" ./cmd/zpecs
+    go install -ldflags "-X github.com/zon/specs/internal/cli.version={{version}}" ./cmd/zpecs
 
 # Check that every relative markdown link in the docs and skills resolves
 check:

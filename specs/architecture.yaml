@@ -1,5 +1,11 @@
 - path: cmd/zpecs
-  description: Parses the command line and orchestrates each command's work.
+  description: Starts the zpecs CLI binary.
+
+- path: internal/cli
+  description: Parses the command line and dispatches each command's work.
+
+- path: internal/update
+  description: Orchestrates an update run's read, write, and report steps.
   orchestration: true
 
 - path: internal/source
@@ -30,4 +36,4 @@
   description: Parses a spec markdown file into a JSON document.
 
 - path: internal/testutil
-  description: Builds temp git repositories for tests.
+  description: Builds temp git repositories and source trees for tests.

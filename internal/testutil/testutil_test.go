@@ -50,6 +50,17 @@ func TestGitRepoURLReturnsCloneableURL(t *testing.T) {
 	require.Equal(t, "content\n", string(content))
 }
 
+func TestWriteSourceFileCreatesParentDirectories(t *testing.T) {
+	dir := t.TempDir()
+	rel := filepath.Join("skills", "prose-editor", "SKILL.md")
+
+	WriteSourceFile(t, dir, rel, "# prose-editor\n")
+
+	content, err := os.ReadFile(filepath.Join(dir, rel))
+	require.NoError(t, err)
+	require.Equal(t, "# prose-editor\n", string(content))
+}
+
 func runGitErr(dir string, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
