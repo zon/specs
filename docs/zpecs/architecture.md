@@ -28,7 +28,7 @@ Look for a component whose only caller is one other component. When two componen
 
 `specs/architecture.yaml` sets each component's type: [implementation module](glossary.md#implementation-module) by default, [orchestration module](glossary.md#orchestration-module) when it sets `orchestration: true`. A component with no code is neither.
 
-Follow the orchestration pattern when it assigns code to a component type. Coordination logic belongs in an [orchestration module](glossary.md#orchestration-module), low-level work in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
+Coordination logic belongs in an [orchestration module](glossary.md#orchestration-module), low-level work in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
 
 ### Orchestration Modules
 

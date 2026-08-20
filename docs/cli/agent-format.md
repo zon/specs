@@ -1,6 +1,6 @@
 # Agent Format
 
-`zpecs update agents` describes the neutral format for agent definitions.
+Agent definitions have a neutral format.
 
 ## File Location
 
