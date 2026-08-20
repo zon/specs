@@ -13,10 +13,8 @@ We want clear, minimal code that is easy to understand and replace. Code should 
 
 * Gradually move towards ideal architecture and implementation. Always look for clearer, more minimal solutions
 * Always refactor within the scope of work
-* File refactoring ideas that are out of the work scope in /refactoring.md
+* Ask for a project to be written when refactoring is out of the work scope. Name it `refactor-<slug>.yaml`
 
-### refactoring.md
+### Refactoring projects
 
-This is a Markdown file where every section is a refactoring plan. Each plan should be self-contained and narrow in scope.
-
-Refactoring plans should be removed from the file after they are completed. Remove the /refactoring.md file when it contains no plans.
+Before asking for a project, check whether a similar one already exists in `./projects/`. If it does, ask for it to be updated instead of writing a new one. Write the project with the `write-project` skill.
