@@ -1,10 +1,5 @@
-Remove internal/target from the architecture
+Bump app version to 0.1.16
 
-The target names claude, opencode, and docs now live in internal/source,
-so specs/architecture.yaml no longer lists internal/target as a
-component.
+Ran `go test ./...` and `just check`. Both pass. Added no new test: the version-file format is pinned.
 
-Tests: none added. The source suite already pins the target name
-constants, and the remaining architecture entries match the code.
-
-Ralph item 1 completed
+Ralph item 2 completed
