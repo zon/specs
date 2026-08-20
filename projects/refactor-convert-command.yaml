@@ -1,0 +1,2 @@
+- The convert command's reading-and-writing sequence is delegated to a named helper, and cmd/zpecs only parses the command line and calls into it
+- Apply a semver patch bump to the app version

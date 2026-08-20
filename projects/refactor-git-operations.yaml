@@ -1,0 +1,3 @@
+- The update flow locates the repository root and clones a remote source through a single component that owns both operations
+- specs/architecture.yaml records the merged git-operations component and no longer lists internal/repo or internal/clone
+- Apply a semver patch bump to the app version
