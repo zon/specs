@@ -51,67 +51,91 @@ func Write(w io.Writer, doc Document) error {
 }
 
 // fromAST walks the markdown AST into a Document. Headings drive the
-// state; prose and lists fill the current section.
+// state. Prose and lists fill the current section.
 func fromAST(root ast.Node, src []byte) (Document, error) {
-	doc := Document{Requirements: []Requirement{}}
-	current := -1
-	inPurpose := false
-	titleSet := false
+	st := fromASTState{doc: Document{Requirements: []Requirement{}}, current: -1}
 	for child := root.FirstChild(); child != nil; child = child.NextSibling() {
-		if child.Kind() != ast.KindHeading {
-			switch {
-			case inPurpose:
-				doc.Purpose = joinProse(doc.Purpose, proseBlock(child, src))
-			case current >= 0 && len(doc.Requirements[current].Scenarios) > 0:
-				if child.Kind() == ast.KindList {
-					scenario := &doc.Requirements[current].Scenarios[len(doc.Requirements[current].Scenarios)-1]
-					scenario.Steps = append(scenario.Steps, stepsBlock(child, src)...)
-				}
-			case current >= 0:
-				doc.Requirements[current].Body = joinProse(doc.Requirements[current].Body, proseBlock(child, src))
-			}
-			continue
+		var err error
+		if child.Kind() == ast.KindHeading {
+			err = st.applyHeading(child, src)
+		} else {
+			st.applyContent(child, src)
 		}
-		level := child.(*ast.Heading).Level
-		text := renderNode(child, src)
-		switch {
-		case level == 1 && !titleSet:
-			doc.Title = text
-			titleSet = true
-			current = -1
-			inPurpose = false
-		case level == 2 && text == "Purpose":
-			doc.Purpose = ""
-			current = -1
-			inPurpose = true
-		case level == 3 && strings.HasPrefix(text, "Requirement:"):
-			name := strings.TrimSpace(strings.TrimPrefix(text, "Requirement:"))
-			if name == "" {
-				return Document{}, errors.New("requirement heading without a name")
-			}
-			doc.Requirements = append(doc.Requirements, Requirement{Name: name, Scenarios: []Scenario{}})
-			current = len(doc.Requirements) - 1
-			inPurpose = false
-		case level == 4 && strings.HasPrefix(text, "Scenario:"):
-			if current < 0 {
-				return Document{}, errors.New("scenario outside a requirement")
-			}
-			name := strings.TrimSpace(strings.TrimPrefix(text, "Scenario:"))
-			doc.Requirements[current].Scenarios = append(doc.Requirements[current].Scenarios, Scenario{Name: name, Steps: []string{}})
-			inPurpose = false
-		default:
-			current = -1
-			inPurpose = false
+		if err != nil {
+			return Document{}, err
 		}
 	}
-	if !titleSet {
+	if !st.titleSet {
 		return Document{}, errors.New("no top-level heading")
 	}
-	doc.Purpose = strings.TrimSpace(doc.Purpose)
-	for i := range doc.Requirements {
-		doc.Requirements[i].Body = strings.TrimSpace(doc.Requirements[i].Body)
+	st.doc.Purpose = strings.TrimSpace(st.doc.Purpose)
+	for i := range st.doc.Requirements {
+		st.doc.Requirements[i].Body = strings.TrimSpace(st.doc.Requirements[i].Body)
 	}
-	return doc, nil
+	return st.doc, nil
+}
+
+// fromASTState is the walk state: the document under construction and
+// where the next content block lands.
+type fromASTState struct {
+	doc       Document
+	current   int
+	inPurpose bool
+	titleSet  bool
+}
+
+// applyContent adds one non-heading node to the purpose, the current
+// scenario's steps, or the current requirement's body.
+func (st *fromASTState) applyContent(child ast.Node, src []byte) {
+	switch {
+	case st.inPurpose:
+		st.doc.Purpose = joinProse(st.doc.Purpose, proseBlock(child, src))
+	case st.current >= 0 && len(st.doc.Requirements[st.current].Scenarios) > 0:
+		if child.Kind() == ast.KindList {
+			scenario := &st.doc.Requirements[st.current].Scenarios[len(st.doc.Requirements[st.current].Scenarios)-1]
+			scenario.Steps = append(scenario.Steps, stepsBlock(child, src)...)
+		}
+	case st.current >= 0:
+		st.doc.Requirements[st.current].Body = joinProse(st.doc.Requirements[st.current].Body, proseBlock(child, src))
+	}
+}
+
+// applyHeading moves the state to the section the heading opens. A
+// heading that matches none of the known shapes leaves the current
+// section behind.
+func (st *fromASTState) applyHeading(heading ast.Node, src []byte) error {
+	level := heading.(*ast.Heading).Level
+	text := renderNode(heading, src)
+	switch {
+	case level == 1 && !st.titleSet:
+		st.doc.Title = text
+		st.titleSet = true
+		st.current = -1
+		st.inPurpose = false
+	case level == 2 && text == "Purpose":
+		st.doc.Purpose = ""
+		st.current = -1
+		st.inPurpose = true
+	case level == 3 && strings.HasPrefix(text, "Requirement:"):
+		name := strings.TrimSpace(strings.TrimPrefix(text, "Requirement:"))
+		if name == "" {
+			return errors.New("requirement heading without a name")
+		}
+		st.doc.Requirements = append(st.doc.Requirements, Requirement{Name: name, Scenarios: []Scenario{}})
+		st.current = len(st.doc.Requirements) - 1
+		st.inPurpose = false
+	case level == 4 && strings.HasPrefix(text, "Scenario:"):
+		if st.current < 0 {
+			return errors.New("scenario outside a requirement")
+		}
+		name := strings.TrimSpace(strings.TrimPrefix(text, "Scenario:"))
+		st.doc.Requirements[st.current].Scenarios = append(st.doc.Requirements[st.current].Scenarios, Scenario{Name: name, Steps: []string{}})
+		st.inPurpose = false
+	default:
+		st.current = -1
+		st.inPurpose = false
+	}
+	return nil
 }
 
 // proseBlock renders one prose block. Only paragraphs carry prose.

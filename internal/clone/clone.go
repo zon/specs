@@ -4,7 +4,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
+
+// IsRemote reports whether source names a git repository by URL.
+func IsRemote(source string) bool {
+	return strings.Contains(source, "://")
+}
 
 // Clone copies the git repository at url into a temp dir and returns
 // that dir with a cleanup func that removes it.

@@ -228,7 +228,7 @@ func updatePair(root, sourceDir, sourceLabel string, p pair) error {
 // A value with a scheme is a repository to clone. Anything else is a
 // local directory to read in place.
 func resolveSource(source string) (dir, label string, cleanup func(), err error) {
-	if strings.Contains(source, "://") {
+	if clone.IsRemote(source) {
 		dir, cleanup, err = clone.Clone(source)
 		if err != nil {
 			return "", "", nil, err

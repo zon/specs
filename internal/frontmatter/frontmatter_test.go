@@ -119,3 +119,12 @@ func TestReadYieldsEmptyBodyWithoutOne(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "", got.Body)
 }
+
+func TestReadYieldsZeroFieldsForEmptyFile(t *testing.T) {
+	path := write(t, "")
+
+	got, err := Read(path)
+	require.NoError(t, err)
+	require.Equal(t, Fields{}, got.Fields)
+	require.Equal(t, "", got.Body)
+}

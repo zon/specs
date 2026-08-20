@@ -37,7 +37,7 @@ func Read(path string) (Content, error) {
 // and the body after it.
 func parse(content string) (Content, error) {
 	lines := strings.Split(content, "\n")
-	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+	if strings.TrimSpace(lines[0]) != "---" {
 		return Content{Body: strings.TrimSpace(content)}, nil
 	}
 	bodyAt := -1

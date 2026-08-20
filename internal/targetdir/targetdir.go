@@ -11,16 +11,16 @@ import (
 	"github.com/zon/specs/internal/target"
 )
 
-// ownedPath records one written path and its kind. An entry read from a
-// manifest written before kinds were stored has known == false.
+// ownedPath records one written path and its kind.
 type ownedPath struct {
-	kind  source.Kind
+	kind source.Kind
+	// known is false for a path read from a manifest written before
+	// kinds were stored.
 	known bool
 }
 
 // manifestName is the file inside a target directory that records
-// ownership, one "kind path" line per written file. Lines without a
-// kind come from older manifests.
+// ownership, one "kind path" line per written file.
 const manifestName = ".zpecs"
 
 // Path returns the path under root where a definition writes, keyed by
@@ -55,8 +55,7 @@ func targetDir(name string) string {
 
 // Owned returns the paths the system wrote under root for a target,
 // with each path's kind. It reads the target's manifest. A target
-// without a manifest owns nothing. A line without a leading kind word
-// is a path from an older manifest, so its entry has known == false.
+// without a manifest owns nothing.
 func Owned(root, name string) (map[string]ownedPath, error) {
 	data, err := os.ReadFile(filepath.Join(root, targetDir(name), manifestName))
 	if os.IsNotExist(err) {
@@ -82,44 +81,42 @@ func Owned(root, name string) (map[string]ownedPath, error) {
 
 // Write stores content at the definition's path under root, creating the
 // directories it needs. It replaces a file only when the system wrote it
-// before. A foreign file stays untouched. It records the written path in
-// owned and reports whether it wrote the file.
-func Write(root, name string, d source.Definition, content string, owned map[string]ownedPath) (bool, error) {
+// before. It records the written path in owned.
+func Write(root, name string, d source.Definition, content string, owned map[string]ownedPath) error {
 	p := Path(root, name, d)
 	rel := RelPath(name, d)
 	if _, err := os.Stat(p); err == nil {
 		if _, ok := owned[rel]; !ok {
-			return false, nil
+			return nil
 		}
 	}
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		return false, err
+		return err
 	}
 	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
-		return false, err
+		return err
 	}
 	owned[rel] = ownedPath{kind: d.Kind, known: true}
-	return true, nil
+	return nil
 }
 
 // WriteAll writes every definition in defs under root for target, using
 // content to produce each file's text. It follows the same owned-file
-// rules as Write and records what it writes in owned.
+// rules as Write.
 func WriteAll(root, name string, defs []source.Definition, content func(source.Definition) (string, error), owned map[string]ownedPath) error {
 	for _, d := range defs {
 		text, err := content(d)
 		if err != nil {
 			return err
 		}
-		if _, err := Write(root, name, d, text, owned); err != nil {
+		if err := Write(root, name, d, text, owned); err != nil {
 			return fmt.Errorf("writing %s: %w", Path(root, name, d), err)
 		}
 	}
 	return nil
 }
 
-// SaveOwned persists the owned paths for a target under root, one
-// "kind path" line per known path and a bare path per unknown one.
+// SaveOwned persists the owned paths for a target under root.
 func SaveOwned(root, name string, owned map[string]ownedPath) error {
 	lines := make([]string, 0, len(owned))
 	for p, op := range owned {
@@ -139,10 +136,9 @@ func SaveOwned(root, name string, owned map[string]ownedPath) error {
 
 // RemoveStale deletes for target under root the files owned records that
 // no definition in current writes, limited to the selected kinds. An
-// entry whose kind is unknown stays, because an older manifest does
-// not record kinds, until a later write of the same path records its
-// kind. RemoveStale drops the removed paths from owned and returns
-// them.
+// entry whose kind is unknown stays until a later write of the same
+// path records its kind. RemoveStale drops the removed paths from owned
+// and returns them.
 func RemoveStale(root, name string, owned map[string]ownedPath, current []source.Definition, kinds ...source.Kind) ([]string, error) {
 	written := make(map[string]bool, len(current))
 	for _, d := range current {
@@ -169,28 +165,24 @@ func RemoveStale(root, name string, owned map[string]ownedPath, current []source
 	return removed, nil
 }
 
+// kindNames maps each kind to its manifest word.
+var kindNames = map[source.Kind]string{
+	source.Skill: "skill",
+	source.Agent: "agent",
+	source.Doc:   "doc",
+}
+
 // kindName returns the manifest word for a kind.
 func kindName(k source.Kind) string {
-	switch k {
-	case source.Skill:
-		return "skill"
-	case source.Agent:
-		return "agent"
-	case source.Doc:
-		return "doc"
-	}
-	return ""
+	return kindNames[k]
 }
 
 // parseKind returns the kind a manifest word names.
 func parseKind(s string) (source.Kind, bool) {
-	switch s {
-	case "skill":
-		return source.Skill, true
-	case "agent":
-		return source.Agent, true
-	case "doc":
-		return source.Doc, true
+	for k, word := range kindNames {
+		if word == s {
+			return k, true
+		}
 	}
 	return 0, false
 }

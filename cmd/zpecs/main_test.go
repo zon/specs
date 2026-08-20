@@ -14,6 +14,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/spec"
+	"github.com/zon/specs/internal/testutil"
 )
 
 func buildBinary(t *testing.T, dir string) string {
@@ -128,8 +129,32 @@ func TestParseUpdateEnvOverridesDefault(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestResolveSourceClonesRemote(t *testing.T) {
+	src := testutil.GitRepoURL(t, map[string]string{"seed": "content\n"})
+
+	dir, label, cleanup, err := resolveSource(src)
+	require.NoError(t, err)
+	defer cleanup()
+	require.Equal(t, src, label)
+	require.DirExists(t, dir)
+	require.FileExists(t, filepath.Join(dir, "seed"))
+	cleanup()
+	require.NoFileExists(t, dir)
+}
+
+func TestResolveSourceReadsLocalInPlace(t *testing.T) {
+	dir := t.TempDir()
+
+	gotDir, label, cleanup, err := resolveSource(dir)
+	require.NoError(t, err)
+	require.Equal(t, dir, gotDir)
+	require.Equal(t, dir, label)
+	cleanup()
+	require.DirExists(t, dir)
+}
+
 func TestRunRecognizesCommands(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
 	sourceDir := t.TempDir()
 	cases := []struct {
@@ -182,7 +207,7 @@ func TestPrintErrorOmitsUsageForRuntimeErrors(t *testing.T) {
 
 func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
-	repoDir := gitRepo(t)
+	repoDir := testutil.GitRepo(t, nil)
 	sourceDir := t.TempDir()
 	src := gitCloneSource(t)
 	cases := []struct {
@@ -220,40 +245,18 @@ func writeSourceFile(t *testing.T, dir, rel, content string) {
 	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }
 
-// gitRepo returns a temp dir that looks like a git repository root.
-func gitRepo(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o755))
-	return dir
-}
-
-// gitCloneSource returns a temp dir that is a real git repository with
-// one commit, so clone can copy it.
+// gitCloneSource returns a temp git repository seeded with source files.
 func gitCloneSource(t *testing.T) string {
 	t.Helper()
-	dir := t.TempDir()
-	runGit(t, dir, "init", "-q")
-	runGit(t, dir, "config", "user.email", "test@example.com")
-	runGit(t, dir, "config", "user.name", "test")
-	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
-	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
-	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
-	runGit(t, dir, "add", "-A")
-	runGit(t, dir, "commit", "-qm", "seed")
-	return dir
-}
-
-func runGit(t *testing.T, dir string, args ...string) {
-	t.Helper()
-	cmd := exec.Command("git", args...)
-	cmd.Dir = dir
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "git %v\n%s", args, out)
+	return testutil.GitRepo(t, map[string]string{
+		filepath.Join("skills", "prose-editor", "SKILL.md"): "# prose-editor\n",
+		filepath.Join("agents", "code-architect.md"):        "---\nname: code-architect\n---\n\nArchitect code.\n",
+		filepath.Join("docs", "zpecs", "prose.md"):          "# Prose guidelines\n",
+	})
 }
 
 func TestUpdateReadsFromDefaultSource(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
 
 	require.NoError(t, run([]string{"update"}))
@@ -264,7 +267,7 @@ func TestUpdateReadsFromDefaultSource(t *testing.T) {
 }
 
 func TestUpdateReadsFromLocalSourceOverDefault(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
 	local := t.TempDir()
 	writeSourceFile(t, local, filepath.Join("skills", "local-only", "SKILL.md"), "# local-only\n")
@@ -278,7 +281,7 @@ func TestUpdateReadsFromLocalSourceOverDefault(t *testing.T) {
 
 func TestBinaryReadsFromDefaultSource(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
-	work := gitRepo(t)
+	work := testutil.GitRepo(t, nil)
 	cmd := exec.Command(binary, "update")
 	cmd.Dir = work
 	cmd.Env = append(os.Environ(), "ZPECS_SOURCE="+gitCloneSource(t))
@@ -289,7 +292,7 @@ func TestBinaryReadsFromDefaultSource(t *testing.T) {
 }
 
 func TestUpdateReadsSameFrontmatterForBothTargets(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
 name: prose-editor
@@ -312,7 +315,7 @@ Review prose.
 }
 
 func TestUpdateWritesAgentUnderSourceNameForBothTargets(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
 name: renamed
@@ -339,7 +342,7 @@ Review prose.
 }
 
 func TestUpdateWritesSkillAndAgentToClaude(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
@@ -359,7 +362,7 @@ Review prose.
 }
 
 func TestUpdateWritesSkillAndAgentToOpencode(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), `---
@@ -384,7 +387,7 @@ func TestBinaryWritesToClaudeTarget(t *testing.T) {
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
-	work := gitRepo(t)
+	work := testutil.GitRepo(t, nil)
 	cmd := exec.Command(binary, "update", "--source", dir, "--target", "claude")
 	cmd.Dir = work
 	out, err := cmd.CombinedOutput()
@@ -412,7 +415,7 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Chdir(gitRepo(t))
+			t.Chdir(testutil.GitRepo(t, nil))
 			dir := t.TempDir()
 			writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 			writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
@@ -466,7 +469,7 @@ func TestBinaryScopedUpdateWritesOnlyWhatItNames(t *testing.T) {
 		{scope: "agents"},
 	} {
 		t.Run(tc.scope, func(t *testing.T) {
-			work := gitRepo(t)
+			work := testutil.GitRepo(t, nil)
 			cmd := exec.Command(binary, "update", tc.scope, "--source", dir)
 			cmd.Dir = work
 			out, err := cmd.CombinedOutput()
@@ -490,7 +493,7 @@ func TestBinaryScopedUpdateWritesOnlyWhatItNames(t *testing.T) {
 }
 
 func TestUpdateWritesToRepositoryRoot(t *testing.T) {
-	root := gitRepo(t)
+	root := testutil.GitRepo(t, nil)
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
@@ -521,7 +524,7 @@ func TestUpdateErrorsOutsideRepository(t *testing.T) {
 
 func TestBinaryWritesToRepositoryRoot(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
-	root := gitRepo(t)
+	root := testutil.GitRepo(t, nil)
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
@@ -554,7 +557,7 @@ func TestBinaryErrorsOutsideRepository(t *testing.T) {
 }
 
 func TestUpdateCreatesMissingDirectories(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 
@@ -572,7 +575,7 @@ func TestUpdateCreatesMissingDirectories(t *testing.T) {
 }
 
 func TestUpdateLeavesForeignFileAlone(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
@@ -588,7 +591,7 @@ func TestUpdateLeavesForeignFileAlone(t *testing.T) {
 }
 
 func TestUpdateReplacesOwnedFiles(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nFirst.\n")
 
@@ -607,7 +610,7 @@ func TestBinaryLeavesForeignFileAlone(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
-	work := gitRepo(t)
+	work := testutil.GitRepo(t, nil)
 	path := filepath.Join(work, ".claude", "agents", "prose-editor.md")
 	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 	require.NoError(t, os.WriteFile(path, []byte("manual content\n"), 0o644))
@@ -623,7 +626,7 @@ func TestBinaryLeavesForeignFileAlone(t *testing.T) {
 }
 
 func TestUpdateRemovesStaleSkill(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 
@@ -640,7 +643,7 @@ func TestUpdateRemovesStaleSkill(t *testing.T) {
 }
 
 func TestUpdateRemovesStaleAgent(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\n---\n\nReview prose.\n")
 
@@ -657,7 +660,7 @@ func TestUpdateRemovesStaleAgent(t *testing.T) {
 }
 
 func TestUpdateAllWritesDocs(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
@@ -676,7 +679,7 @@ func TestUpdateAllWritesDocs(t *testing.T) {
 }
 
 func TestUpdateAllWritesDocsToTheTargetItNames(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
@@ -690,7 +693,7 @@ func TestUpdateAllWritesDocsToTheTargetItNames(t *testing.T) {
 }
 
 func TestUpdateDocsWritesFromSource(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
@@ -707,7 +710,7 @@ func TestUpdateDocsWritesFromSource(t *testing.T) {
 }
 
 func TestUpdateDocsIgnoresTarget(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "prose.md"), "# Prose guidelines\n")
 
@@ -724,7 +727,7 @@ func TestUpdateDocsIgnoresTarget(t *testing.T) {
 }
 
 func TestUpdateDocsLeavesForeignFileAlone(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
@@ -740,7 +743,7 @@ func TestUpdateDocsLeavesForeignFileAlone(t *testing.T) {
 }
 
 func TestUpdateDocsReplacesOwned(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
@@ -755,7 +758,7 @@ func TestUpdateDocsReplacesOwned(t *testing.T) {
 }
 
 func TestUpdateDocsRemovesStale(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
@@ -772,7 +775,7 @@ func TestUpdateDocsRemovesStale(t *testing.T) {
 }
 
 func TestUpdateDocsWritesToRepositoryRoot(t *testing.T) {
-	root := gitRepo(t)
+	root := testutil.GitRepo(t, nil)
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("docs", "zpecs", "architecture.md"), "# Architecture\n")
 
@@ -801,7 +804,7 @@ func TestUpdateDocsErrorsOutsideRepository(t *testing.T) {
 }
 
 func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
-	t.Chdir(gitRepo(t))
+	t.Chdir(testutil.GitRepo(t, nil))
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 	writeSourceFile(t, dir, filepath.Join("agents", "code-architect.md"), "---\nname: code-architect\n---\n\nArchitect code.\n")
@@ -828,7 +831,7 @@ func TestBinaryRemovesStaleSkill(t *testing.T) {
 	dir := t.TempDir()
 	writeSourceFile(t, dir, filepath.Join("skills", "prose-editor", "SKILL.md"), "# prose-editor\n")
 
-	work := gitRepo(t)
+	work := testutil.GitRepo(t, nil)
 	cmd := exec.Command(binary, "update", "--source", dir)
 	cmd.Dir = work
 	out, err := cmd.CombinedOutput()
