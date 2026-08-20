@@ -1,8 +1,9 @@
-Drop the dead guard in frontmatter.parse
+Drop the targetName wrapper type
 
-strings.Split always returns at least one line, so the len(lines) == 0
-check in parse can never fire. Remove it. Add a test that an empty
-file parses to zero fields and an empty body. Remove the completed
-plan from refactoring.md. Delete the file, since no plans remain.
+Replace the targetName type and its constants in cmd/zpecs with the
+target package constants and a plain string field. kong validates a
+plain string against the enum, so the type only added conversions.
+Update the tests that used the type. Remove the completed plan from
+refactoring.md.
 
-Ralph item 4 completed
+Ralph item 2 completed

@@ -56,17 +56,10 @@ func (s *scope) UnmarshalText(text []byte) error {
 	return nil
 }
 
-type targetName string
-
-const (
-	targetClaude   targetName = target.Claude
-	targetOpencode targetName = target.Opencode
-)
-
 type options struct {
 	scope  scope
 	source string
-	target targetName
+	target string
 }
 
 // pair is one run of the sync pipeline: the name to report, the target
@@ -104,9 +97,9 @@ type cli struct {
 
 // updateCmd is the kong grammar for `zpecs update`.
 type updateCmd struct {
-	Scope  scope      `arg:"" default:"all" help:"render skills, agents, and docs, or one of them"`
-	Source string     `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
-	Target targetName `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
+	Scope  scope  `arg:"" default:"all" help:"render skills, agents, and docs, or one of them"`
+	Source string `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
+	Target string `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
 }
 
 func (u *updateCmd) Run() error {
@@ -188,7 +181,7 @@ func update(opts options) error {
 		return err
 	}
 	defer cleanup()
-	for _, p := range pairs(opts.scope, string(opts.target)) {
+	for _, p := range pairs(opts.scope, opts.target) {
 		if err := updatePair(root, sourceDir, sourceLabel, p); err != nil {
 			return err
 		}
