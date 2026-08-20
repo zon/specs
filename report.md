@@ -1,10 +1,7 @@
-Record the merged git-operations component in specs/architecture.yaml
+Apply a semver patch bump to the app version
 
-The architecture document now lists internal/gitops, the component that
-locates the repository root and clones a remote source, and no longer
-lists internal/repo or internal/clone. All descriptions stay single
-sentences per the architecture format guide.
+The VERSION file moves from 0.1.16 to 0.1.17. The git-operations refactor is a patch-level change, so the bump stays at patch level.
 
 Tests: no tests were added. The existing suite passes unchanged.
 
-Ralph item 1 completed
+Ralph item 2 completed
