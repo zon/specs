@@ -134,11 +134,11 @@ func SaveOwned(root, name string, owned map[string]ownedPath) error {
 	return os.WriteFile(filepath.Join(dir, manifestName), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }
 
-// RemoveStale deletes for target under root the files owned records that
-// no definition in current writes, limited to the selected kinds. An
+// RemoveStale deletes the files the system wrote under root for target
+// that no current definition writes, limited to the selected kinds. An
 // entry whose kind is unknown stays until a later write of the same
-// path records its kind. RemoveStale drops the removed paths from owned
-// and returns them.
+// path records its kind. It drops the removed paths from owned and
+// returns them.
 func RemoveStale(root, name string, owned map[string]ownedPath, current []source.Definition, kinds ...source.Kind) ([]string, error) {
 	written := make(map[string]bool, len(current))
 	for _, d := range current {
@@ -157,7 +157,7 @@ func RemoveStale(root, name string, owned map[string]ownedPath, current []source
 			continue
 		}
 		if err := os.Remove(filepath.Join(root, rel)); err != nil && !os.IsNotExist(err) {
-			return nil, err
+			return nil, fmt.Errorf("removing stale definitions: %w", err)
 		}
 		delete(owned, rel)
 		removed = append(removed, rel)

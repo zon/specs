@@ -1,17 +1,13 @@
-Move update orchestration into internal/update
+Move format details out of the update orchestration
 
-Move the update coordination out of cmd/zpecs into a new internal/update
-orchestration module and record it in specs/architecture.yaml. cmd/zpecs
-keeps the entry point, kong grammar, and argument parsing. The scope
-vocabulary moved into internal/source as source.Scope, so it is defined
-once, beside the kinds it selects, per the architecture review. Remove
-the completed plan from refactoring.md and update the remaining plans'
-references.
+targetdir wraps its RemoveStale error. report owns the output sink and
+the scope labels. The orchestration renders through a named function
+instead of an inline closure. It no longer passes os.Stdout or builds
+display names and error messages. Remove the matching plan from
+refactoring.md.
 
-Tests: move TestUnmarshalScope to internal/source and the resolveSource
-tests to internal/update. CLI parser and plumbing tests stay beside the
-entry point. Format-detail cleanup (report sink, stale-removal error
-wrapping, pair labels, render closure) stays planned in refactoring.md
-for a later item.
+Tests: the RemoveStale error-wrapping test in targetdir, the Summary
+sink and label tests in report, and the updatePair sink test in update,
+which captures the report through the testutil helper.
 
-Ralph item 3 completed
+Ralph item 4 completed

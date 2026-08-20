@@ -195,6 +195,17 @@ func TestDefinitionReportsUnreadableAgentFile(t *testing.T) {
 	require.Contains(t, err.Error(), "reading")
 }
 
+func TestForTargetRendersAgentForOpencode(t *testing.T) {
+	path := writeDefinitionFile(t, filepath.Join("agents", "prose-editor.md"), "---\nname: prose-editor\ndescription: Reviews prose with style.\n---\n\nReview prose with style.\n")
+	d := source.Definition{Kind: source.Agent, Name: "prose-editor", Path: path}
+
+	got, err := ForTarget(target.Opencode)(d)
+	require.NoError(t, err)
+	want := "---\nmode: subagent\ndescription: Reviews prose with style.\n---\n\nReview prose with style.\n"
+
+	require.Equal(t, want, got)
+}
+
 // writeDefinitionFile writes content at rel under a fresh temp dir and
 // returns the path.
 func writeDefinitionFile(t *testing.T, rel, content string) string {

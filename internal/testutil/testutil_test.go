@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/zon/specs/internal/report"
 )
 
 func TestGitRepoCreatesRepoWithFiles(t *testing.T) {
@@ -21,7 +23,7 @@ func TestGitRepoCreatesRepoWithFiles(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "content\n", string(content))
 
-	RunGit(t, dir, "rev-parse", "HEAD")
+	runGit(t, dir, "rev-parse", "HEAD")
 }
 
 func TestGitRepoWithoutFilesStillHasGitDir(t *testing.T) {
@@ -43,11 +45,44 @@ func TestGitRepoURLReturnsCloneableURL(t *testing.T) {
 	require.True(t, strings.HasPrefix(url, "file://"))
 
 	dir := t.TempDir()
-	RunGit(t, dir, "clone", url, filepath.Join(dir, "clone"))
+	runGit(t, dir, "clone", url, filepath.Join(dir, "clone"))
 
 	content, err := os.ReadFile(filepath.Join(dir, "clone", "seed"))
 	require.NoError(t, err)
 	require.Equal(t, "content\n", string(content))
+}
+
+func TestWriteFileCreatesFileAndDirectories(t *testing.T) {
+	dir := t.TempDir()
+
+	writeFile(t, dir, filepath.Join("a", "b", "seed"), "content\n")
+
+	content, err := os.ReadFile(filepath.Join(dir, "a", "b", "seed"))
+	require.NoError(t, err)
+	require.Equal(t, "content\n", string(content))
+}
+
+func TestSkillSourceCreatesSkill(t *testing.T) {
+	dir := SkillSource(t, "seed")
+
+	content, err := os.ReadFile(filepath.Join(dir, "skills", "seed", "SKILL.md"))
+	require.NoError(t, err)
+	require.Equal(t, "# seed\n", string(content))
+}
+
+func TestRequireFilePassesForExistingFile(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "seed", "content\n")
+
+	RequireFile(t, dir, "seed")
+}
+
+func TestCaptureReportCaptures(t *testing.T) {
+	captured := CaptureReport(t)
+
+	fmt.Fprint(report.Out, "hello\n")
+
+	require.Equal(t, "hello\n", captured())
 }
 
 func runGitErr(dir string, args ...string) error {

@@ -1,9 +1,6 @@
 package update
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/zon/specs/internal/clone"
 	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/repo"
@@ -40,28 +37,27 @@ func Run(opts Options) error {
 	return nil
 }
 
-// pair is one run of the sync pipeline: the name to report, the target
-// to write to, and the kinds it selects.
+// pair is one update run: the target to write to and the kinds it
+// selects.
 type pair struct {
-	name   string
 	target string
 	kinds  []source.Kind
 }
 
 // pairs selects the runs for a scope. Skills and agents write to the
-// named target. Docs always write to docs/zpecs.
+// named target. Docs write to docs/zpecs.
 func pairs(s source.Scope, targetName string) []pair {
 	switch s {
 	case source.ScopeSkills:
-		return []pair{{name: "skills", target: targetName, kinds: []source.Kind{source.Skill}}}
+		return []pair{{target: targetName, kinds: []source.Kind{source.Skill}}}
 	case source.ScopeAgents:
-		return []pair{{name: "agents", target: targetName, kinds: []source.Kind{source.Agent}}}
+		return []pair{{target: targetName, kinds: []source.Kind{source.Agent}}}
 	case source.ScopeDocs:
-		return []pair{{name: "docs", target: target.Docs, kinds: []source.Kind{source.Doc}}}
+		return []pair{{target: target.Docs, kinds: []source.Kind{source.Doc}}}
 	default:
 		return []pair{
-			{name: "skills and agents", target: targetName, kinds: []source.Kind{source.Skill, source.Agent}},
-			{name: "docs", target: target.Docs, kinds: []source.Kind{source.Doc}},
+			{target: targetName, kinds: []source.Kind{source.Skill, source.Agent}},
+			{target: target.Docs, kinds: []source.Kind{source.Doc}},
 		}
 	}
 }
@@ -78,18 +74,15 @@ func updatePair(root, sourceDir, sourceLabel string, p pair) error {
 		return err
 	}
 	if _, err := targetdir.RemoveStale(root, p.target, owned, defs, p.kinds...); err != nil {
-		return fmt.Errorf("removing stale definitions: %w", err)
+		return err
 	}
-	if err := targetdir.WriteAll(root, p.target, defs, func(d source.Definition) (string, error) {
-		return render.Definition(d, p.target)
-	}, owned); err != nil {
+	if err := targetdir.WriteAll(root, p.target, defs, render.ForTarget(p.target), owned); err != nil {
 		return err
 	}
 	if err := targetdir.SaveOwned(root, p.target, owned); err != nil {
 		return err
 	}
-	report.Summary(os.Stdout, p.name, p.target, sourceLabel, len(defs))
-	return nil
+	return report.Summary(p.kinds, p.target, sourceLabel, len(defs))
 }
 
 // resolveSource returns the directory the definitions come from, the

@@ -29,7 +29,7 @@
   description: Parses a spec markdown file into a JSON document.
 
 - path: internal/testutil
-  description: Builds temp git repositories for tests.
+  description: Provides shared fixtures and helpers for tests.
 
 - path: internal/update
   description: Orchestrates update runs: resolving the source, rendering definitions into their targets, and reporting each run.
