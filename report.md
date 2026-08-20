@@ -1,11 +1,10 @@
-Move target names into internal/source
+Remove internal/target from the architecture
 
-The target names claude, opencode, and docs are now defined once in
-internal/source, and the internal/target package is removed. Its callers
-read the constants from internal/source.
+The target names claude, opencode, and docs now live in internal/source,
+so specs/architecture.yaml no longer lists internal/target as a
+component.
 
-Tests: source gains a test pinning the target name constants. The
-existing update, targetdir, render, and report suites cover the moved
-constants through the behavior they drive.
+Tests: none added. The source suite already pins the target name
+constants, and the remaining architecture entries match the code.
 
-Ralph item 0 completed
+Ralph item 1 completed
