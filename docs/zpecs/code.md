@@ -12,9 +12,9 @@ We want clear, minimal code that is easy to understand and replace. Code should 
 ## Refactoring
 
 * Gradually move towards ideal architecture and implementation. Always look for clearer, more minimal solutions
-* Always refactor within the scope of work
-* Ask for a project to be written when refactoring is out of the work scope. Name it `refactor-<slug>.yaml`
+* Refactor immediately when the opportunity is inside components we're already working on
+* Write a project when the refactoring touches components outside the current work. Name it `refactor-<slug>.yaml`
 
 ### Refactoring projects
 
-Before asking for a project, check whether a similar one already exists in `./projects/`. If it does, ask for it to be updated instead of writing a new one. Write the project with the `write-project` skill.
+Before writing a project, check whether a similar one already exists in `./projects/`. If it does, update it instead of writing a new one. Use the `write-project` skill.
