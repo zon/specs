@@ -116,7 +116,9 @@ func TestWriteDocsCreatesDirectoryAndFile(t *testing.T) {
 func TestSaveOwnedCreatesMissingTargetDirectory(t *testing.T) {
 	root := t.TempDir()
 
-	err := SaveOwned(root, target.Opencode, map[string]ownedPath{})
+	err := SaveOwned(root, target.Opencode, map[string]ownedPath{
+		RelPath(target.Opencode, agent("prose-editor")): {kind: source.Agent, known: true},
+	})
 	require.NoError(t, err)
 
 	dir := filepath.Join(root, ".opencode")
@@ -433,6 +435,33 @@ func TestManifestRoundTripStoresKinds(t *testing.T) {
 	removed, err = RemoveStale(root, target.Docs, owned, nil, source.Doc)
 	require.NoError(t, err)
 	require.Len(t, removed, 1)
+}
+
+func TestSaveOwnedSkipsManifestWhenNothingOwned(t *testing.T) {
+	root := t.TempDir()
+
+	err := SaveOwned(root, target.Docs, map[string]ownedPath{})
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(root, "docs", "zpecs", manifestName))
+	require.Error(t, err)
+}
+
+func TestSaveOwnedRemovesEmptyManifest(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]ownedPath{}
+	err := Write(root, target.Docs, doc("architecture"), "# Architecture\n", owned)
+	require.NoError(t, err)
+	err = SaveOwned(root, target.Docs, owned)
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(root, "docs", "zpecs", manifestName))
+	require.NoError(t, err)
+
+	_, err = RemoveStale(root, target.Docs, owned, nil, source.Doc)
+	require.NoError(t, err)
+	err = SaveOwned(root, target.Docs, owned)
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(root, "docs", "zpecs", manifestName))
+	require.Error(t, err)
 }
 
 func TestOwnedReadsLegacyManifest(t *testing.T) {

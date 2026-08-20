@@ -116,8 +116,17 @@ func WriteAll(root, name string, defs []source.Definition, content func(source.D
 	return nil
 }
 
-// SaveOwned persists the owned paths for a target under root.
+// SaveOwned persists the owned paths for a target under root. When
+// nothing is owned, it removes the manifest instead of writing an empty
+// one.
 func SaveOwned(root, name string, owned map[string]ownedPath) error {
+	if len(owned) == 0 {
+		err := os.Remove(filepath.Join(root, targetDir(name), manifestName))
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
 	lines := make([]string, 0, len(owned))
 	for p, op := range owned {
 		if op.known {
