@@ -8,10 +8,6 @@
 
 `internal/frontmatter/frontmatter.go:43` finds the closing `---`. It derives the body start as `i + 2` and slices `lines[1:bodyAt-1]`. Track the closing delimiter's index and slice the block and body around it.
 
-## Drop the targetName wrapper type
-
-`internal/cli/cli.go` `targetName` and the constants `targetClaude` and `targetOpencode` repeat `target.Claude` and `target.Opencode`. kong validates a plain string against `enum`, so the type only adds conversions. Use the target package constants and a string field. Update the tests that use the type.
-
 ## Keep orchestration bodies free of format details
 
 The orchestration in `internal/update` still has `updatePair` wrapping `RemoveStale` with `fmt.Errorf("removing stale definitions: %w", ...)` and passing `os.Stdout` to `report.Summary`. `pairs` still embeds the display names as literals. Let `targetdir` wrap its own error, let the report module own the output sink and scope labels, and drop `os.Stdout` from orchestration calls.

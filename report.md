@@ -1,12 +1,11 @@
-Split the CLI entry point from the update orchestration
+Drop the targetName wrapper type
 
-Split cmd/zpecs into internal/cli (entry point, kong grammar, argument
-parsing) and internal/update (orchestrated update pipeline). Recorded
-both components in specs/architecture.yaml and updated the cmd/zpecs and
-testutil entries. Removed the completed plan from refactoring.md and
-updated the next plan's references. The CLI tests moved beside
-internal/cli. The orchestration tests moved into internal/update's test
-file. They drive the pipeline through update.Run. Added a shared
-WriteSourceFile helper to internal/testutil.
+Removed the targetName type and its targetClaude and targetOpencode
+constants from internal/cli. The update command's target flag is now a
+plain string that kong validates against the enum, and the grammar's
+enum and default values come from the target package constants.
+Updated the CLI parsing tests to expect the target package constants.
+Removed the completed plan from refactoring.md. Bumped VERSION to
+0.1.8.
 
-Ralph item 3 completed
+Ralph item 2 completed

@@ -25,6 +25,8 @@ const defaultSourceURL = "https://github.com/zon/specs"
 var cliVars = kong.Vars{
 	"version":        version,
 	"default_source": defaultSourceURL,
+	"targets":        target.Claude + "," + target.Opencode,
+	"default_target": target.Opencode,
 }
 
 type scope int
@@ -66,13 +68,6 @@ func scopeWord(s scope) string {
 	}
 }
 
-type targetName string
-
-const (
-	targetClaude   targetName = target.Claude
-	targetOpencode targetName = target.Opencode
-)
-
 // cli is the kong grammar for the whole application.
 type cli struct {
 	Version kong.VersionFlag `name:"version" help:"Print version information and quit"`
@@ -82,16 +77,16 @@ type cli struct {
 
 // updateCmd is the kong grammar for `zpecs update`.
 type updateCmd struct {
-	Scope  scope      `arg:"" default:"all" help:"render skills, agents, and docs, or one of them"`
-	Source string     `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
-	Target targetName `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
+	Scope  scope  `arg:"" default:"all" help:"render skills, agents, and docs, or one of them"`
+	Source string `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
+	Target string `name:"target" enum:"${targets}" default:"${default_target}" help:"render for claude or opencode"`
 }
 
 func (u *updateCmd) Run() error {
 	return update.Run(update.Options{
 		Scope:  scopeWord(u.Scope),
 		Source: u.Source,
-		Target: string(u.Target),
+		Target: u.Target,
 	})
 }
 
