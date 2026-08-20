@@ -1,12 +1,11 @@
-Delegate the convert command's read-and-write sequence to a helper
+Bump the app version to 0.1.15
 
-cmd/zpecs now only parses the command line and calls the named helper,
-matching the update command's shape. internal/spec owns the sequence
-in Convert, which reads a spec file and prints it as JSON. The other
-spec entry points became private.
+The convert command refactor is a patch-level change, so this is a
+patch bump. VERSION stays the single source of truth: the justfile
+passes it to the binary at build time, and the version-format test
+covers the file.
 
-Tests: internal/spec covers Convert printing a file as JSON, and
-erroring on missing and malformed files without output. The existing
-cmd/zpecs convert tests pass unchanged.
+Tests: TestVersionFileHoldsSemver already asserts the VERSION file
+holds a valid semver. Both the test suite and just check pass.
 
-Ralph item 0 completed
+Ralph item 1 completed
