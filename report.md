@@ -1,5 +1,10 @@
-Review the repository the command runs in
+Accept a --model option and forward it to opencode
 
-From a subdirectory, it resolves the repository root and reviews it instead of the working directory.
+The review command forwards --model to opencode run. Without it, opencode runs with deepseek/deepseek-v4-flash.
 
-Ralph item 1 (Repository Scope) completed
+Tests added:
+- parsing and defaults in cmd/zpecs
+- forwarding in internal/review
+- default and custom invocation in internal/opencode
+
+Ralph item 2 (Model Option) completed

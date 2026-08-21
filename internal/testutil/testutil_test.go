@@ -193,7 +193,7 @@ func TestRanInFormatsTheRecordLine(t *testing.T) {
 }
 
 func TestRanAgainstFormatsTheRecordLine(t *testing.T) {
-	require.Equal(t, "args: run Review the repository against the guidelines in docs/zpecs/code.md.\n", RanAgainst("docs/zpecs/code.md"))
+	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash Review the repository against the guidelines in docs/zpecs/code.md.\n", RanAgainst("deepseek/deepseek-v4-flash", "docs/zpecs/code.md"))
 }
 
 func runGitErr(dir string, args ...string) error {

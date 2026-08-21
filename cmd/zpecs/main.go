@@ -26,6 +26,7 @@ const defaultSourceURL = "https://github.com/zon/specs"
 var cliVars = kong.Vars{
 	"version":        version,
 	"default_source": defaultSourceURL,
+	"default_model":  opencode.DefaultModel,
 }
 
 // cli is the kong grammar for the whole application.
@@ -49,11 +50,12 @@ func (u *updateCmd) Run() error {
 
 // reviewCmd is the kong grammar for `zpecs review`.
 type reviewCmd struct {
-	Scope opencode.Scope `arg:"" help:"review against the code, architecture, or prose guidelines"`
+	Scope opencode.Scope `arg:"" help:"code, architecture, or prose"`
+	Model string         `name:"model" default:"${default_model}" help:"model opencode uses"`
 }
 
 func (r *reviewCmd) Run() error {
-	return review.Run(review.Options{Scope: r.Scope})
+	return review.Run(review.Options{Scope: r.Scope, Model: r.Model})
 }
 
 // convertCmd is the kong grammar for `zpecs convert`.

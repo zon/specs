@@ -27,7 +27,17 @@ func TestRunForwardsTheScope(t *testing.T) {
 
 	require.NoError(t, Run(Options{Scope: opencode.ScopeArchitecture}))
 
-	require.Contains(t, read(), testutil.RanAgainst(testutil.ArchitectureGuidelines))
+	require.Contains(t, read(), testutil.RanAgainst(opencode.DefaultModel, testutil.ArchitectureGuidelines))
+}
+
+func TestRunForwardsTheModel(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	read := testutil.FakeOpenCode(t)
+	testutil.ChdirInto(t, root)
+
+	require.NoError(t, Run(Options{Scope: opencode.ScopeCode, Model: "anthropic/claude-sonnet-4-5"}))
+
+	require.Contains(t, read(), "--model anthropic/claude-sonnet-4-5")
 }
 
 func TestRunErrorsOutsideRepository(t *testing.T) {

@@ -74,7 +74,7 @@ func TestReviewRunsOpenCodeWithThePrompt(t *testing.T) {
 			read := testutil.FakeOpenCode(t)
 
 			dir := t.TempDir()
-			require.NoError(t, Review(dir, tc.scope))
+			require.NoError(t, Review(dir, tc.scope, ""))
 			record := read()
 			require.Contains(t, record, "args: run ")
 			require.Contains(t, record, tc.doc)
@@ -85,7 +85,7 @@ func TestReviewRunsOpenCodeWithThePrompt(t *testing.T) {
 func TestReviewErrorsOnUnknownScope(t *testing.T) {
 	read := testutil.FakeOpenCode(t)
 
-	err := Review(t.TempDir(), Scope(99))
+	err := Review(t.TempDir(), Scope(99), "")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown scope")
 	require.Empty(t, read())
@@ -95,7 +95,7 @@ func TestReviewRunsInTheGivenDirectory(t *testing.T) {
 	read := testutil.FakeOpenCode(t)
 
 	dir := t.TempDir()
-	require.NoError(t, Review(dir, ScopeCode))
+	require.NoError(t, Review(dir, ScopeCode, ""))
 	require.Contains(t, read(), "pwd: "+dir+"\n")
 }
 
@@ -105,7 +105,23 @@ func TestReviewErrorsOnOpenCodeFailure(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "opencode"), []byte(script), 0o755))
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	err := Review(t.TempDir(), ScopeCode)
+	err := Review(t.TempDir(), ScopeCode, "")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "opencode")
+}
+
+func TestReviewRunsWithTheDefaultModel(t *testing.T) {
+	read := testutil.FakeOpenCode(t)
+
+	require.NoError(t, Review(t.TempDir(), ScopeCode, ""))
+
+	require.Contains(t, read(), "--model deepseek/deepseek-v4-flash")
+}
+
+func TestReviewRunsWithTheGivenModel(t *testing.T) {
+	read := testutil.FakeOpenCode(t)
+
+	require.NoError(t, Review(t.TempDir(), ScopeCode, "anthropic/claude-sonnet-4-5"))
+
+	require.Contains(t, read(), "--model anthropic/claude-sonnet-4-5")
 }

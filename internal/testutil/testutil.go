@@ -206,9 +206,9 @@ func RanIn(dir string) string {
 const ArchitectureGuidelines = "docs/zpecs/architecture.md"
 
 // RanAgainst returns the args record line the fake opencode writes for a
-// review against the given guidelines doc. The line mirrors the prompt
+// review with the model against the guidelines doc. The line matches what
 // internal/opencode builds. internal/review's TestRunForwardsTheScope pins
-// the mirror so the two stay in lockstep.
-func RanAgainst(guidelines string) string {
-	return "args: run Review the repository against the guidelines in " + guidelines + ".\n"
+// it so the two stay in lockstep.
+func RanAgainst(model, guidelines string) string {
+	return "args: run --model " + model + " Review the repository against the guidelines in " + guidelines + ".\n"
 }

@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// DefaultModel is the model opencode uses unless the user gives one.
+const DefaultModel = "deepseek/deepseek-v4-flash"
+
 // Scope selects the review guidelines.
 type Scope int
 
@@ -56,14 +59,17 @@ func prompt(scope Scope) (string, error) {
 	return "Review the repository against the guidelines in " + doc + ".", nil
 }
 
-// Review runs opencode on the repository at root against the
-// scope's guidelines.
-func Review(root string, scope Scope) error {
+// Review runs opencode on the repository at root with the model and the
+// scope's guidelines. An empty model selects DefaultModel.
+func Review(root string, scope Scope, model string) error {
+	if model == "" {
+		model = DefaultModel
+	}
 	message, err := prompt(scope)
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("opencode", "run", message)
+	cmd := exec.Command("opencode", "run", "--model", model, message)
 	cmd.Dir = root
 	out, err := cmd.CombinedOutput()
 	if err != nil {
