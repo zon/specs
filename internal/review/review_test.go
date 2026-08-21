@@ -1,8 +1,6 @@
 package review
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,9 +12,7 @@ func TestRunRunsOpenCodeAtTheRepositoryRoot(t *testing.T) {
 	root := testutil.GitRepo(t, nil)
 	read := testutil.FakeOpenCode(t)
 
-	work := filepath.Join(root, "nested", "deep")
-	require.NoError(t, os.MkdirAll(work, 0o755))
-	t.Chdir(work)
+	work := testutil.ChdirInto(t, root, "nested", "deep")
 
 	require.NoError(t, Run(Options{Scope: opencode.ScopeCode}))
 
@@ -24,9 +20,18 @@ func TestRunRunsOpenCodeAtTheRepositoryRoot(t *testing.T) {
 	require.NotContains(t, read(), testutil.RanIn(work))
 }
 
+func TestRunForwardsTheScope(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	read := testutil.FakeOpenCode(t)
+	testutil.ChdirInto(t, root)
+
+	require.NoError(t, Run(Options{Scope: opencode.ScopeArchitecture}))
+
+	require.Contains(t, read(), testutil.RanAgainst(testutil.ArchitectureGuidelines))
+}
+
 func TestRunErrorsOutsideRepository(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
+	testutil.ChdirInto(t, t.TempDir())
 	read := testutil.FakeOpenCode(t)
 
 	err := Run(Options{Scope: opencode.ScopeCode})

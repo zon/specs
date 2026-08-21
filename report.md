@@ -1,11 +1,5 @@
-Add the zpecs review command
+Review the repository the command runs in
 
-The CLI now accepts zpecs review code, architecture, or prose. Each runs an opencode review of the repository against that scope's guidelines. An unknown scope errors and reviews nothing.
+From a subdirectory, it resolves the repository root and reviews it instead of the working directory.
 
-Tests added:
-- scope parsing and command recognition tests in cmd/zpecs
-- orchestration tests in internal/review
-- opencode invocation tests in internal/opencode
-- a fake opencode test fixture in internal/testutil
-
-Ralph item 0 (Command Form) completed
+Ralph item 1 (Repository Scope) completed

@@ -46,6 +46,16 @@ func GitRepoURL(t *testing.T, files map[string]string) string {
 	return "file://" + GitRepo(t, files)
 }
 
+// ChdirInto creates parts as a nested directory under root, chdirs into
+// it, and returns the path. Cleanup restores the working directory.
+func ChdirInto(t *testing.T, root string, parts ...string) string {
+	t.Helper()
+	dir := filepath.Join(root, filepath.Join(parts...))
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	t.Chdir(dir)
+	return dir
+}
+
 // writeFile writes content to rel under dir, creating parent directories.
 func writeFile(t *testing.T, dir, rel, content string) {
 	t.Helper()
@@ -54,8 +64,8 @@ func writeFile(t *testing.T, dir, rel, content string) {
 	require.NoError(t, os.WriteFile(full, []byte(content), 0o644))
 }
 
-// WriteSourceFile writes a definition file at rel under dir, creating parent directories.
-func WriteSourceFile(t *testing.T, dir, rel, content string) {
+// writeSourceFile writes a definition file at rel under dir.
+func writeSourceFile(t *testing.T, dir, rel, content string) {
 	t.Helper()
 	writeFile(t, dir, rel, content)
 }
@@ -63,31 +73,31 @@ func WriteSourceFile(t *testing.T, dir, rel, content string) {
 // WriteSkill writes one skill at its layout path under dir.
 func WriteSkill(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Skill, Name: name}), "# "+name+"\n")
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Skill, Name: name}), "# "+name+"\n")
 }
 
 // WriteAgent writes one agent at its layout path under dir.
 func WriteAgent(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+name+".\n")
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+name+".\n")
 }
 
 // WriteAgentBody writes one agent at its layout path with the given body.
 func WriteAgentBody(t *testing.T, dir, name, body string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+body)
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+body)
 }
 
 // WriteDoc writes one doc at its layout path under dir.
 func WriteDoc(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), "# "+name+"\n")
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), "# "+name+"\n")
 }
 
 // WriteDocBody writes one doc at its layout path with the given content.
 func WriteDocBody(t *testing.T, dir, name, content string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), content)
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), content)
 }
 
 // SkillSource returns a temp dir with one skill.
@@ -163,8 +173,8 @@ func CaptureReport(t *testing.T) func() string {
 }
 
 // FakeOpenCode installs a fake opencode executable on PATH that appends its
-// working directory and arguments to a record file. The returned func reads
-// the record, or "" when opencode has not run yet.
+// working directory and arguments to a record file. The returned func
+// returns the record, or "" when opencode has not run yet.
 func FakeOpenCode(t *testing.T) func() string {
 	t.Helper()
 	dir := t.TempDir()
@@ -187,4 +197,18 @@ func FakeOpenCode(t *testing.T) func() string {
 // RanIn returns the record line the fake opencode writes for a run in dir.
 func RanIn(dir string) string {
 	return "pwd: " + dir + "\n"
+}
+
+// ArchitectureGuidelines is the guidelines doc the architecture scope
+// reviews against. It mirrors the path internal/opencode builds for that
+// scope. internal/review's TestRunForwardsTheScope pins the mirror so the
+// two stay in lockstep.
+const ArchitectureGuidelines = "docs/zpecs/architecture.md"
+
+// RanAgainst returns the args record line the fake opencode writes for a
+// review against the given guidelines doc. The line mirrors the prompt
+// internal/opencode builds. internal/review's TestRunForwardsTheScope pins
+// the mirror so the two stay in lockstep.
+func RanAgainst(guidelines string) string {
+	return "args: run Review the repository against the guidelines in " + guidelines + ".\n"
 }

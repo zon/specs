@@ -54,6 +54,17 @@ func TestGitRepoURLReturnsCloneableURL(t *testing.T) {
 	require.Equal(t, "content\n", string(content))
 }
 
+func TestChdirIntoCreatesNestedDirAndEntersIt(t *testing.T) {
+	root := t.TempDir()
+
+	dir := ChdirInto(t, root, "nested", "deep")
+
+	require.Equal(t, filepath.Join(root, "nested", "deep"), dir)
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	require.Equal(t, dir, wd)
+}
+
 func TestWriteFileCreatesFileAndDirectories(t *testing.T) {
 	dir := t.TempDir()
 
@@ -179,6 +190,10 @@ func TestRanInFormatsTheRecordLine(t *testing.T) {
 	dir := "/some/dir"
 
 	require.Equal(t, "pwd: "+dir+"\n", RanIn(dir))
+}
+
+func TestRanAgainstFormatsTheRecordLine(t *testing.T) {
+	require.Equal(t, "args: run Review the repository against the guidelines in docs/zpecs/code.md.\n", RanAgainst("docs/zpecs/code.md"))
 }
 
 func runGitErr(dir string, args ...string) error {
