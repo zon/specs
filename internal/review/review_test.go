@@ -27,7 +27,7 @@ func TestRunForwardsTheScope(t *testing.T) {
 
 	require.NoError(t, Run(Options{Scope: opencode.ScopeArchitecture}))
 
-	require.Contains(t, read(), testutil.RanAgainst(opencode.DefaultModel, testutil.ArchitectureGuidelines))
+	require.Contains(t, read(), testutil.RanAgainstMessage(opencode.DefaultModel, opencode.ArchitectureReviewPrompt))
 }
 
 func TestRunForwardsTheModel(t *testing.T) {

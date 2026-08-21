@@ -34,79 +34,55 @@ func TestUnmarshalScope(t *testing.T) {
 	}
 }
 
-func TestGuideline(t *testing.T) {
-	cases := []struct {
-		name    string
-		scope   Scope
-		want    string
-		wantErr bool
-	}{
-		{name: "architecture", scope: ScopeArchitecture, want: "docs/zpecs/architecture.md"},
-		{name: "prose", scope: ScopeProse, want: "docs/zpecs/prose.md"},
-		{name: "unknown scope", scope: Scope(99), wantErr: true},
-	}
+func TestReviewRunsProseWithThePrompt(t *testing.T) {
+	read := testutil.FakeOpenCode(t)
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := guideline(tc.scope)
-			require.Equal(t, tc.wantErr, err != nil)
-			if err == nil {
-				require.Equal(t, tc.want, got)
-			}
-		})
-	}
+	dir := t.TempDir()
+	require.NoError(t, Review(dir, ScopeProse, "", ""))
+	record := read()
+	require.Contains(t, record, testutil.RanAgainst(DefaultModel, "docs/zpecs/prose.md"))
 }
 
-func TestReviewRunsOpenCodeWithThePrompt(t *testing.T) {
+func TestPromptDirectsIssuesToRefactorProjects(t *testing.T) {
 	cases := []struct {
 		name  string
 		scope Scope
-		doc   string
+		want  string
 	}{
-		{name: "architecture", scope: ScopeArchitecture, doc: "docs/zpecs/architecture.md"},
-		{name: "prose", scope: ScopeProse, doc: "docs/zpecs/prose.md"},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			read := testutil.FakeOpenCode(t)
-
-			dir := t.TempDir()
-			require.NoError(t, Review(dir, tc.scope, "", ""))
-			record := read()
-			require.Contains(t, record, testutil.RanAgainst(DefaultModel, tc.doc))
-		})
-	}
-}
-
-func TestCodePromptDirectsIssuesToRefactorProjects(t *testing.T) {
-	msg, err := prompt(ScopeCode)
-	require.NoError(t, err)
-	require.Equal(t, CodeReviewPrompt, msg)
-	require.Contains(t, msg, "Do not edit the code")
-	require.Contains(t, msg, "refactor-<slug>.yaml")
-	require.Contains(t, msg, "projects/")
-	require.Contains(t, msg, "for its refactoring")
-	require.Contains(t, msg, "Update a matching project when one exists")
-	require.Contains(t, msg, "Write no project when you find no issues")
-}
-
-func TestRefactorInstructionStaysOutOfOtherScopes(t *testing.T) {
-	cases := []struct {
-		name  string
-		scope Scope
-	}{
-		{name: "architecture", scope: ScopeArchitecture},
-		{name: "prose", scope: ScopeProse},
+		{name: "code", scope: ScopeCode, want: CodeReviewPrompt},
+		{name: "architecture", scope: ScopeArchitecture, want: ArchitectureReviewPrompt},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			msg, err := prompt(tc.scope)
 			require.NoError(t, err)
-			require.NotContains(t, msg, "refactor-<slug>.yaml")
+			require.Equal(t, tc.want, msg)
+			require.Contains(t, msg, "Do not edit the code")
+			require.Contains(t, msg, "refactor-<slug>.yaml")
+			require.Contains(t, msg, "projects/")
+			require.Contains(t, msg, "for its refactoring")
 		})
 	}
+}
+
+func TestCodePromptUpdatesMatchingProjects(t *testing.T) {
+	require.Contains(t, CodeReviewPrompt, "Update a matching project when one exists")
+	require.Contains(t, CodeReviewPrompt, "Write no project when you find no issues")
+}
+
+func TestReviewRunsArchitectureWithThePrompt(t *testing.T) {
+	read := testutil.FakeOpenCode(t)
+
+	require.NoError(t, Review(t.TempDir(), ScopeArchitecture, "", ""))
+
+	require.Contains(t, read(), testutil.RanAgainstMessage(DefaultModel, ArchitectureReviewPrompt))
+}
+
+func TestRefactorInstructionStaysOutOfProseScope(t *testing.T) {
+	msg, err := prompt(ScopeProse)
+	require.NoError(t, err)
+	require.NotContains(t, msg, "refactor-<slug>.yaml")
 }
 
 func TestReviewErrorsOnUnknownScope(t *testing.T) {

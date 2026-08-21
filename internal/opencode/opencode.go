@@ -18,6 +18,11 @@ const DefaultVariant = "high"
 // editing the code.
 const CodeReviewPrompt = "Review the repository against the guidelines in docs/zpecs/code.md. Do not edit the code. Write each issue you find to the refactor-<slug>.yaml project for its refactoring in projects/. Update a matching project when one exists. Write no project when you find no issues."
 
+// ArchitectureReviewPrompt is the prompt the architecture scope gives
+// opencode. It directs each issue to a refactor-<slug>.yaml project
+// rather than editing the code.
+const ArchitectureReviewPrompt = "Review the repository against the guidelines in docs/zpecs/architecture.md. Do not edit the code. Write each issue you find to the refactor-<slug>.yaml project for its refactoring in projects/."
+
 // Scope selects the review guidelines.
 type Scope int
 
@@ -45,28 +50,18 @@ func (s *Scope) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// guideline returns the guidelines doc path for a scope.
-func guideline(scope Scope) (string, error) {
+// prompt builds the review prompt naming the scope's guidelines.
+func prompt(scope Scope) (string, error) {
 	switch scope {
+	case ScopeCode:
+		return CodeReviewPrompt, nil
 	case ScopeArchitecture:
-		return "docs/zpecs/architecture.md", nil
+		return ArchitectureReviewPrompt, nil
 	case ScopeProse:
-		return "docs/zpecs/prose.md", nil
+		return "Review the repository against the guidelines in docs/zpecs/prose.md.", nil
 	default:
 		return "", fmt.Errorf("unknown scope %d", scope)
 	}
-}
-
-// prompt builds the review prompt naming the scope's guidelines.
-func prompt(scope Scope) (string, error) {
-	if scope == ScopeCode {
-		return CodeReviewPrompt, nil
-	}
-	doc, err := guideline(scope)
-	if err != nil {
-		return "", err
-	}
-	return "Review the repository against the guidelines in " + doc + ".", nil
 }
 
 // Review runs opencode on the repository at root with the model, variant,

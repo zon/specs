@@ -199,15 +199,9 @@ func RanIn(dir string) string {
 	return "pwd: " + dir + "\n"
 }
 
-// ArchitectureGuidelines is the guidelines doc the architecture scope
-// reviews against. It mirrors the path internal/opencode builds for that
-// scope.
-const ArchitectureGuidelines = "docs/zpecs/architecture.md"
-
 // RanAgainst returns the args record line the fake opencode writes for a
-// review with the model against the guidelines doc, matching what
-// internal/opencode builds for the architecture and prose scopes. The
-// code scope's longer prompt is opencode.CodeReviewPrompt.
+// review with the model against the guidelines doc. It matches the prompt
+// internal/opencode builds for the prose scope.
 func RanAgainst(model, guidelines string) string {
 	return "args: run --model " + model + " Review the repository against the guidelines in " + guidelines + ".\n"
 }
