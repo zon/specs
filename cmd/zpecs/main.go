@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
+	"github.com/zon/specs/internal/opencode"
+	"github.com/zon/specs/internal/review"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/spec"
 	"github.com/zon/specs/internal/update"
@@ -22,14 +24,17 @@ const defaultSourceURL = "https://github.com/zon/specs"
 
 // cliVars feeds kong's ${...} interpolation in the grammar.
 var cliVars = kong.Vars{
-	"version":        version,
-	"default_source": defaultSourceURL,
+	"version":         version,
+	"default_source":  defaultSourceURL,
+	"default_model":   opencode.DefaultModel,
+	"default_variant": opencode.DefaultVariant,
 }
 
 // cli is the kong grammar for the whole application.
 type cli struct {
 	Version kong.VersionFlag `name:"version" help:"Print version information and quit"`
 	Update  updateCmd        `cmd:"" help:"renders skills, agents, and docs"`
+	Review  reviewCmd        `cmd:"" help:"reviews the repository against the code, architecture, or prose guidelines"`
 	Convert convertCmd       `cmd:"" help:"turns a spec markdown file into JSON"`
 }
 
@@ -42,6 +47,33 @@ type updateCmd struct {
 
 func (u *updateCmd) Run() error {
 	return update.Run(update.Options{Scope: u.Scope, Source: u.Source, Target: u.Target})
+}
+
+// reviewCmd is the kong grammar for `zpecs review`.
+type reviewCmd struct {
+	Scope   opencode.Scope `arg:"" help:"code, architecture, or prose"`
+	Model   *string        `name:"model" help:"model opencode uses. Defaults to ${default_model}."`
+	Variant *string        `name:"variant" help:"variant opencode uses. Defaults to ${default_variant} when no model or variant is given."`
+}
+
+// options resolves the parsed flags into review options.
+func (r *reviewCmd) options() review.Options {
+	model := opencode.DefaultModel
+	if r.Model != nil {
+		model = *r.Model
+	}
+	variant := ""
+	if r.Variant != nil {
+		variant = *r.Variant
+	}
+	if r.Model == nil && r.Variant == nil {
+		variant = opencode.DefaultVariant
+	}
+	return review.Options{Scope: r.Scope, Model: model, Variant: variant}
+}
+
+func (r *reviewCmd) Run() error {
+	return review.Run(r.options())
 }
 
 // convertCmd is the kong grammar for `zpecs convert`.

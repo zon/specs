@@ -7,6 +7,9 @@
 - path: internal/gitops
   description: Locates the repository root and clones a remote source into a temp dir so the copy reads like a local one.
 
+- path: internal/opencode
+  description: Runs the opencode CLI to review a repository against the guidelines for a scope.
+
 - path: internal/targetdir
   description: Writes definitions into a repository's target directories under an ownership manifest.
 
@@ -24,4 +27,8 @@
 
 - path: internal/update
   description: Orchestrates update runs: resolving the source, rendering definitions into their targets, and reporting each one.
+  orchestration: true
+
+- path: internal/review
+  description: Orchestrates review runs: locating the repository root and delegating them to opencode.
   orchestration: true

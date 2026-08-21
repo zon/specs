@@ -54,6 +54,17 @@ func TestGitRepoURLReturnsCloneableURL(t *testing.T) {
 	require.Equal(t, "content\n", string(content))
 }
 
+func TestChdirIntoCreatesNestedDirAndEntersIt(t *testing.T) {
+	root := t.TempDir()
+
+	dir := ChdirInto(t, root, "nested", "deep")
+
+	require.Equal(t, filepath.Join(root, "nested", "deep"), dir)
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	require.Equal(t, dir, wd)
+}
+
 func TestWriteFileCreatesFileAndDirectories(t *testing.T) {
 	dir := t.TempDir()
 
@@ -154,6 +165,39 @@ func TestCaptureReportCaptures(t *testing.T) {
 	fmt.Fprint(report.Out, "hello\n")
 
 	require.Equal(t, "hello\n", captured())
+}
+
+func TestFakeOpenCodeReturnsEmptyBeforeInvocation(t *testing.T) {
+	read := FakeOpenCode(t)
+
+	require.Equal(t, "", read())
+}
+
+func TestFakeOpenCodeRecordsInvocation(t *testing.T) {
+	read := FakeOpenCode(t)
+
+	dir := t.TempDir()
+	cmd := exec.Command("opencode", "run", "hello")
+	cmd.Dir = dir
+	require.NoError(t, cmd.Run())
+
+	record := read()
+	require.Contains(t, record, "pwd: "+dir+"\n")
+	require.Contains(t, record, "args: run hello\n")
+}
+
+func TestRanInFormatsTheRecordLine(t *testing.T) {
+	dir := "/some/dir"
+
+	require.Equal(t, "pwd: "+dir+"\n", RanIn(dir))
+}
+
+func TestRanAgainstMessageFormatsTheRecordLine(t *testing.T) {
+	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash hello\n", RanAgainstMessage("deepseek/deepseek-v4-flash", "hello"))
+}
+
+func TestRanAgainstMessageVariantFormatsTheRecordLine(t *testing.T) {
+	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash --variant minimal hello\n", RanAgainstMessageVariant("deepseek/deepseek-v4-flash", "minimal", "hello"))
 }
 
 func runGitErr(dir string, args ...string) error {

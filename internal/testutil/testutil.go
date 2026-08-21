@@ -46,6 +46,16 @@ func GitRepoURL(t *testing.T, files map[string]string) string {
 	return "file://" + GitRepo(t, files)
 }
 
+// ChdirInto creates parts as a nested directory under root, chdirs into
+// it, and returns the path. Cleanup restores the working directory.
+func ChdirInto(t *testing.T, root string, parts ...string) string {
+	t.Helper()
+	dir := filepath.Join(root, filepath.Join(parts...))
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	t.Chdir(dir)
+	return dir
+}
+
 // writeFile writes content to rel under dir, creating parent directories.
 func writeFile(t *testing.T, dir, rel, content string) {
 	t.Helper()
@@ -54,8 +64,8 @@ func writeFile(t *testing.T, dir, rel, content string) {
 	require.NoError(t, os.WriteFile(full, []byte(content), 0o644))
 }
 
-// WriteSourceFile writes a definition file at rel under dir, creating parent directories.
-func WriteSourceFile(t *testing.T, dir, rel, content string) {
+// writeSourceFile writes a definition file at rel under dir.
+func writeSourceFile(t *testing.T, dir, rel, content string) {
 	t.Helper()
 	writeFile(t, dir, rel, content)
 }
@@ -63,31 +73,31 @@ func WriteSourceFile(t *testing.T, dir, rel, content string) {
 // WriteSkill writes one skill at its layout path under dir.
 func WriteSkill(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Skill, Name: name}), "# "+name+"\n")
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Skill, Name: name}), "# "+name+"\n")
 }
 
 // WriteAgent writes one agent at its layout path under dir.
 func WriteAgent(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+name+".\n")
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+name+".\n")
 }
 
 // WriteAgentBody writes one agent at its layout path with the given body.
 func WriteAgentBody(t *testing.T, dir, name, body string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+body)
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Agent, Name: name}), "---\nname: "+name+"\n---\n\n"+body)
 }
 
 // WriteDoc writes one doc at its layout path under dir.
 func WriteDoc(t *testing.T, dir, name string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), "# "+name+"\n")
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), "# "+name+"\n")
 }
 
 // WriteDocBody writes one doc at its layout path with the given content.
 func WriteDocBody(t *testing.T, dir, name, content string) {
 	t.Helper()
-	WriteSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), content)
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), content)
 }
 
 // SkillSource returns a temp dir with one skill.
@@ -160,4 +170,43 @@ func CaptureReport(t *testing.T) func() string {
 	report.Out = &buf
 	t.Cleanup(func() { report.Out = prev })
 	return buf.String
+}
+
+// FakeOpenCode installs a fake opencode executable on PATH that appends its
+// working directory and arguments to a record file. The returned func
+// returns the record, or "" when opencode has not run yet.
+func FakeOpenCode(t *testing.T) func() string {
+	t.Helper()
+	dir := t.TempDir()
+	record := filepath.Join(dir, "record")
+	script := "#!/bin/sh\n" +
+		"echo \"pwd: $(pwd)\" >> " + record + "\n" +
+		"echo \"args: $*\" >> " + record + "\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "opencode"), []byte(script), 0o755))
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return func() string {
+		content, err := os.ReadFile(record)
+		if os.IsNotExist(err) {
+			return ""
+		}
+		require.NoError(t, err)
+		return string(content)
+	}
+}
+
+// RanIn returns the record line the fake opencode writes for a run in dir.
+func RanIn(dir string) string {
+	return "pwd: " + dir + "\n"
+}
+
+// RanAgainstMessage returns the args record line the fake opencode writes
+// for a review with the given model and prompt message.
+func RanAgainstMessage(model, message string) string {
+	return "args: run --model " + model + " " + message + "\n"
+}
+
+// RanAgainstMessageVariant returns the args record line the fake opencode
+// writes for a review with the given model, variant, and prompt message.
+func RanAgainstMessageVariant(model, variant, message string) string {
+	return "args: run --model " + model + " --variant " + variant + " " + message + "\n"
 }
