@@ -199,22 +199,14 @@ func RanIn(dir string) string {
 	return "pwd: " + dir + "\n"
 }
 
-// RanAgainst returns the args record line the fake opencode writes for a
-// review with the model against the guidelines doc. It matches the prompt
-// internal/opencode builds for the prose scope.
-func RanAgainst(model, guidelines string) string {
-	return "args: run --model " + model + " Review the repository against the guidelines in " + guidelines + ".\n"
-}
-
 // RanAgainstMessage returns the args record line the fake opencode writes
-// for a review with the model and the given prompt message.
+// for a review with the given model and prompt message.
 func RanAgainstMessage(model, message string) string {
 	return "args: run --model " + model + " " + message + "\n"
 }
 
 // RanAgainstMessageVariant returns the args record line the fake opencode
-// writes for a review with the model and variant and the given prompt
-// message.
+// writes for a review with the given model, variant, and prompt message.
 func RanAgainstMessageVariant(model, variant, message string) string {
 	return "args: run --model " + model + " --variant " + variant + " " + message + "\n"
 }

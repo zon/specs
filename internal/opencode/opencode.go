@@ -23,6 +23,10 @@ const CodeReviewPrompt = "Review the repository against the guidelines in docs/z
 // rather than editing the code.
 const ArchitectureReviewPrompt = "Review the repository against the guidelines in docs/zpecs/architecture.md. Do not edit the code. Write each issue you find to the refactor-<slug>.yaml project for its refactoring in projects/."
 
+// ProseReviewPrompt is the prompt the prose scope gives opencode. It
+// fixes each issue by editing the offending text in place.
+const ProseReviewPrompt = "Review the repository against the guidelines in docs/zpecs/prose.md. Fix each prose issue you find immediately by editing the offending text in place."
+
 // Scope selects the review guidelines.
 type Scope int
 
@@ -58,7 +62,7 @@ func prompt(scope Scope) (string, error) {
 	case ScopeArchitecture:
 		return ArchitectureReviewPrompt, nil
 	case ScopeProse:
-		return "Review the repository against the guidelines in docs/zpecs/prose.md.", nil
+		return ProseReviewPrompt, nil
 	default:
 		return "", fmt.Errorf("unknown scope %d", scope)
 	}

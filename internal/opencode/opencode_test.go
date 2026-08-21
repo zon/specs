@@ -40,7 +40,7 @@ func TestReviewRunsProseWithThePrompt(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, Review(dir, ScopeProse, "", ""))
 	record := read()
-	require.Contains(t, record, testutil.RanAgainst(DefaultModel, "docs/zpecs/prose.md"))
+	require.Contains(t, record, testutil.RanAgainstMessage(DefaultModel, ProseReviewPrompt))
 }
 
 func TestPromptDirectsIssuesToRefactorProjects(t *testing.T) {
@@ -79,10 +79,19 @@ func TestReviewRunsArchitectureWithThePrompt(t *testing.T) {
 	require.Contains(t, read(), testutil.RanAgainstMessage(DefaultModel, ArchitectureReviewPrompt))
 }
 
+func TestProsePromptFixesIssuesInPlace(t *testing.T) {
+	msg, err := prompt(ScopeProse)
+	require.NoError(t, err)
+	require.Equal(t, ProseReviewPrompt, msg)
+	require.Contains(t, msg, "Fix each prose issue you find immediately")
+	require.Contains(t, msg, "editing the offending text in place")
+}
+
 func TestRefactorInstructionStaysOutOfProseScope(t *testing.T) {
 	msg, err := prompt(ScopeProse)
 	require.NoError(t, err)
 	require.NotContains(t, msg, "refactor-<slug>.yaml")
+	require.NotContains(t, msg, "Do not edit the code")
 }
 
 func TestReviewErrorsOnUnknownScope(t *testing.T) {

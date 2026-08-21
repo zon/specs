@@ -1,12 +1,11 @@
-Prompt architecture reviews into refactor projects
+Prompt prose reviews to fix issues in place
 
-The architecture review scope now prompts opencode to write each
-architecture issue to a refactor-<slug>.yaml project in projects/ rather
-than editing the code. VERSION bumps to 0.6.0.
+The prose review scope now prompts opencode to fix each prose issue it
+finds immediately, editing the offending text in place rather than
+writing issues to a project. VERSION bumps to 0.7.0.
 
 Tests added:
-- prompt coverage of the architecture issue behavior in internal/opencode
-- updated forwarding assertions in internal/review
+- prompt coverage of the in-place fix behavior in internal/opencode
 - updated record-line helpers in internal/testutil
 
-Ralph item 5 (Architecture Review) completed
+Ralph item 6 (Prose Review) completed

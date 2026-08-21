@@ -192,10 +192,6 @@ func TestRanInFormatsTheRecordLine(t *testing.T) {
 	require.Equal(t, "pwd: "+dir+"\n", RanIn(dir))
 }
 
-func TestRanAgainstFormatsTheRecordLine(t *testing.T) {
-	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash Review the repository against the guidelines in docs/zpecs/prose.md.\n", RanAgainst("deepseek/deepseek-v4-flash", "docs/zpecs/prose.md"))
-}
-
 func TestRanAgainstMessageFormatsTheRecordLine(t *testing.T) {
 	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash hello\n", RanAgainstMessage("deepseek/deepseek-v4-flash", "hello"))
 }
