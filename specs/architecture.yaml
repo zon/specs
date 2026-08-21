@@ -30,5 +30,5 @@
   orchestration: true
 
 - path: internal/review
-  description: Orchestrates review runs: locating the repository root and delegating to opencode for the scope.
+  description: Orchestrates review runs: locating the repository root and delegating them to opencode.
   orchestration: true

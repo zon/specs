@@ -109,7 +109,7 @@ func TestParseUpdate(t *testing.T) {
 }
 
 // parseReviewArgs parses `review <args>` with the same kong grammar
-// `run` uses. It returns the selected options.
+// `run` uses. It returns the resolved options `Run` would use.
 func parseReviewArgs(t *testing.T, args ...string) (review.Options, error) {
 	t.Helper()
 	var c cli
@@ -118,7 +118,7 @@ func parseReviewArgs(t *testing.T, args ...string) (review.Options, error) {
 	if _, err := parser.Parse(append([]string{"review"}, args...)); err != nil {
 		return review.Options{}, err
 	}
-	return review.Options{Scope: c.Review.Scope, Model: c.Review.Model}, nil
+	return c.Review.options(), nil
 }
 
 func TestParseReview(t *testing.T) {
@@ -128,11 +128,16 @@ func TestParseReview(t *testing.T) {
 		want    review.Options
 		wantErr bool
 	}{
-		{name: "code", args: []string{"code"}, want: review.Options{Scope: opencode.ScopeCode, Model: opencode.DefaultModel}},
-		{name: "architecture", args: []string{"architecture"}, want: review.Options{Scope: opencode.ScopeArchitecture, Model: opencode.DefaultModel}},
-		{name: "prose", args: []string{"prose"}, want: review.Options{Scope: opencode.ScopeProse, Model: opencode.DefaultModel}},
+		{name: "code", args: []string{"code"}, want: review.Options{Scope: opencode.ScopeCode, Model: opencode.DefaultModel, Variant: opencode.DefaultVariant}},
+		{name: "architecture", args: []string{"architecture"}, want: review.Options{Scope: opencode.ScopeArchitecture, Model: opencode.DefaultModel, Variant: opencode.DefaultVariant}},
+		{name: "prose", args: []string{"prose"}, want: review.Options{Scope: opencode.ScopeProse, Model: opencode.DefaultModel, Variant: opencode.DefaultVariant}},
 		{name: "model", args: []string{"code", "--model", "anthropic/claude-sonnet-4-5"}, want: review.Options{Scope: opencode.ScopeCode, Model: "anthropic/claude-sonnet-4-5"}},
 		{name: "model equals", args: []string{"code", "--model=anthropic/claude-sonnet-4-5"}, want: review.Options{Scope: opencode.ScopeCode, Model: "anthropic/claude-sonnet-4-5"}},
+		{name: "variant", args: []string{"code", "--variant", "minimal"}, want: review.Options{Scope: opencode.ScopeCode, Model: opencode.DefaultModel, Variant: "minimal"}},
+		{name: "variant equals", args: []string{"code", "--variant=minimal"}, want: review.Options{Scope: opencode.ScopeCode, Model: opencode.DefaultModel, Variant: "minimal"}},
+		{name: "empty variant", args: []string{"code", "--variant", ""}, want: review.Options{Scope: opencode.ScopeCode, Model: opencode.DefaultModel, Variant: ""}},
+		{name: "model and variant", args: []string{"code", "--model", "anthropic/claude-sonnet-4-5", "--variant", "minimal"}, want: review.Options{Scope: opencode.ScopeCode, Model: "anthropic/claude-sonnet-4-5", Variant: "minimal"}},
+		{name: "missing variant value", args: []string{"code", "--variant"}, wantErr: true},
 		{name: "missing model value", args: []string{"code", "--model"}, wantErr: true},
 		{name: "unknown scope", args: []string{"vscode"}, wantErr: true},
 		{name: "missing scope", args: nil, wantErr: true},
@@ -192,8 +197,8 @@ func TestRunRecognizesCommands(t *testing.T) {
 		})
 	}
 
-	// Each review case must delegate to opencode, so install a fresh fake
-	// and assert opencode ran. A no-op review.Run would pass an err == nil
+	// Each review case must delegate to opencode. Install a fresh fake and
+	// assert opencode ran. A no-op review.Run would pass an err == nil
 	// check on its own.
 	reviewCases := []struct {
 		name string
@@ -203,6 +208,7 @@ func TestRunRecognizesCommands(t *testing.T) {
 		{name: "review architecture", args: []string{"review", "architecture"}},
 		{name: "review prose", args: []string{"review", "prose"}},
 		{name: "review with model", args: []string{"review", "code", "--model", "anthropic/claude-sonnet-4-5"}},
+		{name: "review with variant", args: []string{"review", "code", "--variant", "minimal"}},
 	}
 
 	for _, tc := range reviewCases {
@@ -269,15 +275,17 @@ func TestBinaryRunsReviewCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	repoDir := testutil.GitRepo(t, nil)
 	cases := []struct {
-		name  string
-		args  []string
-		doc   string
-		model string
+		name    string
+		args    []string
+		doc     string
+		model   string
+		variant string
 	}{
-		{name: "code", args: []string{"review", "code"}, doc: "docs/zpecs/code.md", model: opencode.DefaultModel},
-		{name: "architecture", args: []string{"review", "architecture"}, doc: "docs/zpecs/architecture.md", model: opencode.DefaultModel},
-		{name: "prose", args: []string{"review", "prose"}, doc: "docs/zpecs/prose.md", model: opencode.DefaultModel},
+		{name: "code", args: []string{"review", "code"}, doc: "docs/zpecs/code.md", model: opencode.DefaultModel, variant: opencode.DefaultVariant},
+		{name: "architecture", args: []string{"review", "architecture"}, doc: "docs/zpecs/architecture.md", model: opencode.DefaultModel, variant: opencode.DefaultVariant},
+		{name: "prose", args: []string{"review", "prose"}, doc: "docs/zpecs/prose.md", model: opencode.DefaultModel, variant: opencode.DefaultVariant},
 		{name: "custom model", args: []string{"review", "code", "--model", "anthropic/claude-sonnet-4-5"}, doc: "docs/zpecs/code.md", model: "anthropic/claude-sonnet-4-5"},
+		{name: "custom variant", args: []string{"review", "code", "--variant", "minimal"}, doc: "docs/zpecs/code.md", model: opencode.DefaultModel, variant: "minimal"},
 	}
 
 	for _, tc := range cases {
@@ -290,6 +298,11 @@ func TestBinaryRunsReviewCommand(t *testing.T) {
 			record := read()
 			require.Contains(t, record, "args: run ")
 			require.Contains(t, record, "--model "+tc.model)
+			if tc.variant != "" {
+				require.Contains(t, record, "--variant "+tc.variant)
+			} else {
+				require.NotContains(t, record, "--variant")
+			}
 			require.Contains(t, record, tc.doc)
 			require.Contains(t, record, "pwd: "+repoDir)
 		})

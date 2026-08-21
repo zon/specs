@@ -74,10 +74,9 @@ func TestReviewRunsOpenCodeWithThePrompt(t *testing.T) {
 			read := testutil.FakeOpenCode(t)
 
 			dir := t.TempDir()
-			require.NoError(t, Review(dir, tc.scope, ""))
+			require.NoError(t, Review(dir, tc.scope, "", ""))
 			record := read()
-			require.Contains(t, record, "args: run ")
-			require.Contains(t, record, tc.doc)
+			require.Contains(t, record, testutil.RanAgainst(DefaultModel, tc.doc))
 		})
 	}
 }
@@ -85,7 +84,7 @@ func TestReviewRunsOpenCodeWithThePrompt(t *testing.T) {
 func TestReviewErrorsOnUnknownScope(t *testing.T) {
 	read := testutil.FakeOpenCode(t)
 
-	err := Review(t.TempDir(), Scope(99), "")
+	err := Review(t.TempDir(), Scope(99), "", "")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown scope")
 	require.Empty(t, read())
@@ -95,8 +94,8 @@ func TestReviewRunsInTheGivenDirectory(t *testing.T) {
 	read := testutil.FakeOpenCode(t)
 
 	dir := t.TempDir()
-	require.NoError(t, Review(dir, ScopeCode, ""))
-	require.Contains(t, read(), "pwd: "+dir+"\n")
+	require.NoError(t, Review(dir, ScopeCode, "", ""))
+	require.Contains(t, read(), testutil.RanIn(dir))
 }
 
 func TestReviewErrorsOnOpenCodeFailure(t *testing.T) {
@@ -105,7 +104,7 @@ func TestReviewErrorsOnOpenCodeFailure(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "opencode"), []byte(script), 0o755))
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	err := Review(t.TempDir(), ScopeCode, "")
+	err := Review(t.TempDir(), ScopeCode, "", "")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "opencode")
 }
@@ -113,15 +112,42 @@ func TestReviewErrorsOnOpenCodeFailure(t *testing.T) {
 func TestReviewRunsWithTheDefaultModel(t *testing.T) {
 	read := testutil.FakeOpenCode(t)
 
-	require.NoError(t, Review(t.TempDir(), ScopeCode, ""))
+	require.NoError(t, Review(t.TempDir(), ScopeCode, "", ""))
 
-	require.Contains(t, read(), "--model deepseek/deepseek-v4-flash")
+	require.Contains(t, read(), testutil.RanAgainst(DefaultModel, testutil.CodeGuidelines))
 }
 
 func TestReviewRunsWithTheGivenModel(t *testing.T) {
 	read := testutil.FakeOpenCode(t)
 
-	require.NoError(t, Review(t.TempDir(), ScopeCode, "anthropic/claude-sonnet-4-5"))
+	require.NoError(t, Review(t.TempDir(), ScopeCode, "anthropic/claude-sonnet-4-5", ""))
 
-	require.Contains(t, read(), "--model anthropic/claude-sonnet-4-5")
+	require.Contains(t, read(), testutil.RanAgainst("anthropic/claude-sonnet-4-5", testutil.CodeGuidelines))
+}
+
+func TestReviewRunsWithTheGivenVariant(t *testing.T) {
+	read := testutil.FakeOpenCode(t)
+
+	require.NoError(t, Review(t.TempDir(), ScopeCode, "", "minimal"))
+
+	require.Contains(t, read(), testutil.RanAgainstVariant(DefaultModel, "minimal", testutil.CodeGuidelines))
+}
+
+func TestReviewRunsWithTheModelAndVariant(t *testing.T) {
+	read := testutil.FakeOpenCode(t)
+
+	dir := t.TempDir()
+	require.NoError(t, Review(dir, ScopeCode, "anthropic/claude-sonnet-4-5", "minimal"))
+
+	record := read()
+	require.Contains(t, record, testutil.RanAgainstVariant("anthropic/claude-sonnet-4-5", "minimal", testutil.CodeGuidelines))
+	require.Contains(t, record, testutil.RanIn(dir))
+}
+
+func TestReviewOmitsTheVariantFlagWhenEmpty(t *testing.T) {
+	read := testutil.FakeOpenCode(t)
+
+	require.NoError(t, Review(t.TempDir(), ScopeCode, "anthropic/claude-sonnet-4-5", ""))
+
+	require.NotContains(t, read(), "--variant")
 }

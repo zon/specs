@@ -6,10 +6,11 @@ import (
 	"github.com/zon/specs/internal/opencode"
 )
 
-// Options selects the review scope and model.
+// Options selects the review scope, model, and variant.
 type Options struct {
-	Scope opencode.Scope
-	Model string
+	Scope   opencode.Scope
+	Model   string
+	Variant string
 }
 
 // Run reviews the repository against the guidelines for the scope.
@@ -18,5 +19,5 @@ func Run(opts Options) error {
 	if err != nil {
 		return err
 	}
-	return opencode.Review(root, opts.Scope, opts.Model)
+	return opencode.Review(root, opts.Scope, opts.Model, opts.Variant)
 }

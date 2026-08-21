@@ -9,6 +9,10 @@ import (
 // DefaultModel is the model opencode uses unless the user gives one.
 const DefaultModel = "deepseek/deepseek-v4-flash"
 
+// DefaultVariant is the variant the CLI passes when the user gives no
+// model and no variant.
+const DefaultVariant = "high"
+
 // Scope selects the review guidelines.
 type Scope int
 
@@ -59,9 +63,10 @@ func prompt(scope Scope) (string, error) {
 	return "Review the repository against the guidelines in " + doc + ".", nil
 }
 
-// Review runs opencode on the repository at root with the model and the
-// scope's guidelines. An empty model selects DefaultModel.
-func Review(root string, scope Scope, model string) error {
+// Review runs opencode on the repository at root with the model, variant,
+// and the scope's guidelines. An empty model selects DefaultModel. An
+// empty variant omits the flag. opencode chooses its default.
+func Review(root string, scope Scope, model, variant string) error {
 	if model == "" {
 		model = DefaultModel
 	}
@@ -69,7 +74,12 @@ func Review(root string, scope Scope, model string) error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("opencode", "run", "--model", model, message)
+	args := []string{"run", "--model", model}
+	if variant != "" {
+		args = append(args, "--variant", variant)
+	}
+	args = append(args, message)
+	cmd := exec.Command("opencode", args...)
 	cmd.Dir = root
 	out, err := cmd.CombinedOutput()
 	if err != nil {

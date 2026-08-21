@@ -201,14 +201,23 @@ func RanIn(dir string) string {
 
 // ArchitectureGuidelines is the guidelines doc the architecture scope
 // reviews against. It mirrors the path internal/opencode builds for that
-// scope. internal/review's TestRunForwardsTheScope pins the mirror so the
-// two stay in lockstep.
+// scope.
 const ArchitectureGuidelines = "docs/zpecs/architecture.md"
+
+// CodeGuidelines is the guidelines doc the code scope reviews against. It
+// mirrors the path internal/opencode builds for that scope.
+const CodeGuidelines = "docs/zpecs/code.md"
 
 // RanAgainst returns the args record line the fake opencode writes for a
 // review with the model against the guidelines doc. The line matches what
-// internal/opencode builds. internal/review's TestRunForwardsTheScope pins
-// it so the two stay in lockstep.
+// internal/opencode builds.
 func RanAgainst(model, guidelines string) string {
 	return "args: run --model " + model + " Review the repository against the guidelines in " + guidelines + ".\n"
+}
+
+// RanAgainstVariant returns the args record line the fake opencode writes
+// for a review with the model and variant against the guidelines doc. The
+// line matches what internal/opencode builds.
+func RanAgainstVariant(model, variant, guidelines string) string {
+	return "args: run --model " + model + " --variant " + variant + " Review the repository against the guidelines in " + guidelines + ".\n"
 }

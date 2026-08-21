@@ -24,9 +24,10 @@ const defaultSourceURL = "https://github.com/zon/specs"
 
 // cliVars feeds kong's ${...} interpolation in the grammar.
 var cliVars = kong.Vars{
-	"version":        version,
-	"default_source": defaultSourceURL,
-	"default_model":  opencode.DefaultModel,
+	"version":         version,
+	"default_source":  defaultSourceURL,
+	"default_model":   opencode.DefaultModel,
+	"default_variant": opencode.DefaultVariant,
 }
 
 // cli is the kong grammar for the whole application.
@@ -50,12 +51,29 @@ func (u *updateCmd) Run() error {
 
 // reviewCmd is the kong grammar for `zpecs review`.
 type reviewCmd struct {
-	Scope opencode.Scope `arg:"" help:"code, architecture, or prose"`
-	Model string         `name:"model" default:"${default_model}" help:"model opencode uses"`
+	Scope   opencode.Scope `arg:"" help:"code, architecture, or prose"`
+	Model   *string        `name:"model" help:"model opencode uses. Defaults to ${default_model}."`
+	Variant *string        `name:"variant" help:"variant opencode uses. Defaults to ${default_variant} when no model or variant is given."`
+}
+
+// options resolves the parsed flags into review options.
+func (r *reviewCmd) options() review.Options {
+	model := opencode.DefaultModel
+	if r.Model != nil {
+		model = *r.Model
+	}
+	variant := ""
+	if r.Variant != nil {
+		variant = *r.Variant
+	}
+	if r.Model == nil && r.Variant == nil {
+		variant = opencode.DefaultVariant
+	}
+	return review.Options{Scope: r.Scope, Model: model, Variant: variant}
 }
 
 func (r *reviewCmd) Run() error {
-	return review.Run(review.Options{Scope: r.Scope, Model: r.Model})
+	return review.Run(r.options())
 }
 
 // convertCmd is the kong grammar for `zpecs convert`.
