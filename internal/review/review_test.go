@@ -37,7 +37,7 @@ func TestRunForwardsTheModel(t *testing.T) {
 
 	require.NoError(t, Run(Options{Scope: opencode.ScopeCode, Model: "anthropic/claude-sonnet-4-5"}))
 
-	require.Contains(t, read(), testutil.RanAgainst("anthropic/claude-sonnet-4-5", testutil.CodeGuidelines))
+	require.Contains(t, read(), testutil.RanAgainstMessage("anthropic/claude-sonnet-4-5", opencode.CodeReviewPrompt))
 }
 
 func TestRunForwardsTheVariant(t *testing.T) {
@@ -47,7 +47,7 @@ func TestRunForwardsTheVariant(t *testing.T) {
 
 	require.NoError(t, Run(Options{Scope: opencode.ScopeCode, Model: opencode.DefaultModel, Variant: "minimal"}))
 
-	require.Contains(t, read(), testutil.RanAgainstVariant(opencode.DefaultModel, "minimal", testutil.CodeGuidelines))
+	require.Contains(t, read(), testutil.RanAgainstMessageVariant(opencode.DefaultModel, "minimal", opencode.CodeReviewPrompt))
 }
 
 func TestRunErrorsOutsideRepository(t *testing.T) {

@@ -193,11 +193,15 @@ func TestRanInFormatsTheRecordLine(t *testing.T) {
 }
 
 func TestRanAgainstFormatsTheRecordLine(t *testing.T) {
-	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash Review the repository against the guidelines in docs/zpecs/code.md.\n", RanAgainst("deepseek/deepseek-v4-flash", "docs/zpecs/code.md"))
+	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash Review the repository against the guidelines in docs/zpecs/architecture.md.\n", RanAgainst("deepseek/deepseek-v4-flash", ArchitectureGuidelines))
 }
 
-func TestRanAgainstVariantFormatsTheRecordLine(t *testing.T) {
-	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash --variant minimal Review the repository against the guidelines in docs/zpecs/code.md.\n", RanAgainstVariant("deepseek/deepseek-v4-flash", "minimal", "docs/zpecs/code.md"))
+func TestRanAgainstMessageFormatsTheRecordLine(t *testing.T) {
+	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash hello\n", RanAgainstMessage("deepseek/deepseek-v4-flash", "hello"))
+}
+
+func TestRanAgainstMessageVariantFormatsTheRecordLine(t *testing.T) {
+	require.Equal(t, "args: run --model deepseek/deepseek-v4-flash --variant minimal hello\n", RanAgainstMessageVariant("deepseek/deepseek-v4-flash", "minimal", "hello"))
 }
 
 func runGitErr(dir string, args ...string) error {

@@ -41,7 +41,6 @@ func TestGuideline(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "code", scope: ScopeCode, want: "docs/zpecs/code.md"},
 		{name: "architecture", scope: ScopeArchitecture, want: "docs/zpecs/architecture.md"},
 		{name: "prose", scope: ScopeProse, want: "docs/zpecs/prose.md"},
 		{name: "unknown scope", scope: Scope(99), wantErr: true},
@@ -64,7 +63,6 @@ func TestReviewRunsOpenCodeWithThePrompt(t *testing.T) {
 		scope Scope
 		doc   string
 	}{
-		{name: "code", scope: ScopeCode, doc: "docs/zpecs/code.md"},
 		{name: "architecture", scope: ScopeArchitecture, doc: "docs/zpecs/architecture.md"},
 		{name: "prose", scope: ScopeProse, doc: "docs/zpecs/prose.md"},
 	}
@@ -77,6 +75,36 @@ func TestReviewRunsOpenCodeWithThePrompt(t *testing.T) {
 			require.NoError(t, Review(dir, tc.scope, "", ""))
 			record := read()
 			require.Contains(t, record, testutil.RanAgainst(DefaultModel, tc.doc))
+		})
+	}
+}
+
+func TestCodePromptDirectsIssuesToRefactorProjects(t *testing.T) {
+	msg, err := prompt(ScopeCode)
+	require.NoError(t, err)
+	require.Equal(t, CodeReviewPrompt, msg)
+	require.Contains(t, msg, "Do not edit the code")
+	require.Contains(t, msg, "refactor-<slug>.yaml")
+	require.Contains(t, msg, "projects/")
+	require.Contains(t, msg, "for its refactoring")
+	require.Contains(t, msg, "Update a matching project when one exists")
+	require.Contains(t, msg, "Write no project when you find no issues")
+}
+
+func TestRefactorInstructionStaysOutOfOtherScopes(t *testing.T) {
+	cases := []struct {
+		name  string
+		scope Scope
+	}{
+		{name: "architecture", scope: ScopeArchitecture},
+		{name: "prose", scope: ScopeProse},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			msg, err := prompt(tc.scope)
+			require.NoError(t, err)
+			require.NotContains(t, msg, "refactor-<slug>.yaml")
 		})
 	}
 }
@@ -114,7 +142,7 @@ func TestReviewRunsWithTheDefaultModel(t *testing.T) {
 
 	require.NoError(t, Review(t.TempDir(), ScopeCode, "", ""))
 
-	require.Contains(t, read(), testutil.RanAgainst(DefaultModel, testutil.CodeGuidelines))
+	require.Contains(t, read(), testutil.RanAgainstMessage(DefaultModel, CodeReviewPrompt))
 }
 
 func TestReviewRunsWithTheGivenModel(t *testing.T) {
@@ -122,7 +150,7 @@ func TestReviewRunsWithTheGivenModel(t *testing.T) {
 
 	require.NoError(t, Review(t.TempDir(), ScopeCode, "anthropic/claude-sonnet-4-5", ""))
 
-	require.Contains(t, read(), testutil.RanAgainst("anthropic/claude-sonnet-4-5", testutil.CodeGuidelines))
+	require.Contains(t, read(), testutil.RanAgainstMessage("anthropic/claude-sonnet-4-5", CodeReviewPrompt))
 }
 
 func TestReviewRunsWithTheGivenVariant(t *testing.T) {
@@ -130,7 +158,7 @@ func TestReviewRunsWithTheGivenVariant(t *testing.T) {
 
 	require.NoError(t, Review(t.TempDir(), ScopeCode, "", "minimal"))
 
-	require.Contains(t, read(), testutil.RanAgainstVariant(DefaultModel, "minimal", testutil.CodeGuidelines))
+	require.Contains(t, read(), testutil.RanAgainstMessageVariant(DefaultModel, "minimal", CodeReviewPrompt))
 }
 
 func TestReviewRunsWithTheModelAndVariant(t *testing.T) {
@@ -140,7 +168,7 @@ func TestReviewRunsWithTheModelAndVariant(t *testing.T) {
 	require.NoError(t, Review(dir, ScopeCode, "anthropic/claude-sonnet-4-5", "minimal"))
 
 	record := read()
-	require.Contains(t, record, testutil.RanAgainstVariant("anthropic/claude-sonnet-4-5", "minimal", testutil.CodeGuidelines))
+	require.Contains(t, record, testutil.RanAgainstMessageVariant("anthropic/claude-sonnet-4-5", "minimal", CodeReviewPrompt))
 	require.Contains(t, record, testutil.RanIn(dir))
 }
 

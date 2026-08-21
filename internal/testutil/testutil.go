@@ -204,20 +204,23 @@ func RanIn(dir string) string {
 // scope.
 const ArchitectureGuidelines = "docs/zpecs/architecture.md"
 
-// CodeGuidelines is the guidelines doc the code scope reviews against. It
-// mirrors the path internal/opencode builds for that scope.
-const CodeGuidelines = "docs/zpecs/code.md"
-
 // RanAgainst returns the args record line the fake opencode writes for a
-// review with the model against the guidelines doc. The line matches what
-// internal/opencode builds.
+// review with the model against the guidelines doc, matching what
+// internal/opencode builds for the architecture and prose scopes. The
+// code scope's longer prompt is opencode.CodeReviewPrompt.
 func RanAgainst(model, guidelines string) string {
 	return "args: run --model " + model + " Review the repository against the guidelines in " + guidelines + ".\n"
 }
 
-// RanAgainstVariant returns the args record line the fake opencode writes
-// for a review with the model and variant against the guidelines doc. The
-// line matches what internal/opencode builds.
-func RanAgainstVariant(model, variant, guidelines string) string {
-	return "args: run --model " + model + " --variant " + variant + " Review the repository against the guidelines in " + guidelines + ".\n"
+// RanAgainstMessage returns the args record line the fake opencode writes
+// for a review with the model and the given prompt message.
+func RanAgainstMessage(model, message string) string {
+	return "args: run --model " + model + " " + message + "\n"
+}
+
+// RanAgainstMessageVariant returns the args record line the fake opencode
+// writes for a review with the model and variant and the given prompt
+// message.
+func RanAgainstMessageVariant(model, variant, message string) string {
+	return "args: run --model " + model + " --variant " + variant + " " + message + "\n"
 }
