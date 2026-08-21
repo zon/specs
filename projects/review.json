@@ -1,0 +1,174 @@
+{
+  "title": "CLI Review Specification",
+  "purpose": "Run an opencode review of the repository against the code, architecture, or prose standards.",
+  "requirements": [
+    {
+      "name": "Command Form",
+      "body": "The system SHALL accept a scope of `code`, `architecture`, or `prose` for the review command.",
+      "scenarios": [
+        {
+          "name": "Code scope",
+          "steps": [
+            "GIVEN `zpecs review code`",
+            "WHEN the command runs",
+            "THEN it reviews the repository against the code guidelines"
+          ]
+        },
+        {
+          "name": "Architecture scope",
+          "steps": [
+            "GIVEN `zpecs review architecture`",
+            "WHEN the command runs",
+            "THEN it reviews the repository against the architecture guidelines"
+          ]
+        },
+        {
+          "name": "Prose scope",
+          "steps": [
+            "GIVEN `zpecs review prose`",
+            "WHEN the command runs",
+            "THEN it reviews the repository against the prose guidelines"
+          ]
+        },
+        {
+          "name": "Unknown scope",
+          "steps": [
+            "GIVEN a scope the command does not name",
+            "WHEN the command runs",
+            "THEN it errors and reviews nothing"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Repository Scope",
+      "body": "The system SHALL review the repository the command runs in.",
+      "scenarios": [
+        {
+          "name": "Nested invocation",
+          "steps": [
+            "GIVEN the command runs in a subdirectory of a git repository",
+            "WHEN the command runs",
+            "THEN it reviews the repository at its root"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Model Option",
+      "body": "The system SHALL accept a `--model` option and forward its value to opencode. When the user gives no value, the model is `deepseek/deepseek-v4-flash`.",
+      "scenarios": [
+        {
+          "name": "Default model",
+          "steps": [
+            "GIVEN no `--model`",
+            "WHEN the command runs",
+            "THEN opencode runs with the model `deepseek/deepseek-v4-flash`"
+          ]
+        },
+        {
+          "name": "Custom model",
+          "steps": [
+            "GIVEN `--model anthropic/claude-sonnet-4-5`",
+            "WHEN the command runs",
+            "THEN opencode runs with that model"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Variant Option",
+      "body": "The system SHALL accept a `--variant` option and forward its value to opencode. When the user gives no `--model`, the variant defaults to `high`; when the user gives a `--model`, the variant carries no value.",
+      "scenarios": [
+        {
+          "name": "Default variant",
+          "steps": [
+            "GIVEN no `--model` and no `--variant`",
+            "WHEN the command runs",
+            "THEN opencode runs with the variant `high`"
+          ]
+        },
+        {
+          "name": "Model picks the variant",
+          "steps": [
+            "GIVEN `--model anthropic/claude-sonnet-4-5` and no `--variant`",
+            "WHEN the command runs",
+            "THEN opencode runs with no variant"
+          ]
+        },
+        {
+          "name": "Explicit variant",
+          "steps": [
+            "GIVEN `--variant minimal`",
+            "WHEN the command runs",
+            "THEN opencode runs with the variant `minimal`"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Code Review",
+      "body": "The system SHALL prompt opencode to write each code issue it finds to a `refactor-\u003cslug\u003e.yaml` project rather than editing the code.",
+      "scenarios": [
+        {
+          "name": "Issue becomes a project",
+          "steps": [
+            "GIVEN `zpecs review code`",
+            "AND opencode finds a code issue",
+            "WHEN the command runs",
+            "THEN a `refactor-\u003cslug\u003e.yaml` project appears in `projects/`"
+          ]
+        },
+        {
+          "name": "Existing project is updated",
+          "steps": [
+            "GIVEN `zpecs review code`",
+            "AND a matching `refactor-\u003cslug\u003e.yaml` project already exists",
+            "AND opencode finds another issue in the same refactor",
+            "WHEN the command runs",
+            "THEN the existing project gains the issue"
+          ]
+        },
+        {
+          "name": "No issues",
+          "steps": [
+            "GIVEN `zpecs review code`",
+            "AND opencode finds no code issues",
+            "WHEN the command runs",
+            "THEN no refactor project is written"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Architecture Review",
+      "body": "The system SHALL prompt opencode to write each architecture issue it finds to a `refactor-\u003cslug\u003e.yaml` project rather than editing the code.",
+      "scenarios": [
+        {
+          "name": "Issue becomes a project",
+          "steps": [
+            "GIVEN `zpecs review architecture`",
+            "AND opencode finds an architecture issue",
+            "WHEN the command runs",
+            "THEN a `refactor-\u003cslug\u003e.yaml` project appears in `projects/`"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Prose Review",
+      "body": "The system SHALL prompt opencode to fix each prose issue it finds immediately.",
+      "scenarios": [
+        {
+          "name": "Issue is fixed",
+          "steps": [
+            "GIVEN `zpecs review prose`",
+            "AND opencode finds a prose issue",
+            "WHEN the command runs",
+            "THEN the offending text is edited in place"
+          ]
+        }
+      ]
+    }
+  ]
+}
