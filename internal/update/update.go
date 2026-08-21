@@ -1,9 +1,8 @@
 package update
 
 import (
-	"github.com/zon/specs/internal/clone"
+	"github.com/zon/specs/internal/gitops"
 	"github.com/zon/specs/internal/render"
-	"github.com/zon/specs/internal/repo"
 	"github.com/zon/specs/internal/report"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/targetdir"
@@ -19,7 +18,7 @@ type Options struct {
 
 // Run renders the selected kinds from the source into the target.
 func Run(opts Options) error {
-	root, err := repo.Root()
+	root, err := gitops.Root()
 	if err != nil {
 		return err
 	}
@@ -89,8 +88,8 @@ func updatePair(root, sourceDir, sourceLabel string, p pair) error {
 // repository to clone. Anything else is a local directory to read in
 // place.
 func resolveSource(source string) (dir, label string, cleanup func(), err error) {
-	if clone.IsRemote(source) {
-		dir, cleanup, err = clone.Clone(source)
+	if gitops.IsRemote(source) {
+		dir, cleanup, err = gitops.Clone(source)
 		if err != nil {
 			return "", "", nil, err
 		}

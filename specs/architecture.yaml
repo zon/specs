@@ -4,8 +4,8 @@
 - path: internal/source
   description: Reads and selects skill, agent, and doc definitions from a local source directory and owns the per-kind file layout.
 
-- path: internal/clone
-  description: Clones a repository into a temp dir so a remote source reads like a local one.
+- path: internal/gitops
+  description: Locates the repository root and clones a remote source into a temp dir so the copy reads like a local one.
 
 - path: internal/targetdir
   description: Writes definitions into a repository's target directories under an ownership manifest.
@@ -16,9 +16,6 @@
 - path: internal/report
   description: Formats and prints the lines that report each update run.
 
-- path: internal/repo
-  description: Locates the repository root that contains the working directory.
-
 - path: internal/spec
   description: Parses a spec markdown file into a JSON document.
 
@@ -26,5 +23,5 @@
   description: Provides shared fixtures and helpers for tests.
 
 - path: internal/update
-  description: Orchestrates update runs: resolving the source, rendering definitions into their targets, and reporting each run.
+  description: Orchestrates update runs: resolving the source, rendering definitions into their targets, and reporting each one.
   orchestration: true
