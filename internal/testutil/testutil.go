@@ -161,3 +161,30 @@ func CaptureReport(t *testing.T) func() string {
 	t.Cleanup(func() { report.Out = prev })
 	return buf.String
 }
+
+// FakeOpenCode installs a fake opencode executable on PATH that appends its
+// working directory and arguments to a record file. The returned func reads
+// the record, or "" when opencode has not run yet.
+func FakeOpenCode(t *testing.T) func() string {
+	t.Helper()
+	dir := t.TempDir()
+	record := filepath.Join(dir, "record")
+	script := "#!/bin/sh\n" +
+		"echo \"pwd: $(pwd)\" >> " + record + "\n" +
+		"echo \"args: $*\" >> " + record + "\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "opencode"), []byte(script), 0o755))
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return func() string {
+		content, err := os.ReadFile(record)
+		if os.IsNotExist(err) {
+			return ""
+		}
+		require.NoError(t, err)
+		return string(content)
+	}
+}
+
+// RanIn returns the record line the fake opencode writes for a run in dir.
+func RanIn(dir string) string {
+	return "pwd: " + dir + "\n"
+}

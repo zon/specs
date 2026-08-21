@@ -13,6 +13,8 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/stretchr/testify/require"
+	"github.com/zon/specs/internal/opencode"
+	"github.com/zon/specs/internal/review"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/spec"
 	"github.com/zon/specs/internal/testutil"
@@ -106,6 +108,45 @@ func TestParseUpdate(t *testing.T) {
 	}
 }
 
+// parseReviewArgs parses `review <args>` with the same kong grammar
+// `run` uses. It returns the selected options.
+func parseReviewArgs(t *testing.T, args ...string) (review.Options, error) {
+	t.Helper()
+	var c cli
+	parser, err := kong.New(&c, cliVars)
+	require.NoError(t, err)
+	if _, err := parser.Parse(append([]string{"review"}, args...)); err != nil {
+		return review.Options{}, err
+	}
+	return review.Options{Scope: c.Review.Scope}, nil
+}
+
+func TestParseReview(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		want    review.Options
+		wantErr bool
+	}{
+		{name: "code", args: []string{"code"}, want: review.Options{Scope: opencode.ScopeCode}},
+		{name: "architecture", args: []string{"architecture"}, want: review.Options{Scope: opencode.ScopeArchitecture}},
+		{name: "prose", args: []string{"prose"}, want: review.Options{Scope: opencode.ScopeProse}},
+		{name: "unknown scope", args: []string{"vscode"}, wantErr: true},
+		{name: "missing scope", args: nil, wantErr: true},
+		{name: "unknown flag", args: []string{"--force"}, wantErr: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := parseReviewArgs(t, tc.args...)
+			require.Equal(t, tc.wantErr, err != nil)
+			if err == nil {
+				require.Equal(t, tc.want, got)
+			}
+		})
+	}
+}
+
 func TestParseUpdateEnvOverridesDefault(t *testing.T) {
 	t.Setenv("ZPECS_SOURCE", "/env/src")
 	got, err := parseUpdateArgs(t)
@@ -116,6 +157,7 @@ func TestParseUpdateEnvOverridesDefault(t *testing.T) {
 
 func TestRunRecognizesCommands(t *testing.T) {
 	t.Chdir(testutil.GitRepo(t, nil))
+	testutil.FakeOpenCode(t)
 	t.Setenv("ZPECS_SOURCE", gitCloneSource(t))
 	sourceDir := t.TempDir()
 	cases := []struct {
@@ -136,12 +178,34 @@ func TestRunRecognizesCommands(t *testing.T) {
 		{name: "invalid target", args: []string{"update", "--target", "vscode"}, wantErr: true},
 		{name: "unknown flag", args: []string{"update", "--force"}, wantErr: true},
 		{name: "missing source", args: []string{"update", "--source", "/tmp/nope/does-not-exist"}, wantErr: true},
+		{name: "unknown review scope", args: []string{"review", "vscode"}, wantErr: true},
+		{name: "review missing scope", args: []string{"review"}, wantErr: true},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := run(tc.args)
 			require.Equal(t, tc.wantErr, err != nil)
+		})
+	}
+
+	// Each review case must delegate to opencode, so install a fresh fake
+	// and assert opencode ran. A no-op review.Run would pass an err == nil
+	// check on its own.
+	reviewCases := []struct {
+		name string
+		args []string
+	}{
+		{name: "review code", args: []string{"review", "code"}},
+		{name: "review architecture", args: []string{"review", "architecture"}},
+		{name: "review prose", args: []string{"review", "prose"}},
+	}
+
+	for _, tc := range reviewCases {
+		t.Run(tc.name, func(t *testing.T) {
+			read := testutil.FakeOpenCode(t)
+			require.NoError(t, run(tc.args))
+			require.NotEmpty(t, read(), "review did not delegate to opencode")
 		})
 	}
 }
@@ -195,6 +259,45 @@ func TestBinaryRejectsUnknownCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	cmd := exec.Command(binary, "install")
 	require.Error(t, cmd.Run())
+}
+
+func TestBinaryRunsReviewCommand(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	repoDir := testutil.GitRepo(t, nil)
+	cases := []struct {
+		name string
+		args []string
+		doc  string
+	}{
+		{name: "code", args: []string{"review", "code"}, doc: "docs/zpecs/code.md"},
+		{name: "architecture", args: []string{"review", "architecture"}, doc: "docs/zpecs/architecture.md"},
+		{name: "prose", args: []string{"review", "prose"}, doc: "docs/zpecs/prose.md"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			read := testutil.FakeOpenCode(t)
+			cmd := exec.Command(binary, tc.args...)
+			cmd.Dir = repoDir
+			out, err := cmd.CombinedOutput()
+			require.NoError(t, err, "zpecs %v failed\n%s", tc.args, out)
+			record := read()
+			require.Contains(t, record, "args: run ")
+			require.Contains(t, record, tc.doc)
+			require.Contains(t, record, "pwd: "+repoDir)
+		})
+	}
+}
+
+func TestBinaryRejectsUnknownReviewScope(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	repoDir := testutil.GitRepo(t, nil)
+	read := testutil.FakeOpenCode(t)
+	cmd := exec.Command(binary, "review", "vscode")
+	cmd.Dir = repoDir
+	out, err := cmd.CombinedOutput()
+	require.Error(t, err, "zpecs review vscode unexpectedly succeeded\n%s", out)
+	require.Empty(t, read(), "zpecs review vscode delegated to opencode")
 }
 
 // gitCloneSource returns a temp git repository seeded with source files.

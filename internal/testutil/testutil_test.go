@@ -156,6 +156,31 @@ func TestCaptureReportCaptures(t *testing.T) {
 	require.Equal(t, "hello\n", captured())
 }
 
+func TestFakeOpenCodeReturnsEmptyBeforeInvocation(t *testing.T) {
+	read := FakeOpenCode(t)
+
+	require.Equal(t, "", read())
+}
+
+func TestFakeOpenCodeRecordsInvocation(t *testing.T) {
+	read := FakeOpenCode(t)
+
+	dir := t.TempDir()
+	cmd := exec.Command("opencode", "run", "hello")
+	cmd.Dir = dir
+	require.NoError(t, cmd.Run())
+
+	record := read()
+	require.Contains(t, record, "pwd: "+dir+"\n")
+	require.Contains(t, record, "args: run hello\n")
+}
+
+func TestRanInFormatsTheRecordLine(t *testing.T) {
+	dir := "/some/dir"
+
+	require.Equal(t, "pwd: "+dir+"\n", RanIn(dir))
+}
+
 func runGitErr(dir string, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir

@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
+	"github.com/zon/specs/internal/opencode"
+	"github.com/zon/specs/internal/review"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/spec"
 	"github.com/zon/specs/internal/update"
@@ -30,6 +32,7 @@ var cliVars = kong.Vars{
 type cli struct {
 	Version kong.VersionFlag `name:"version" help:"Print version information and quit"`
 	Update  updateCmd        `cmd:"" help:"renders skills, agents, and docs"`
+	Review  reviewCmd        `cmd:"" help:"reviews the repository against the code, architecture, or prose guidelines"`
 	Convert convertCmd       `cmd:"" help:"turns a spec markdown file into JSON"`
 }
 
@@ -42,6 +45,15 @@ type updateCmd struct {
 
 func (u *updateCmd) Run() error {
 	return update.Run(update.Options{Scope: u.Scope, Source: u.Source, Target: u.Target})
+}
+
+// reviewCmd is the kong grammar for `zpecs review`.
+type reviewCmd struct {
+	Scope opencode.Scope `arg:"" help:"review against the code, architecture, or prose guidelines"`
+}
+
+func (r *reviewCmd) Run() error {
+	return review.Run(review.Options{Scope: r.Scope})
 }
 
 // convertCmd is the kong grammar for `zpecs convert`.
