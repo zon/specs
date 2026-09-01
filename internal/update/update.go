@@ -9,9 +9,11 @@ import (
 )
 
 // Options selects what an update run renders: the scope of kinds to
-// read, the source they come from, and the target to write to.
+// read, the source they come from, the target to write to, and whether
+// a full update also renders agents.
 type Options struct {
 	Scope  source.Scope
+	Agents bool
 	Source string
 	Target string
 }
@@ -27,7 +29,7 @@ func Run(opts Options) error {
 		return err
 	}
 	defer cleanup()
-	for _, p := range pairs(opts.Scope, opts.Target) {
+	for _, p := range pairs(opts.Scope, opts.Target, opts.Agents) {
 		if err := updatePair(root, sourceDir, sourceLabel, p); err != nil {
 			return err
 		}
@@ -43,8 +45,9 @@ type pair struct {
 }
 
 // pairs selects the runs for a scope. Skills and agents write to the
-// named target. Docs write to docs/zpecs.
-func pairs(s source.Scope, targetName string) []pair {
+// named target. Docs write to docs/zpecs. A full update only renders
+// agents when agents is true; the agents scope always renders them.
+func pairs(s source.Scope, targetName string, agents bool) []pair {
 	switch s {
 	case source.ScopeSkills:
 		return []pair{{target: targetName, kinds: []source.Kind{source.Skill}}}
@@ -52,11 +55,14 @@ func pairs(s source.Scope, targetName string) []pair {
 		return []pair{{target: targetName, kinds: []source.Kind{source.Agent}}}
 	case source.ScopeDocs:
 		return []pair{{target: source.Docs, kinds: []source.Kind{source.Doc}}}
-	default:
-		return []pair{
-			{target: targetName, kinds: []source.Kind{source.Skill, source.Agent}},
-			{target: source.Docs, kinds: []source.Kind{source.Doc}},
-		}
+	}
+	targetKinds := []source.Kind{source.Skill}
+	if agents {
+		targetKinds = append(targetKinds, source.Agent)
+	}
+	return []pair{
+		{target: targetName, kinds: targetKinds},
+		{target: source.Docs, kinds: []source.Kind{source.Doc}},
 	}
 }
 

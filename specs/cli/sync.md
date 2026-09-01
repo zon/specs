@@ -67,6 +67,13 @@ The system SHALL render what each command names.
 #### Scenario: Full update
 - GIVEN `update`
 - WHEN the system runs
+- THEN it renders skills for the target
+- AND it syncs docs
+- AND it does not render agents
+
+#### Scenario: Full update with agents
+- GIVEN `update --agents`
+- WHEN the system runs
 - THEN it renders skills and agents for the target
 - AND it syncs docs
 
@@ -78,7 +85,7 @@ The system SHALL render what each command names.
 #### Scenario: Agents only
 - GIVEN `update agents`
 - WHEN the system runs
-- THEN it renders agents and not skills
+- THEN it renders agents and not skills, even without `--agents`
 
 #### Scenario: Docs only
 - GIVEN `update docs`

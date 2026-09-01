@@ -8,15 +8,16 @@ It is a Go program that parses arguments with [kong](https://github.com/alecthom
 
 One command takes an optional scope:
 
-- `update` — render skill and agent definitions, and sync the standards docs
+- `update` — render skill definitions, and sync the standards docs
 - `update skills` — render skill definitions only
 - `update agents` — render agent definitions only
 - `update docs` — sync the standards docs only
 
-All four take the same flags. Docs always go to `docs/zpecs/`, so `--target` only picks where skills and agents go:
+All four take the same flags. A full `update` skips agents unless you pass `--agents`. Docs always go to `docs/zpecs/`, so `--target` only picks where skills and agents go:
 
 | Flag | Meaning |
 |---|---|
+| `--agents` | Also render agents in a full update. Off by default |
 | `--target` | Render for `opencode` (default) or `claude` |
 | `--source` | Path to a local directory, or a repository URL to clone. Omit it to read from GitHub |
 | `--version` | Print the version and quit |

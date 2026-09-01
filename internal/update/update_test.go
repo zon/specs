@@ -47,14 +47,19 @@ func TestUpdatePairReportsTheRun(t *testing.T) {
 func TestPairsSelectsRunsPerScope(t *testing.T) {
 	const targetName = source.Opencode
 	cases := []struct {
-		name  string
-		scope source.Scope
-		want  []pair
+		name   string
+		scope  source.Scope
+		agents bool
+		want   []pair
 	}{
 		{name: "skills", scope: source.ScopeSkills, want: []pair{{target: targetName, kinds: []source.Kind{source.Skill}}}},
 		{name: "agents", scope: source.ScopeAgents, want: []pair{{target: targetName, kinds: []source.Kind{source.Agent}}}},
 		{name: "docs", scope: source.ScopeDocs, want: []pair{{target: source.Docs, kinds: []source.Kind{source.Doc}}}},
 		{name: "all", scope: source.ScopeAll, want: []pair{
+			{target: targetName, kinds: []source.Kind{source.Skill}},
+			{target: source.Docs, kinds: []source.Kind{source.Doc}},
+		}},
+		{name: "all with agents", scope: source.ScopeAll, agents: true, want: []pair{
 			{target: targetName, kinds: []source.Kind{source.Skill, source.Agent}},
 			{target: source.Docs, kinds: []source.Kind{source.Doc}},
 		}},
@@ -62,7 +67,7 @@ func TestPairsSelectsRunsPerScope(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, pairs(tc.scope, targetName))
+			require.Equal(t, tc.want, pairs(tc.scope, targetName, tc.agents))
 		})
 	}
 }
@@ -74,8 +79,32 @@ func TestRunRendersSkillsAndAgents(t *testing.T) {
 	testutil.WriteSkill(t, src, "prose-editor")
 	testutil.WriteAgent(t, src, "code-architect")
 
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Opencode}))
+	testutil.RequireWritten(t, root, source.Opencode, "prose-editor", source.Skill)
+	testutil.RequireWritten(t, root, source.Opencode, "code-architect", source.Agent)
+}
+
+func TestRunSkipsAgentsWithoutTheFlag(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteSkill(t, src, "prose-editor")
+	testutil.WriteAgent(t, src, "code-architect")
+	testutil.WriteDoc(t, src, "prose")
+
 	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Opencode}))
 	testutil.RequireWritten(t, root, source.Opencode, "prose-editor", source.Skill)
+	testutil.RequireNotWritten(t, root, source.Opencode, "code-architect", source.Agent)
+	testutil.RequireWritten(t, root, source.Docs, "prose", source.Doc)
+}
+
+func TestRunAgentsScopeRendersAgentsWithoutTheFlag(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteAgent(t, src, "code-architect")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeAgents, Source: src, Target: source.Opencode}))
 	testutil.RequireWritten(t, root, source.Opencode, "code-architect", source.Agent)
 }
 
@@ -97,7 +126,7 @@ func TestUpdateWritesAgentUnderSourceNameForBothTargets(t *testing.T) {
 	cases := []string{source.Claude, source.Opencode}
 	for _, trgt := range cases {
 		t.Run(trgt, func(t *testing.T) {
-			require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: trgt}))
+			require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: trgt}))
 			testutil.RequireWritten(t, root, trgt, "prose-editor", source.Agent)
 		})
 	}
@@ -110,7 +139,7 @@ func TestUpdateWritesSkillAndAgentToClaude(t *testing.T) {
 	testutil.WriteSkill(t, src, "prose-editor")
 	testutil.WriteAgent(t, src, "prose-editor")
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Claude}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Claude}))
 	testutil.RequireWritten(t, root, source.Claude, "prose-editor", source.Skill)
 	testutil.RequireWritten(t, root, source.Claude, "prose-editor", source.Agent)
 }
@@ -122,7 +151,7 @@ func TestUpdateWritesSkillAndAgentToOpencode(t *testing.T) {
 	testutil.WriteSkill(t, src, "prose-editor")
 	testutil.WriteAgent(t, src, "prose-editor")
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Opencode}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Opencode}))
 	testutil.RequireWritten(t, root, source.Opencode, "prose-editor", source.Skill)
 	testutil.RequireWritten(t, root, source.Opencode, "prose-editor", source.Agent)
 }
@@ -131,11 +160,13 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 	cases := []struct {
 		name      string
 		scope     source.Scope
+		agents    bool
 		wantSkill bool
 		wantAgent bool
 		wantDoc   bool
 	}{
-		{name: "update renders skills, agents, and docs", scope: source.ScopeAll, wantSkill: true, wantAgent: true, wantDoc: true},
+		{name: "update renders skills, agents, and docs", scope: source.ScopeAll, agents: true, wantSkill: true, wantAgent: true, wantDoc: true},
+		{name: "update renders skills and docs without the agents flag", scope: source.ScopeAll, wantSkill: true, wantDoc: true},
 		{name: "update skills renders skills only", scope: source.ScopeSkills, wantSkill: true},
 		{name: "update agents renders agents only", scope: source.ScopeAgents, wantAgent: true},
 		{name: "update docs renders docs only", scope: source.ScopeDocs, wantDoc: true},
@@ -150,7 +181,7 @@ func TestUpdateRendersWhatTheCommandNames(t *testing.T) {
 			testutil.WriteAgent(t, src, "code-architect")
 			testutil.WriteDoc(t, src, "prose")
 
-			require.NoError(t, Run(Options{Scope: tc.scope, Source: src, Target: source.Opencode}))
+			require.NoError(t, Run(Options{Scope: tc.scope, Agents: tc.agents, Source: src, Target: source.Opencode}))
 
 			if tc.wantSkill {
 				testutil.RequireWritten(t, root, source.Opencode, "prose-editor", source.Skill)
@@ -181,7 +212,7 @@ func TestUpdateWritesToRepositoryRoot(t *testing.T) {
 	require.NoError(t, os.MkdirAll(work, 0o755))
 	t.Chdir(work)
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Opencode}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Opencode}))
 
 	testutil.RequireWritten(t, root, source.Opencode, "prose-editor", source.Skill)
 	testutil.RequireNotWritten(t, work, source.Opencode, "prose-editor", source.Skill)
@@ -214,7 +245,7 @@ func TestUpdateLeavesForeignFileAlone(t *testing.T) {
 
 	testutil.SeedForeignFile(t, root, source.Claude, "prose-editor", source.Agent, "manual content\n")
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Claude}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Claude}))
 
 	require.Equal(t, "manual content\n", testutil.WrittenContent(t, root, source.Claude, "prose-editor", source.Agent))
 }
@@ -225,10 +256,10 @@ func TestUpdateReplacesOwnedFiles(t *testing.T) {
 	src := t.TempDir()
 	testutil.WriteAgentBody(t, src, "prose-editor", "First.\n")
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Opencode}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Opencode}))
 
 	testutil.WriteAgentBody(t, src, "prose-editor", "Second.\n")
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Opencode}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Opencode}))
 
 	require.Contains(t, testutil.WrittenContent(t, root, source.Opencode, "prose-editor", source.Agent), "Second.")
 }
@@ -252,12 +283,12 @@ func TestUpdateRemovesStaleAgent(t *testing.T) {
 	t.Chdir(root)
 	src := testutil.AgentSource(t, "prose-editor")
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Claude}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Claude}))
 	testutil.RequireWritten(t, root, source.Claude, "prose-editor", source.Agent)
 
 	require.NoError(t, os.RemoveAll(filepath.Join(src, "agents")))
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Claude}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Claude}))
 	testutil.RequireNotWritten(t, root, source.Claude, "prose-editor", source.Agent)
 }
 
@@ -269,7 +300,7 @@ func TestUpdateAllWritesDocs(t *testing.T) {
 	testutil.WriteAgent(t, src, "code-architect")
 	testutil.WriteDoc(t, src, "prose")
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Opencode}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Opencode}))
 	testutil.RequireWritten(t, root, source.Opencode, "prose-editor", source.Skill)
 	testutil.RequireWritten(t, root, source.Opencode, "code-architect", source.Agent)
 	testutil.RequireWritten(t, root, source.Docs, "prose", source.Doc)
@@ -282,7 +313,7 @@ func TestUpdateAllWritesDocsToTheTargetItNames(t *testing.T) {
 	testutil.WriteAgent(t, src, "code-architect")
 	testutil.WriteDoc(t, src, "prose")
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Claude}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Claude}))
 	testutil.RequireWritten(t, root, source.Claude, "code-architect", source.Agent)
 	testutil.RequireWritten(t, root, source.Docs, "prose", source.Doc)
 }
@@ -391,7 +422,7 @@ func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
 	testutil.WriteSkill(t, src, "prose-editor")
 	testutil.WriteAgent(t, src, "code-architect")
 
-	require.NoError(t, Run(Options{Scope: source.ScopeAll, Source: src, Target: source.Opencode}))
+	require.NoError(t, Run(Options{Scope: source.ScopeAll, Agents: true, Source: src, Target: source.Opencode}))
 	testutil.RequireWritten(t, root, source.Opencode, "prose-editor", source.Skill)
 	testutil.RequireWritten(t, root, source.Opencode, "code-architect", source.Agent)
 

@@ -41,12 +41,13 @@ type cli struct {
 // updateCmd is the kong grammar for `zpecs update`.
 type updateCmd struct {
 	Scope  source.Scope `arg:"" default:"all" help:"render skills, agents, and docs, or one of them"`
+	Agents bool         `name:"agents" default:"false" help:"also render agents in a full update"`
 	Source string       `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
 	Target string       `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
 }
 
 func (u *updateCmd) Run() error {
-	return update.Run(update.Options{Scope: u.Scope, Source: u.Source, Target: u.Target})
+	return update.Run(update.Options{Scope: u.Scope, Agents: u.Agents, Source: u.Source, Target: u.Target})
 }
 
 // reviewCmd is the kong grammar for `zpecs review`.

@@ -71,7 +71,7 @@ func parseUpdateArgs(t *testing.T, args ...string) (update.Options, error) {
 	if _, err := parser.Parse(append([]string{"update"}, args...)); err != nil {
 		return update.Options{}, err
 	}
-	return update.Options{Scope: c.Update.Scope, Source: c.Update.Source, Target: c.Update.Target}, nil
+	return update.Options{Scope: c.Update.Scope, Agents: c.Update.Agents, Source: c.Update.Source, Target: c.Update.Target}, nil
 }
 
 func TestParseUpdate(t *testing.T) {
@@ -85,11 +85,14 @@ func TestParseUpdate(t *testing.T) {
 		{name: "all scope", args: []string{"all"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: defaultSourceURL}},
 		{name: "scope", args: []string{"skills"}, want: update.Options{Scope: source.ScopeSkills, Target: source.Opencode, Source: defaultSourceURL}},
 		{name: "docs scope", args: []string{"docs"}, want: update.Options{Scope: source.ScopeDocs, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "agents", args: []string{"--agents"}, want: update.Options{Scope: source.ScopeAll, Agents: true, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "agents equals", args: []string{"--agents=true"}, want: update.Options{Scope: source.ScopeAll, Agents: true, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "agents false", args: []string{"--agents=false"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: defaultSourceURL}},
 		{name: "claude target", args: []string{"--target", "claude"}, want: update.Options{Scope: source.ScopeAll, Target: source.Claude, Source: defaultSourceURL}},
 		{name: "claude target equals", args: []string{"--target=claude"}, want: update.Options{Scope: source.ScopeAll, Target: source.Claude, Source: defaultSourceURL}},
 		{name: "source", args: []string{"--source", "/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: "/tmp/src"}},
 		{name: "source equals", args: []string{"--source=/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: "/tmp/src"}},
-		{name: "all together", args: []string{"agents", "--source", "/tmp/src", "--target", "claude"}, want: update.Options{Scope: source.ScopeAgents, Target: source.Claude, Source: "/tmp/src"}},
+		{name: "all together", args: []string{"agents", "--agents", "--source", "/tmp/src", "--target", "claude"}, want: update.Options{Scope: source.ScopeAgents, Agents: true, Target: source.Claude, Source: "/tmp/src"}},
 		{name: "unknown scope", args: []string{"vscode"}, wantErr: true},
 		{name: "unknown target", args: []string{"--target", "vscode"}, wantErr: true},
 		{name: "missing target value", args: []string{"--target"}, wantErr: true},
