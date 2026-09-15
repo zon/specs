@@ -1,6 +1,6 @@
 workflow:
   namespace: ralph-specs
-model: deepseek/deepseek-v4-flash
+model: deepseek/deepseek-flash
 variant: high
 agent: code-architect
 before:
