@@ -1,34 +1,34 @@
 - path: cmd/zpecs
-  description: Parses the command line and runs each command's work.
+  description: Runs the CLI commands.
 
 - path: internal/source
-  description: Reads and selects skill, agent, and doc definitions from a local source directory and owns the per-kind file layout.
+  description: Reads definition files from a local source directory.
 
 - path: internal/gitops
-  description: Locates the repository root and clones a remote source into a temp dir so the copy reads like a local one.
+  description: Resolves the repository root and clones remote sources.
 
 - path: internal/opencode
-  description: Runs the opencode CLI to review a repository against the guidelines for a scope.
+  description: Runs opencode to review a repository.
 
 - path: internal/targetdir
-  description: Writes definitions into a repository's target directories under an ownership manifest.
+  description: Writes definitions into a repository's target directories.
 
 - path: internal/render
-  description: Parses definition files and produces each one's text for its target, verbatim for skills and docs.
+  description: Produces each definition's text for its target.
 
 - path: internal/report
-  description: Formats and prints the lines that report each update run.
+  description: Prints the report lines for a run.
 
 - path: internal/spec
-  description: Parses a spec markdown file into a JSON document.
+  description: Parses a spec into a JSON document.
 
 - path: internal/testutil
   description: Provides shared fixtures and helpers for tests.
 
 - path: internal/update
-  description: Orchestrates update runs: resolving the source, rendering definitions into their targets, and reporting each one.
+  description: Orchestrates update runs.
   orchestration: true
 
 - path: internal/review
-  description: Orchestrates review runs: locating the repository root and delegating them to opencode.
+  description: Orchestrates review runs.
   orchestration: true
