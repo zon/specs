@@ -83,6 +83,16 @@ func TestSkillSourceCreatesSkill(t *testing.T) {
 	require.Equal(t, "# seed\n", string(content))
 }
 
+func TestWriteSkillBodyWritesTheContent(t *testing.T) {
+	dir := t.TempDir()
+
+	WriteSkillBody(t, dir, "seed", "content\n")
+
+	content, err := os.ReadFile(filepath.Join(dir, "skills", "seed", "SKILL.md"))
+	require.NoError(t, err)
+	require.Equal(t, "content\n", string(content))
+}
+
 func TestAgentSourceCreatesAgent(t *testing.T) {
 	dir := AgentSource(t, "seed")
 

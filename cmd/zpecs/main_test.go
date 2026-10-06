@@ -71,7 +71,7 @@ func parseUpdateArgs(t *testing.T, args ...string) (update.Options, error) {
 	if _, err := parser.Parse(append([]string{"update"}, args...)); err != nil {
 		return update.Options{}, err
 	}
-	return update.Options{Scope: c.Update.Scope, Agents: c.Update.Agents, Source: c.Update.Source, Target: c.Update.Target}, nil
+	return c.Update.options(), nil
 }
 
 func TestParseUpdate(t *testing.T) {
@@ -88,6 +88,9 @@ func TestParseUpdate(t *testing.T) {
 		{name: "agents", args: []string{"--agents"}, want: update.Options{Scope: source.ScopeAll, Agents: true, Target: source.Opencode, Source: defaultSourceURL}},
 		{name: "agents equals", args: []string{"--agents=true"}, want: update.Options{Scope: source.ScopeAll, Agents: true, Target: source.Opencode, Source: defaultSourceURL}},
 		{name: "agents false", args: []string{"--agents=false"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "orchestration", args: []string{"--orchestration"}, want: update.Options{Scope: source.ScopeAll, Orchestration: true, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "orchestration equals", args: []string{"--orchestration=true"}, want: update.Options{Scope: source.ScopeAll, Orchestration: true, Target: source.Opencode, Source: defaultSourceURL}},
+		{name: "orchestration false", args: []string{"--orchestration=false"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: defaultSourceURL}},
 		{name: "claude target", args: []string{"--target", "claude"}, want: update.Options{Scope: source.ScopeAll, Target: source.Claude, Source: defaultSourceURL}},
 		{name: "claude target equals", args: []string{"--target=claude"}, want: update.Options{Scope: source.ScopeAll, Target: source.Claude, Source: defaultSourceURL}},
 		{name: "source", args: []string{"--source", "/tmp/src"}, want: update.Options{Scope: source.ScopeAll, Target: source.Opencode, Source: "/tmp/src"}},
@@ -265,6 +268,31 @@ func TestBinaryRunsEachUpdateCommand(t *testing.T) {
 		cmd.Env = append(os.Environ(), "ZPECS_SOURCE="+src)
 		out, err := cmd.CombinedOutput()
 		require.NoError(t, err, "zpecs %v failed\n%s", tc.args, out)
+	}
+}
+
+func TestUpdateHelpListsOrchestrationFlag(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	out, err := exec.Command(binary, "update", "--help").CombinedOutput()
+	require.NoError(t, err, "zpecs update --help failed\n%s", out)
+	require.Contains(t, string(out), "--orchestration")
+}
+
+// TestDocsDocumentOrchestrationFlag checks that the user-facing docs
+// describe the --orchestration flag and state it is off by default.
+func TestDocsDocumentOrchestrationFlag(t *testing.T) {
+	paths := []string{
+		filepath.Join("..", "..", "README.md"),
+		filepath.Join("..", "..", "docs", "cli", "README.md"),
+	}
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			data, err := os.ReadFile(path)
+			require.NoError(t, err)
+			text := strings.ToLower(string(data))
+			require.Contains(t, text, "--orchestration")
+			require.Contains(t, text, "off by default")
+		})
 	}
 }
 

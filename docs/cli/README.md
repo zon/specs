@@ -18,6 +18,7 @@ All four take the same flags. A full `update` skips agents unless you pass `--ag
 | Flag | Meaning |
 |---|---|
 | `--agents` | Also render agents in a full update. Off by default |
+| `--orchestration` | Also render orchestration-only content. Off by default |
 | `--target` | Render for `opencode` (default) or `claude` |
 | `--source` | Path to a local directory, or a repository URL to clone. Omit it to read from GitHub |
 | `--version` | Print the version and quit |

@@ -1,6 +1,8 @@
 package update
 
 import (
+	"strings"
+
 	"github.com/zon/specs/internal/gitops"
 	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/report"
@@ -10,12 +12,13 @@ import (
 
 // Options selects what an update run renders: the scope of kinds to
 // read, the source they come from, the target to write to, and whether
-// a full update also renders agents.
+// a full update also renders agents and enables orchestration.
 type Options struct {
-	Scope  source.Scope
-	Agents bool
-	Source string
-	Target string
+	Scope         source.Scope
+	Agents        bool
+	Orchestration bool
+	Source        string
+	Target        string
 }
 
 // Run renders the selected kinds from the source into the target.
@@ -29,8 +32,9 @@ func Run(opts Options) error {
 		return err
 	}
 	defer cleanup()
+	features := render.Enabled(opts.Orchestration)
 	for _, p := range pairs(opts.Scope, opts.Target, opts.Agents) {
-		if err := updatePair(root, sourceDir, sourceLabel, p); err != nil {
+		if err := updatePair(root, sourceDir, sourceLabel, p, features); err != nil {
 			return err
 		}
 	}
@@ -68,7 +72,7 @@ func pairs(s source.Scope, targetName string, agents bool) []pair {
 
 // updatePair renders a pair's definitions into its target under root.
 // It then reports the run.
-func updatePair(root, sourceDir, sourceLabel string, p pair) error {
+func updatePair(root, sourceDir, sourceLabel string, p pair, features render.Features) error {
 	defs, err := source.ReadKinds(p.kinds, sourceDir)
 	if err != nil {
 		return err
@@ -77,16 +81,42 @@ func updatePair(root, sourceDir, sourceLabel string, p pair) error {
 	if err != nil {
 		return err
 	}
+	defs, texts, err := renderDefs(defs, render.ForTarget(p.target, features))
+	if err != nil {
+		return err
+	}
 	if _, err := targetdir.RemoveStale(root, p.target, owned, defs, p.kinds...); err != nil {
 		return err
 	}
-	if err := targetdir.WriteAll(root, p.target, defs, render.ForTarget(p.target), owned); err != nil {
+	content := func(d source.Definition) (string, error) { return texts[d], nil }
+	if err := targetdir.WriteAll(root, p.target, defs, content, owned); err != nil {
 		return err
 	}
 	if err := targetdir.SaveOwned(root, p.target, owned); err != nil {
 		return err
 	}
 	return report.Summary(p.kinds, p.target, sourceLabel, len(defs))
+}
+
+// renderDefs renders each definition with content and returns the ones
+// whose rendered text is not blank, keyed by definition. A definition
+// that renders to nothing is dropped, so the run neither writes it nor
+// records it as owned, and a file it wrote before is removed as stale.
+func renderDefs(defs []source.Definition, content func(source.Definition) (string, error)) ([]source.Definition, map[source.Definition]string, error) {
+	texts := make(map[source.Definition]string, len(defs))
+	kept := make([]source.Definition, 0, len(defs))
+	for _, d := range defs {
+		text, err := content(d)
+		if err != nil {
+			return nil, nil, err
+		}
+		if strings.TrimSpace(text) == "" {
+			continue
+		}
+		texts[d] = text
+		kept = append(kept, d)
+	}
+	return kept, texts, nil
 }
 
 // resolveSource returns the directory the definitions come from, the

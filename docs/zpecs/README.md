@@ -10,8 +10,8 @@ The document formats and standards for spec-driven development with AI coding ag
 
 ## Standards
 
-- [Orchestration](orchestration.md) — separates coordination logic from implementation detail
-- [Architecture](architecture.md) — component placement, and what belongs in each component type
+{{if .orchestration}}- [Orchestration](orchestration.md) — separates coordination logic from implementation detail
+{{end}}- [Architecture](architecture.md) — component placement, and what belongs in each component type
 - [Writing Requirements](requirements.md) — what makes a good unit of work
 - [Agent Prompts](prompts.md) — how to structure a single-task prompt
 - [Dependencies](dependencies.md) — when to use one instead of writing your own
