@@ -3,6 +3,7 @@ package render
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -487,6 +488,32 @@ func TestDefinitionReportsInvalidTemplate(t *testing.T) {
 
 	require.ErrorContains(t, err, "rendering")
 	require.Contains(t, err.Error(), path)
+}
+
+// TestRepositoryDocsGateOrchestration checks this repository's own docs.
+// With the feature off, no docs/zpecs doc mentions orchestration or links
+// to the orchestration document. With it on, the orchestration document
+// returns and the other docs may link to it.
+func TestRepositoryDocsGateOrchestration(t *testing.T) {
+	paths, err := filepath.Glob(filepath.Join("..", "..", "docs", "zpecs", "*.md"))
+	require.NoError(t, err)
+	require.NotEmpty(t, paths)
+
+	for _, path := range paths {
+		name := strings.TrimSuffix(filepath.Base(path), ".md")
+		d := source.Definition{Kind: source.Doc, Name: name, Path: path}
+
+		off, err := definition(d, source.Opencode, Features{})
+		require.NoError(t, err)
+		require.NotContains(t, strings.ToLower(off), "orchestrat", "%s mentions orchestration with the feature off", name)
+		require.NotContains(t, off, "orchestration.md", "%s links to orchestration with the feature off", name)
+
+		on, err := definition(d, source.Opencode, Features{Orchestration: true})
+		require.NoError(t, err)
+		if name == "orchestration" {
+			require.Contains(t, on, "Orchestration", "the orchestration doc returns with the feature on")
+		}
+	}
 }
 
 // writeDefinitionFile writes content to rel in a fresh temp dir and

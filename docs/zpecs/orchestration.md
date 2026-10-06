@@ -1,4 +1,4 @@
-# Orchestration Pattern
+{{if .orchestration}}# Orchestration Pattern
 
 Orchestration is a pattern for structuring domain logic. An orchestration sequences steps, enforces domain conditions, and delegates the work to other modules.
 
@@ -82,4 +82,4 @@ Record orchestration modules in `specs/architecture.yaml`. See [Architecture For
 ## What Orchestrations Are Not
 
 - **Not a spec.** Orchestrations do not define behavioral guarantees. Put those in a [spec](specs.md).
-- **Not a branching tree.** Orchestrations should be exhaustive but minimize paths. If an orchestration has many branches, that is a signal to simplify the design, not to add more cases.
+- **Not a branching tree.** Orchestrations should be exhaustive but minimize paths. If an orchestration has many branches, that is a signal to simplify the design, not to add more cases.{{end}}

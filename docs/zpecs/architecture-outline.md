@@ -11,19 +11,19 @@ The architecture document lives at **`/specs/architecture.yaml`** and describes 
 The architecture document is a YAML list. A component is a collection of resources that serve one concern: source code, scripts, runtimes, assets, or config. Each entry has the following fields:
 
 - **path** (required, string): The file path or directory path where the component lives. Relative to the repo root.
-- **description** (required, string): A high-level overview of the component in one short sentence. State what it is for, not what it contains. Do not list behaviors, method names, routes, interfaces, or error types. Details like these churn every time the component grows.
-- **orchestration** (optional, boolean): Whether the component is an [orchestration module](glossary.md#orchestration-module) rather than an [implementation module](glossary.md#implementation-module). Defaults to `false` if omitted.
+- **description** (required, string): A high-level overview of the component in one short sentence. State what it is for, not what it contains. Do not list behaviors, method names, routes, interfaces, or error types. Details like these churn every time the component grows.{{if .orchestration}}
+- **orchestration** (optional, boolean): Whether the component is an [orchestration module](glossary.md#orchestration-module) rather than an [implementation module](glossary.md#implementation-module). Defaults to `false` if omitted.{{end}}
 
 ## Example
 
 ```yaml
 - path: cmd/myapp
-  description: Wires dependencies and starts the server.
-  orchestration: true
+  description: Wires dependencies and starts the server.{{if .orchestration}}
+  orchestration: true{{end}}
 
 - path: internal/orders
-  description: Coordinates the order lifecycle.
-  orchestration: true
+  description: Coordinates the order lifecycle.{{if .orchestration}}
+  orchestration: true{{end}}
 
 - path: internal/postgres
   description: Stores domain data in PostgreSQL.

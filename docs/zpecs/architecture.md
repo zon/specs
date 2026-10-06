@@ -14,8 +14,8 @@ Keep the component set as small as it can be. Each component should earn its pla
 
 Create a new component only for one of these reasons:
 
-- **Separate orchestration from implementation.** Create one component for coordination and one for the low-level work it delegates. See [Orchestration Pattern](orchestration.md).
-- **Separate major concerns.** Give each major concern its own [deep module](glossary.md#deep-module): a simple interface over a complex implementation.
+{{if .orchestration}}- **Separate orchestration from implementation.** Create one component for coordination and one for the low-level work it delegates. See [Orchestration Pattern](orchestration.md).
+{{end}}- **Separate major concerns.** Give each major concern its own [deep module](glossary.md#deep-module): a simple interface over a complex implementation.
 - **Share common logic.** Move logic that several major concerns use into a shared component.
 
 When none of these apply, add the code to an existing component.
@@ -26,9 +26,9 @@ Look for a component whose only caller is one other component. When two componen
 
 ## Component Types
 
-`specs/architecture.yaml` sets each component's type: [implementation module](glossary.md#implementation-module) by default, [orchestration module](glossary.md#orchestration-module) when it sets `orchestration: true`. A component with no code is neither.
+`specs/architecture.yaml` sets each component's type: [implementation module](glossary.md#implementation-module) by default{{if .orchestration}}, [orchestration module](glossary.md#orchestration-module) when it sets `orchestration: true`{{end}}. A component with no code is neither.
 
-Coordination logic belongs in an [orchestration module](glossary.md#orchestration-module), low-level work in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
+{{if .orchestration}}Coordination logic belongs in an [orchestration module](glossary.md#orchestration-module), low-level work in an [implementation module](glossary.md#implementation-module). See [Orchestration Pattern](orchestration.md).
 
 ### Orchestration Modules
 
@@ -37,7 +37,7 @@ Coordination logic belongs in an [orchestration module](glossary.md#orchestratio
 - If an orchestration module is accumulating logic that is not pure coordination, move that logic into an implementation module.
 - Split a growing orchestration module along deep concern boundaries.
 
-### Implementation Modules
+{{end}}### Implementation Modules
 
 - Keep each component focused on its declared concern. Do not extend a component's scope without updating `specs/architecture.yaml`.
 - Prefer deepening an existing component over creating a new one for the same concern.
@@ -47,4 +47,4 @@ Coordination logic belongs in an [orchestration module](glossary.md#orchestratio
 
 ## Related
 
-- [Glossary](glossary.md) — definitions of deep, pure, orchestration, and implementation modules
+- [Glossary](glossary.md) — definitions of deep, pure,{{if .orchestration}} orchestration,{{end}} and implementation modules
