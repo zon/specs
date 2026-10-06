@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/testutil"
 )
@@ -39,7 +40,7 @@ func TestUpdatePairReportsTheRun(t *testing.T) {
 	src := testutil.SkillSource(t, "prose-editor")
 	reported := testutil.CaptureReport(t)
 
-	err := updatePair(root, src, src, pair{target: source.Opencode, kinds: []source.Kind{source.Skill}})
+	err := updatePair(root, src, src, pair{target: source.Opencode, kinds: []source.Kind{source.Skill}}, render.Features{})
 	require.NoError(t, err)
 	require.Contains(t, reported(), src)
 }

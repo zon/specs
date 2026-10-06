@@ -8,9 +8,24 @@ import (
 	"github.com/zon/specs/internal/source"
 )
 
+// Features names the optional feature areas a run enables.
+type Features map[string]bool
+
+// Orchestration is the feature name for orchestration-only content.
+const Orchestration = "orchestration"
+
+// Enabled returns the feature names a run enables. Every feature
+// defaults to off.
+func Enabled(orchestration bool) Features {
+	if !orchestration {
+		return Features{}
+	}
+	return Features{Orchestration: true}
+}
+
 // definition returns a definition's text for a target. Skills and docs
 // return their contents verbatim. It parses and renders agents.
-func definition(d source.Definition, targetName string) (string, error) {
+func definition(d source.Definition, targetName string, features Features) (string, error) {
 	if d.Kind == source.Skill || d.Kind == source.Doc {
 		raw, err := os.ReadFile(d.Path)
 		if err != nil {
@@ -29,9 +44,9 @@ func definition(d source.Definition, targetName string) (string, error) {
 }
 
 // ForTarget returns the function that renders each definition for a target.
-func ForTarget(targetName string) func(source.Definition) (string, error) {
+func ForTarget(targetName string, features Features) func(source.Definition) (string, error) {
 	return func(d source.Definition) (string, error) {
-		return definition(d, targetName)
+		return definition(d, targetName, features)
 	}
 }
 

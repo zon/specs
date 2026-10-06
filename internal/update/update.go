@@ -10,12 +10,13 @@ import (
 
 // Options selects what an update run renders: the scope of kinds to
 // read, the source they come from, the target to write to, and whether
-// a full update also renders agents.
+// a full update also renders agents and enables orchestration.
 type Options struct {
-	Scope  source.Scope
-	Agents bool
-	Source string
-	Target string
+	Scope         source.Scope
+	Agents        bool
+	Orchestration bool
+	Source        string
+	Target        string
 }
 
 // Run renders the selected kinds from the source into the target.
@@ -29,8 +30,9 @@ func Run(opts Options) error {
 		return err
 	}
 	defer cleanup()
+	features := render.Enabled(opts.Orchestration)
 	for _, p := range pairs(opts.Scope, opts.Target, opts.Agents) {
-		if err := updatePair(root, sourceDir, sourceLabel, p); err != nil {
+		if err := updatePair(root, sourceDir, sourceLabel, p, features); err != nil {
 			return err
 		}
 	}
@@ -68,7 +70,7 @@ func pairs(s source.Scope, targetName string, agents bool) []pair {
 
 // updatePair renders a pair's definitions into its target under root.
 // It then reports the run.
-func updatePair(root, sourceDir, sourceLabel string, p pair) error {
+func updatePair(root, sourceDir, sourceLabel string, p pair, features render.Features) error {
 	defs, err := source.ReadKinds(p.kinds, sourceDir)
 	if err != nil {
 		return err
@@ -80,7 +82,7 @@ func updatePair(root, sourceDir, sourceLabel string, p pair) error {
 	if _, err := targetdir.RemoveStale(root, p.target, owned, defs, p.kinds...); err != nil {
 		return err
 	}
-	if err := targetdir.WriteAll(root, p.target, defs, render.ForTarget(p.target), owned); err != nil {
+	if err := targetdir.WriteAll(root, p.target, defs, render.ForTarget(p.target, features), owned); err != nil {
 		return err
 	}
 	if err := targetdir.SaveOwned(root, p.target, owned); err != nil {
