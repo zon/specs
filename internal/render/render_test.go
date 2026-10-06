@@ -516,6 +516,49 @@ func TestRepositoryDocsGateOrchestration(t *testing.T) {
 	}
 }
 
+// TestRepositorySkillsAndAgentsGateOrchestration checks this repository's
+// own skills and agents. With the feature off, no written definition
+// mentions orchestration or links to the orchestration document. With it
+// on, the definitions that carry orchestration guidance return it.
+func TestRepositorySkillsAndAgentsGateOrchestration(t *testing.T) {
+	skillPaths, err := filepath.Glob(filepath.Join("..", "..", "skills", "*", "SKILL.md"))
+	require.NoError(t, err)
+	require.NotEmpty(t, skillPaths)
+
+	agentPaths, err := filepath.Glob(filepath.Join("..", "..", "agents", "*.md"))
+	require.NoError(t, err)
+	require.NotEmpty(t, agentPaths)
+
+	var defs []source.Definition
+	for _, path := range skillPaths {
+		defs = append(defs, source.Definition{Kind: source.Skill, Name: filepath.Base(filepath.Dir(path)), Path: path})
+	}
+	for _, path := range agentPaths {
+		defs = append(defs, source.Definition{Kind: source.Agent, Name: strings.TrimSuffix(filepath.Base(path), ".md"), Path: path})
+	}
+
+	gated := map[string]bool{
+		"write-architecture": true,
+		"code-architect":     true,
+		"component-reviewer": true,
+	}
+
+	for _, target := range []string{source.Claude, source.Opencode} {
+		for _, d := range defs {
+			off, err := definition(d, target, Features{})
+			require.NoError(t, err)
+			require.NotContains(t, strings.ToLower(off), "orchestrat", "%s/%s mentions orchestration with the feature off", d.Name, target)
+			require.NotContains(t, off, "orchestration.md", "%s/%s links to orchestration with the feature off", d.Name, target)
+
+			on, err := definition(d, target, Features{Orchestration: true})
+			require.NoError(t, err)
+			if gated[d.Name] {
+				require.Contains(t, strings.ToLower(on), "orchestrat", "%s/%s restores orchestration with the feature on", d.Name, target)
+			}
+		}
+	}
+}
+
 // writeDefinitionFile writes content to rel in a fresh temp dir and
 // returns the path.
 func writeDefinitionFile(t *testing.T, rel, content string) string {
