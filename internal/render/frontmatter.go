@@ -2,7 +2,6 @@ package render
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -21,20 +20,6 @@ type fields struct {
 type content struct {
 	fields fields
 	body   string
-}
-
-// read parses the definition at path into fields and body. A file without
-// frontmatter yields zero fields and its whole content as the body.
-func read(path string) (content, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return content{}, fmt.Errorf("reading %s: %w", path, err)
-	}
-	out, err := parse(string(raw))
-	if err != nil {
-		return content{}, fmt.Errorf("parsing %s: %w", path, err)
-	}
-	return out, nil
 }
 
 // parse reads the YAML block between the leading and closing --- lines,

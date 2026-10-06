@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/template"
 
 	"github.com/zon/specs/internal/source"
 )
@@ -23,24 +24,48 @@ func Enabled(orchestration bool) Features {
 	return Features{Orchestration: true}
 }
 
-// definition returns a definition's text for a target. Skills and docs
-// return their contents verbatim. It parses and renders agents.
+// definition returns a definition's text for a target. It reads the
+// definition file and renders it through the template with the enabled
+// features. Skills and docs return the rendered text. It parses and frames
+// agents.
 func definition(d source.Definition, targetName string, features Features) (string, error) {
-	if d.Kind == source.Skill || d.Kind == source.Doc {
-		raw, err := os.ReadFile(d.Path)
-		if err != nil {
-			return "", fmt.Errorf("reading %s: %w", d.Path, err)
-		}
-		return string(raw), nil
+	raw, err := os.ReadFile(d.Path)
+	if err != nil {
+		return "", fmt.Errorf("reading %s: %w", d.Path, err)
 	}
-	content, err := read(d.Path)
+	text, err := renderTemplate(string(raw), d.Path, features)
 	if err != nil {
 		return "", err
+	}
+	if d.Kind == source.Skill || d.Kind == source.Doc {
+		return text, nil
+	}
+	content, err := parse(text)
+	if err != nil {
+		return "", fmt.Errorf("parsing %s: %w", d.Path, err)
 	}
 	if targetName == source.Claude {
 		return claudeAgent(content.fields, content.body), nil
 	}
 	return opencodeAgent(content.fields, content.body)
+}
+
+// renderTemplate executes raw as a text/template with features as data. A
+// missing feature is false. A definition gates optional content with
+// {{if .orchestration}} ... {{end}}. The markers sit without their own
+// line, or trim with {{- and -}}, so a disabled block leaves no blank
+// line or dangling list punctuation. A definition writes a literal {{ with
+// the {{"{{"}} escape. A template without actions renders verbatim.
+func renderTemplate(raw, path string, features Features) (string, error) {
+	tmpl, err := template.New("definition").Parse(raw)
+	if err != nil {
+		return "", fmt.Errorf("rendering %s: %w", path, err)
+	}
+	var out strings.Builder
+	if err := tmpl.Execute(&out, features); err != nil {
+		return "", fmt.Errorf("rendering %s: %w", path, err)
+	}
+	return out.String(), nil
 }
 
 // ForTarget returns the function that renders each definition for a target.
