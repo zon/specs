@@ -1,8 +1,10 @@
 package update
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -507,6 +509,72 @@ func TestUpdateGatedLinkDisappearsAndReturns(t *testing.T) {
 	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Source: src, Target: source.Opencode}))
 	on := testutil.WrittenContent(t, root, source.Docs, "architecture", source.Doc)
 	require.Contains(t, on, link)
+}
+
+// TestUpdateOnThisRepositoryGatesOrchestration runs an update against this
+// repository's own definitions. With the flag off, the run writes no
+// orchestration document and no written file links to it. With the flag on,
+// the document returns and a file links to it.
+func TestUpdateOnThisRepositoryGatesOrchestration(t *testing.T) {
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	require.NoError(t, err)
+
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	opts := Options{Scope: source.ScopeAll, Source: repoRoot, Target: source.Opencode}
+
+	require.NoError(t, Run(opts))
+	require.NoFileExists(t, filepath.Join(root, "docs", "zpecs", "orchestration.md"))
+	requireNotLinked(t, root, "orchestration.md")
+
+	opts.Orchestration = true
+	require.NoError(t, Run(opts))
+	require.FileExists(t, filepath.Join(root, "docs", "zpecs", "orchestration.md"))
+	requireLinked(t, root, "orchestration.md")
+}
+
+// requireNotLinked asserts no markdown file under root contains target.
+func requireNotLinked(t *testing.T, root, target string) {
+	t.Helper()
+	for _, path := range markdownFiles(t, root) {
+		data, err := os.ReadFile(path)
+		require.NoError(t, err)
+		require.NotContains(t, string(data), target, "%s links to %q", path, target)
+	}
+}
+
+// requireLinked asserts some markdown file under root contains target.
+func requireLinked(t *testing.T, root, target string) {
+	t.Helper()
+	for _, path := range markdownFiles(t, root) {
+		data, err := os.ReadFile(path)
+		require.NoError(t, err)
+		if strings.Contains(string(data), target) {
+			return
+		}
+	}
+	require.Failf(t, "no link", "no file under %s contains %q", root, target)
+}
+
+// markdownFiles returns every markdown file under root, skipping .git.
+func markdownFiles(t *testing.T, root string) []string {
+	t.Helper()
+	var paths []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && d.Name() == ".git" {
+			return fs.SkipDir
+		}
+		if !d.IsDir() && strings.HasSuffix(path, ".md") {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, paths)
+	return paths
 }
 
 func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
