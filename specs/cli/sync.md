@@ -1,7 +1,7 @@
 # CLI Sync Specification
 
 ## Purpose
-Write rendered definitions into a target repository and keep it in sync with the source.
+Write rendered definitions into a target repository and keep it in sync with the source. [Feature flags](features.md) filter optional content before a run writes it.
 
 ## Requirements
 

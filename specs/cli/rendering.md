@@ -1,7 +1,7 @@
 # CLI Rendering Specification
 
 ## Purpose
-Map skill and agent definitions to each target runner's format.
+Map skill and agent definitions to each target runner's format. [Feature flags](features.md) select the optional content the mapping keeps.
 
 ## Requirements
 
