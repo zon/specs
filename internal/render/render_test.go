@@ -447,6 +447,39 @@ func TestDefinitionGatedLinkDisappearsAndReturns(t *testing.T) {
 	require.Equal(t, "See the docs.\n"+link+"\n", on)
 }
 
+// TestDefinitionReturnsNothingWhenTemplateRendersEmpty checks that a
+// definition wrapped entirely in a disabled gate renders to nothing, for
+// every kind. An empty agent does not gain empty frontmatter.
+func TestDefinitionReturnsNothingWhenTemplateRendersEmpty(t *testing.T) {
+	content := "{{- if .orchestration}}\n# Orchestration\n{{- end}}\n"
+	cases := []struct {
+		name    string
+		kind    source.Kind
+		defName string
+		target  string
+		rel     string
+	}{
+		{name: "skill", kind: source.Skill, defName: "prose-editor", target: source.Claude, rel: filepath.Join("skills", "prose-editor", "SKILL.md")},
+		{name: "doc", kind: source.Doc, defName: "orchestration", target: source.Opencode, rel: filepath.Join("docs", "zpecs", "orchestration.md")},
+		{name: "agent", kind: source.Agent, defName: "prose-editor", target: source.Claude, rel: filepath.Join("agents", "prose-editor.md")},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeDefinitionFile(t, tc.rel, content)
+			d := source.Definition{Kind: tc.kind, Name: tc.defName, Path: path}
+
+			got, err := definition(d, tc.target, Features{})
+			require.NoError(t, err)
+			require.Equal(t, "", got)
+
+			on, err := definition(d, tc.target, Features{Orchestration: true})
+			require.NoError(t, err)
+			require.NotEmpty(t, on)
+		})
+	}
+}
+
 func TestDefinitionReportsInvalidTemplate(t *testing.T) {
 	path := writeDefinitionFile(t, filepath.Join("skills", "prose-editor", "SKILL.md"), "{{if .orchestration}}unterminated\n")
 

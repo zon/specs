@@ -26,8 +26,9 @@ func Enabled(orchestration bool) Features {
 
 // definition returns a definition's text for a target. It reads the
 // definition file and renders it through the template with the enabled
-// features. Skills and docs return the rendered text. It parses and frames
-// agents.
+// features. A definition that renders to nothing returns an empty string,
+// whatever its kind. Skills and docs otherwise return the rendered text.
+// It parses and frames agents.
 func definition(d source.Definition, targetName string, features Features) (string, error) {
 	raw, err := os.ReadFile(d.Path)
 	if err != nil {
@@ -36,6 +37,9 @@ func definition(d source.Definition, targetName string, features Features) (stri
 	text, err := renderTemplate(string(raw), d.Path, features)
 	if err != nil {
 		return "", err
+	}
+	if strings.TrimSpace(text) == "" {
+		return "", nil
 	}
 	if d.Kind == source.Skill || d.Kind == source.Doc {
 		return text, nil

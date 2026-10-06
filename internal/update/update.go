@@ -1,6 +1,8 @@
 package update
 
 import (
+	"strings"
+
 	"github.com/zon/specs/internal/gitops"
 	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/report"
@@ -79,16 +81,42 @@ func updatePair(root, sourceDir, sourceLabel string, p pair, features render.Fea
 	if err != nil {
 		return err
 	}
+	defs, texts, err := renderDefs(defs, render.ForTarget(p.target, features))
+	if err != nil {
+		return err
+	}
 	if _, err := targetdir.RemoveStale(root, p.target, owned, defs, p.kinds...); err != nil {
 		return err
 	}
-	if err := targetdir.WriteAll(root, p.target, defs, render.ForTarget(p.target, features), owned); err != nil {
+	content := func(d source.Definition) (string, error) { return texts[d], nil }
+	if err := targetdir.WriteAll(root, p.target, defs, content, owned); err != nil {
 		return err
 	}
 	if err := targetdir.SaveOwned(root, p.target, owned); err != nil {
 		return err
 	}
 	return report.Summary(p.kinds, p.target, sourceLabel, len(defs))
+}
+
+// renderDefs renders each definition with content and returns the ones
+// whose rendered text is not blank, keyed by definition. A definition
+// that renders to nothing is dropped, so the run neither writes it nor
+// records it as owned, and a file it wrote before is removed as stale.
+func renderDefs(defs []source.Definition, content func(source.Definition) (string, error)) ([]source.Definition, map[source.Definition]string, error) {
+	texts := make(map[source.Definition]string, len(defs))
+	kept := make([]source.Definition, 0, len(defs))
+	for _, d := range defs {
+		text, err := content(d)
+		if err != nil {
+			return nil, nil, err
+		}
+		if strings.TrimSpace(text) == "" {
+			continue
+		}
+		texts[d] = text
+		kept = append(kept, d)
+	}
+	return kept, texts, nil
 }
 
 // resolveSource returns the directory the definitions come from, the

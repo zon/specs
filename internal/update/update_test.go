@@ -416,6 +416,41 @@ func TestUpdateDocsErrorsOutsideRepository(t *testing.T) {
 	testutil.RequireNotWritten(t, root, source.Docs, "architecture", source.Doc)
 }
 
+func TestUpdateSkipsDefinitionThatRendersToNothing(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteDocBody(t, src, "orchestration", "{{- if .orchestration}}\n# Orchestration\n{{- end}}\n")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+	testutil.RequireNotWritten(t, root, source.Docs, "orchestration", source.Doc)
+	_, err := os.Stat(filepath.Join(root, "docs", "zpecs", ".zpecs"))
+	require.True(t, os.IsNotExist(err), "manifest should be absent when nothing is written")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Source: src, Target: source.Opencode}))
+	testutil.RequireWritten(t, root, source.Docs, "orchestration", source.Doc)
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+	testutil.RequireNotWritten(t, root, source.Docs, "orchestration", source.Doc)
+}
+
+func TestUpdateSummaryCountsOnlyWrittenDefinitions(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteDoc(t, src, "prose")
+	testutil.WriteDocBody(t, src, "orchestration", "{{- if .orchestration}}\n# Orchestration\n{{- end}}\n")
+	reported := testutil.CaptureReport(t)
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+	require.Contains(t, reported(), "(1 files)")
+	testutil.RequireWritten(t, root, source.Docs, "prose", source.Doc)
+	testutil.RequireNotWritten(t, root, source.Docs, "orchestration", source.Doc)
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Source: src, Target: source.Opencode}))
+	require.Contains(t, reported(), "(2 files)")
+}
+
 func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
 	root := testutil.GitRepo(t, nil)
 	t.Chdir(root)
