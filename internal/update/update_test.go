@@ -451,6 +451,64 @@ func TestUpdateSummaryCountsOnlyWrittenDefinitions(t *testing.T) {
 	require.Contains(t, reported(), "(2 files)")
 }
 
+// TestUpdateGatesOptionalContentForEachKind checks the orchestration flag
+// for each kind at the update level. Optional content appears in the
+// written definition only when the flag is on.
+func TestUpdateGatesOptionalContentForEachKind(t *testing.T) {
+	content := "Kept.\n{{- if .orchestration}}\nOrchestrate.\n{{- end}}\n"
+	cases := []struct {
+		name    string
+		kind    source.Kind
+		scope   source.Scope
+		target  string
+		defName string
+		write   func(*testing.T, string, string, string)
+	}{
+		{name: "skill", kind: source.Skill, scope: source.ScopeSkills, target: source.Opencode, defName: "prose-editor", write: testutil.WriteSkillBody},
+		{name: "agent", kind: source.Agent, scope: source.ScopeAgents, target: source.Opencode, defName: "code-architect", write: testutil.WriteAgentBody},
+		{name: "doc", kind: source.Doc, scope: source.ScopeDocs, target: source.Docs, defName: "architecture", write: testutil.WriteDocBody},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := testutil.GitRepo(t, nil)
+			t.Chdir(root)
+			src := t.TempDir()
+			tc.write(t, src, tc.defName, content)
+
+			require.NoError(t, Run(Options{Scope: tc.scope, Source: src, Target: tc.target}))
+			off := testutil.WrittenContent(t, root, tc.target, tc.defName, tc.kind)
+			require.Contains(t, off, "Kept.")
+			require.NotContains(t, off, "Orchestrate.")
+
+			require.NoError(t, Run(Options{Scope: tc.scope, Orchestration: true, Source: src, Target: tc.target}))
+			on := testutil.WrittenContent(t, root, tc.target, tc.defName, tc.kind)
+			require.Contains(t, on, "Kept.")
+			require.Contains(t, on, "Orchestrate.")
+		})
+	}
+}
+
+// TestUpdateGatedLinkDisappearsAndReturns checks that a link to gated
+// content is absent from the written definition when the flag is off and
+// present when it is on.
+func TestUpdateGatedLinkDisappearsAndReturns(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	link := "[Orchestration](orchestration.md)"
+	body := "# Architecture\n\nSee the docs.\n{{- if .orchestration}}\n" + link + "\n{{- end}}\n"
+	testutil.WriteDocBody(t, src, "architecture", body)
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+	off := testutil.WrittenContent(t, root, source.Docs, "architecture", source.Doc)
+	require.NotContains(t, off, link)
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Source: src, Target: source.Opencode}))
+	on := testutil.WrittenContent(t, root, source.Docs, "architecture", source.Doc)
+	require.Contains(t, on, link)
+}
+
 func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
 	root := testutil.GitRepo(t, nil)
 	t.Chdir(root)

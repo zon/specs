@@ -76,6 +76,12 @@ func WriteSkill(t *testing.T, dir, name string) {
 	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Skill, Name: name}), "# "+name+"\n")
 }
 
+// WriteSkillBody writes one skill at its layout path with the given content.
+func WriteSkillBody(t *testing.T, dir, name, content string) {
+	t.Helper()
+	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Skill, Name: name}), content)
+}
+
 // WriteAgent writes one agent at its layout path under dir.
 func WriteAgent(t *testing.T, dir, name string) {
 	t.Helper()
