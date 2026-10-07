@@ -11,6 +11,7 @@ The document formats and standards for spec-driven development with AI coding ag
 ## Standards
 
 {{if .process}}- [Development Process](process.md) — the layered process from milestones to regressions
+{{end}}{{if .design}}- [Design](design.md) — how to write high level design docs
 {{end}}{{if .orchestration}}- [Orchestration](orchestration.md) — separates coordination logic from implementation detail
 {{end}}- [Architecture](architecture.md) — component placement, and what belongs in each component type
 - [Writing Requirements](requirements.md) — what makes a good unit of work

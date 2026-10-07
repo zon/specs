@@ -18,6 +18,7 @@ type Options struct {
 	Agents        bool
 	Orchestration bool
 	Process       bool
+	Design        bool
 	Source        string
 	Target        string
 }
@@ -33,7 +34,7 @@ func Run(opts Options) error {
 		return err
 	}
 	defer cleanup()
-	features := render.Enabled(opts.Orchestration, opts.Process)
+	features := render.Enabled(opts.Orchestration, opts.Process, opts.Design)
 	for _, p := range pairs(opts.Scope, opts.Target, opts.Agents) {
 		if err := updatePair(root, sourceDir, sourceLabel, p, features); err != nil {
 			return err

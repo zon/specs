@@ -18,15 +18,21 @@ const Orchestration = "orchestration"
 // Process is the feature name for process-only content.
 const Process = "process"
 
+// Design is the feature name for design-only content.
+const Design = "design"
+
 // Enabled returns the feature names a run enables. Every feature
 // defaults to off.
-func Enabled(orchestration, process bool) Features {
+func Enabled(orchestration, process, design bool) Features {
 	features := Features{}
 	if orchestration {
 		features[Orchestration] = true
 	}
 	if process {
 		features[Process] = true
+	}
+	if design {
+		features[Design] = true
 	}
 	return features
 }

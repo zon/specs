@@ -44,13 +44,14 @@ type updateCmd struct {
 	Agents        bool         `name:"agents" default:"false" help:"also render agents in a full update"`
 	Orchestration bool         `name:"orchestration" default:"false" help:"also render orchestration-only content"`
 	Process       bool         `name:"process" default:"false" help:"also render process-only content"`
+	Design        bool         `name:"design" default:"false" help:"also render design-only content"`
 	Source        string       `name:"source" env:"ZPECS_SOURCE" default:"${default_source}" help:"read definitions from a local directory, or clone it if it is a git repository"`
 	Target        string       `name:"target" enum:"claude,opencode" default:"opencode" help:"render for claude or opencode"`
 }
 
 // options resolves the parsed flags into update options.
 func (u *updateCmd) options() update.Options {
-	return update.Options{Scope: u.Scope, Agents: u.Agents, Orchestration: u.Orchestration, Process: u.Process, Source: u.Source, Target: u.Target}
+	return update.Options{Scope: u.Scope, Agents: u.Agents, Orchestration: u.Orchestration, Process: u.Process, Design: u.Design, Source: u.Source, Target: u.Target}
 }
 
 func (u *updateCmd) Run() error {

@@ -6,7 +6,7 @@ Control optional documents, skills, and agents with feature flags, so a run copi
 ## Requirements
 
 ### Requirement: Feature Flags
-The system SHALL accept one flag per optional feature area. The optional features are orchestration, named `--orchestration`, and process, named `--process`.
+The system SHALL accept one flag per optional feature area. The optional features are orchestration, named `--orchestration`; process, named `--process`; and design, named `--design`.
 
 #### Scenario: Flag omitted
 - GIVEN an update run without `--orchestration`
@@ -22,6 +22,11 @@ The system SHALL accept one flag per optional feature area. The optional feature
 - GIVEN an update run with `--process`
 - WHEN the system selects optional content
 - THEN the process feature is on
+
+#### Scenario: Design flag passed
+- GIVEN an update run with `--design`
+- WHEN the system selects optional content
+- THEN the design feature is on
 
 ### Requirement: Feature Defaults
 The system MUST treat every feature as off unless the user passes its flag.
@@ -88,6 +93,6 @@ Feature flags SHALL only select optional content. They SHALL NOT change a run's 
 The system SHALL add a new feature flag without changing how it selects other features.
 
 #### Scenario: Adding a feature
-- GIVEN the orchestration and process features
+- GIVEN the orchestration, process, and design features
 - WHEN another feature flag is added
 - THEN each flag still selects its own content and defaults to off

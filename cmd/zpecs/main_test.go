@@ -285,6 +285,13 @@ func TestUpdateHelpListsProcessFlag(t *testing.T) {
 	require.Contains(t, string(out), "--process")
 }
 
+func TestUpdateHelpListsDesignFlag(t *testing.T) {
+	binary := buildBinary(t, t.TempDir())
+	out, err := exec.Command(binary, "update", "--help").CombinedOutput()
+	require.NoError(t, err, "zpecs update --help failed\n%s", out)
+	require.Contains(t, string(out), "--design")
+}
+
 // TestDocsDocumentOrchestrationFlag checks that the user-facing docs
 // describe the --orchestration flag and state it is off by default.
 func TestDocsDocumentOrchestrationFlag(t *testing.T) {
@@ -316,6 +323,24 @@ func TestDocsDocumentProcessFlag(t *testing.T) {
 			require.NoError(t, err)
 			text := strings.ToLower(string(data))
 			require.Contains(t, text, "--process")
+			require.Contains(t, text, "off by default")
+		})
+	}
+}
+
+// TestDocsDocumentDesignFlag checks that the user-facing docs describe the
+// --design flag and state it is off by default.
+func TestDocsDocumentDesignFlag(t *testing.T) {
+	paths := []string{
+		filepath.Join("..", "..", "README.md"),
+		filepath.Join("..", "..", "docs", "cli", "README.md"),
+	}
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			data, err := os.ReadFile(path)
+			require.NoError(t, err)
+			text := strings.ToLower(string(data))
+			require.Contains(t, text, "--design")
 			require.Contains(t, text, "off by default")
 		})
 	}

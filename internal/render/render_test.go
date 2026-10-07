@@ -15,17 +15,19 @@ func TestEnabledMapsFeatures(t *testing.T) {
 		name          string
 		orchestration bool
 		process       bool
+		design        bool
 		want          Features
 	}{
 		{name: "off", want: Features{}},
 		{name: "orchestration only", orchestration: true, want: Features{Orchestration: true}},
 		{name: "process only", process: true, want: Features{Process: true}},
-		{name: "both", orchestration: true, process: true, want: Features{Orchestration: true, Process: true}},
+		{name: "design only", design: true, want: Features{Design: true}},
+		{name: "all", orchestration: true, process: true, design: true, want: Features{Orchestration: true, Process: true, Design: true}},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, Enabled(tc.orchestration, tc.process))
+			require.Equal(t, tc.want, Enabled(tc.orchestration, tc.process, tc.design))
 		})
 	}
 }
@@ -540,6 +542,31 @@ func TestRepositoryDocsGateProcess(t *testing.T) {
 		require.NoError(t, err)
 		if name == "process" {
 			require.Contains(t, on, "Development Process", "the process doc returns with the feature on")
+		}
+	}
+}
+
+// TestRepositoryDocsGateDesign checks this repository's own docs. With the
+// feature off, no docs/zpecs doc links to the design document and the doc
+// renders to nothing. With it on, the document returns and the README links
+// to it.
+func TestRepositoryDocsGateDesign(t *testing.T) {
+	paths, err := filepath.Glob(filepath.Join("..", "..", "docs", "zpecs", "*.md"))
+	require.NoError(t, err)
+	require.NotEmpty(t, paths)
+
+	for _, path := range paths {
+		name := strings.TrimSuffix(filepath.Base(path), ".md")
+		d := source.Definition{Kind: source.Doc, Name: name, Path: path}
+
+		off, err := definition(d, source.Opencode, Features{})
+		require.NoError(t, err)
+		require.NotContains(t, off, "design.md", "%s links to design with the feature off", name)
+
+		on, err := definition(d, source.Opencode, Features{Design: true})
+		require.NoError(t, err)
+		if name == "design" {
+			require.Contains(t, on, "Design Standard", "the design doc returns with the feature on")
 		}
 	}
 }
