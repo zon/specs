@@ -1,7 +1,7 @@
 # CLI Sync Specification
 
 ## Purpose
-Write rendered definitions into a target repository and keep it in sync with the source. [Feature flags](features.md) filter optional content before a run writes it.
+Write rendered definitions into a target repository and keep it in sync with the source. [Feature flags](features.md) filter optional content before a run writes it. A docs run also indexes the standards it writes in the repository's `AGENTS.md`.
 
 ## Requirements
 
@@ -73,6 +73,39 @@ The system SHALL stop listing definitions the source no longer provides.
 - WHEN the source no longer lists it
 - AND the system runs
 - THEN the rendered skill is removed from the target
+
+### Requirement: Agents Section
+The system SHALL keep the repository's `AGENTS.md` in sync with a `## Zpecs` section when a run includes docs. It SHALL render the source's `docs/agents-section.md` template, replace an existing section in place, append the section when the document has none, and leave the rest of the document alone. A source without the template leaves `AGENTS.md` alone.
+
+#### Scenario: Section added
+- GIVEN a repository with no `## Zpecs` section
+- WHEN the system updates docs
+- THEN it appends the rendered section to `AGENTS.md`
+
+#### Scenario: Section replaced
+- GIVEN a repository whose `AGENTS.md` has a `## Zpecs` section
+- WHEN the system updates docs
+- THEN it replaces only that section
+
+#### Scenario: Other content kept
+- GIVEN an `AGENTS.md` with content beyond the `## Zpecs` section
+- WHEN the system updates docs
+- THEN the rest of the document is unchanged
+
+#### Scenario: Optional link gated
+- GIVEN the section template links to an orchestration document
+- WHEN the system updates docs without `--orchestration` and no recorded feature
+- THEN the link does not appear in the section
+
+#### Scenario: Skills-only run
+- GIVEN an `update skills` run
+- WHEN the system runs
+- THEN it leaves `AGENTS.md` alone
+
+#### Scenario: No template
+- GIVEN a source without `docs/agents-section.md`
+- WHEN the system updates docs
+- THEN it leaves `AGENTS.md` alone
 
 ### Requirement: Command Scope
 The system SHALL render what each command names.

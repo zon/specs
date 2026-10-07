@@ -58,9 +58,5 @@ zpecs update docs
 
 Optional orchestration, process, and design content is off by default. Pass `--orchestration`, `--process`, or `--design` to include it. The docs run records the flags it enabled, so later runs keep that content without the flag.
 
-Then point its `AGENTS.md` at the docs:
-
-```markdown
-Before writing any code, read [docs/zpecs/architecture.md](docs/zpecs/architecture.md).
-```
+The docs run writes a `## Zpecs` section into `AGENTS.md`, indexing the standards it installed with when to read each one. It replaces an existing section and leaves the rest of the file alone.
 

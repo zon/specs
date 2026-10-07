@@ -105,6 +105,17 @@ func ForTarget(targetName string, features Features) func(source.Definition) (st
 	}
 }
 
+// File renders the standalone template at path with the enabled features. It
+// is the counterpart of a definition for a source file that is not a
+// definition, such as the AGENTS.md section template.
+func File(path string, features Features) (string, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("reading %s: %w", path, err)
+	}
+	return renderTemplate(string(raw), path, features)
+}
+
 // claudeAgent keeps the name, description, and tools. It uses the body
 // as the prompt.
 func claudeAgent(fields fields, body string) string {

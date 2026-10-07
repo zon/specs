@@ -680,3 +680,109 @@ func TestUpdateScopedRemovalLeavesOtherKinds(t *testing.T) {
 	testutil.RequireNotWritten(t, root, source.Opencode, "prose-editor", source.Skill)
 	testutil.RequireWritten(t, root, source.Opencode, "code-architect", source.Agent)
 }
+
+func TestUpdateWritesAgentsSection(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteDoc(t, src, "code")
+	testutil.WriteAgentsSection(t, src, "## Zpecs\n\n* [Code](docs/zpecs/code.md) - Read before writing code\n")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+
+	content := readAgentsFile(t, root)
+	require.Contains(t, content, "## Zpecs")
+	require.Contains(t, content, "[Code](docs/zpecs/code.md)")
+}
+
+func TestUpdateAgentsSectionReplacesInPlace(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteAgentsSection(t, src, "## Zpecs\n\nNew.\n")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+
+	content := readAgentsFile(t, root)
+	require.Equal(t, 1, strings.Count(content, "## Zpecs"))
+}
+
+func TestUpdateAgentsSectionGatesFeatures(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteAgentsSection(t, src, "## Zpecs\n\nKept.\n{{if .orchestration}}* [Orchestration](docs/zpecs/orchestration.md)\n{{end}}")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+	off := readAgentsFile(t, root)
+	require.Contains(t, off, "Kept.")
+	require.NotContains(t, off, "Orchestration")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Source: src, Target: source.Opencode}))
+	on := readAgentsFile(t, root)
+	require.Contains(t, on, "Orchestration")
+}
+
+func TestUpdateAgentsSectionKeepsForeignContent(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteAgentsSection(t, src, "## Zpecs\n\nNew.\n")
+	require.NoError(t, os.WriteFile(filepath.Join(root, "AGENTS.md"), []byte("# Mine\n\nKeep me.\n"), 0o644))
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+
+	content := readAgentsFile(t, root)
+	require.Contains(t, content, "Keep me.")
+	require.Contains(t, content, "## Zpecs")
+}
+
+func TestUpdateSkillsLeavesAgentsFileAlone(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteSkill(t, src, "prose-editor")
+	testutil.WriteAgentsSection(t, src, "## Zpecs\n\nNew.\n")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeSkills, Source: src, Target: source.Opencode}))
+
+	require.NoFileExists(t, filepath.Join(root, "AGENTS.md"))
+}
+
+func TestUpdateWithoutAgentsSectionTemplateLeavesAgentsAlone(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := testutil.DocSource(t, "code")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
+
+	require.NoFileExists(t, filepath.Join(root, "AGENTS.md"))
+}
+
+func TestUpdateOnThisRepositoryWritesAgentsSection(t *testing.T) {
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	require.NoError(t, err)
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	opts := Options{Scope: source.ScopeAll, Source: repoRoot, Target: source.Opencode}
+
+	require.NoError(t, Run(opts))
+	content := readAgentsFile(t, root)
+	require.Contains(t, content, "## Zpecs")
+	require.Contains(t, content, "[Code](docs/zpecs/code.md)")
+	require.NotContains(t, content, "orchestration.md")
+
+	opts.Orchestration = true
+	require.NoError(t, Run(opts))
+	content = readAgentsFile(t, root)
+	require.Contains(t, content, "orchestration.md")
+}
+
+// readAgentsFile returns the repository's AGENTS.md text.
+func readAgentsFile(t *testing.T, root string) string {
+	t.Helper()
+	content, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
+	require.NoError(t, err)
+	return string(content)
+}

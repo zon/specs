@@ -721,3 +721,22 @@ func TestParseYieldsZeroFieldsForEmptyFile(t *testing.T) {
 	require.Equal(t, fields{}, got.fields)
 	require.Equal(t, "", got.body)
 }
+
+func TestFileRendersTemplateWithFeatures(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "agents-section.md")
+	require.NoError(t, os.WriteFile(path, []byte("Kept.\n{{if .orchestration}}Orchestrate.\n{{end}}"), 0o644))
+
+	off, err := File(path, Features{})
+	require.NoError(t, err)
+	require.Equal(t, "Kept.\n", off)
+
+	on, err := File(path, Features{Orchestration: true})
+	require.NoError(t, err)
+	require.Equal(t, "Kept.\nOrchestrate.\n", on)
+}
+
+func TestFileErrorsOnMissingPath(t *testing.T) {
+	_, err := File(filepath.Join(t.TempDir(), "missing.md"), Features{})
+	require.Error(t, err)
+}

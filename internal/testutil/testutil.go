@@ -106,6 +106,12 @@ func WriteDocBody(t *testing.T, dir, name, content string) {
 	writeSourceFile(t, dir, source.RelPath(source.Definition{Kind: source.Doc, Name: name}), content)
 }
 
+// WriteAgentsSection writes the AGENTS.md section template under dir.
+func WriteAgentsSection(t *testing.T, dir, content string) {
+	t.Helper()
+	writeFile(t, dir, filepath.Join("docs", "agents-section.md"), content)
+}
+
 // SkillSource returns a temp dir with one skill.
 func SkillSource(t *testing.T, name string) string {
 	t.Helper()

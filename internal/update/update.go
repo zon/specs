@@ -1,14 +1,20 @@
 package update
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/zon/specs/internal/agentsmd"
 	"github.com/zon/specs/internal/gitops"
 	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/report"
 	"github.com/zon/specs/internal/source"
 	"github.com/zon/specs/internal/targetdir"
 )
+
+// agentsSectionFile is the source file that templates the AGENTS.md section.
+var agentsSectionFile = filepath.Join("docs", "agents-section.md")
 
 // Options selects what an update run renders: the scope of kinds to
 // read, the source they come from, the target to write to, and whether
@@ -43,7 +49,35 @@ func Run(opts Options) error {
 			return err
 		}
 	}
+	if includesDocs(opts.Scope) {
+		if err := writeAgentsSection(root, sourceDir, features); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// includesDocs reports whether a scope renders docs.
+func includesDocs(s source.Scope) bool {
+	return s == source.ScopeAll || s == source.ScopeDocs
+}
+
+// writeAgentsSection renders the source's AGENTS.md section template and
+// writes it into the repository's AGENTS.md. A source without the template
+// leaves AGENTS.md alone.
+func writeAgentsSection(root, sourceDir string, features render.Features) error {
+	path := filepath.Join(sourceDir, agentsSectionFile)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	}
+	section, err := render.File(path, features)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(section) == "" {
+		return nil
+	}
+	return agentsmd.Update(root, section)
 }
 
 // resolveFeatures returns the features a run enables. It merges the
