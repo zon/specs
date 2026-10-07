@@ -25,7 +25,7 @@ We use a [simple variant of OpenSpec](specs.md) to define domain logic requireme
 
 ## Projects
 
-We use [simple project files](project.md) to make implementation plans.
+We use [simple project files](project.md) to make implementation plans. Update design and specs before writing or updating a project, and keep those updates within the project's scope. The project covers only their implementation.
 
 ## Implementation
 
