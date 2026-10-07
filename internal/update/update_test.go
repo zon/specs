@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/zon/specs/internal/render"
 	"github.com/zon/specs/internal/source"
+	"github.com/zon/specs/internal/targetdir"
 	"github.com/zon/specs/internal/testutil"
 )
 
@@ -431,9 +432,50 @@ func TestUpdateSkipsDefinitionThatRendersToNothing(t *testing.T) {
 
 	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Source: src, Target: source.Opencode}))
 	testutil.RequireWritten(t, root, source.Docs, "orchestration", source.Doc)
+}
+
+// TestUpdateRecordsFeaturesInDocsManifest checks that a feature the run
+// enables is recorded in the docs manifest.
+func TestUpdateRecordsFeaturesInDocsManifest(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := testutil.DocSource(t, "prose")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Process: true, Source: src, Target: source.Opencode}))
+
+	features, err := targetdir.Features(root, source.Docs)
+	require.NoError(t, err)
+	require.Equal(t, []string{render.Orchestration, render.Process}, features)
+}
+
+// TestUpdateReusesRecordedFeatures checks that a feature recorded in the
+// docs manifest stays on when a later run passes no flag.
+func TestUpdateReusesRecordedFeatures(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteDocBody(t, src, "orchestration", "{{- if .orchestration}}\n# Orchestration\n{{- end}}\n")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Source: src, Target: source.Opencode}))
+	testutil.RequireWritten(t, root, source.Docs, "orchestration", source.Doc)
 
 	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Source: src, Target: source.Opencode}))
-	testutil.RequireNotWritten(t, root, source.Docs, "orchestration", source.Doc)
+	testutil.RequireWritten(t, root, source.Docs, "orchestration", source.Doc)
+}
+
+// TestUpdateRecordedFeatureAppliesToOtherKinds checks that a feature the
+// docs manifest records reaches a later skills run.
+func TestUpdateRecordedFeatureAppliesToOtherKinds(t *testing.T) {
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	src := t.TempDir()
+	testutil.WriteDoc(t, src, "prose")
+	testutil.WriteSkillBody(t, src, "prose-editor", "Kept.\n{{- if .orchestration}}\nOrchestrate.\n{{- end}}\n")
+
+	require.NoError(t, Run(Options{Scope: source.ScopeDocs, Orchestration: true, Source: src, Target: source.Opencode}))
+	require.NoError(t, Run(Options{Scope: source.ScopeSkills, Source: src, Target: source.Opencode}))
+
+	require.Contains(t, testutil.WrittenContent(t, root, source.Opencode, "prose-editor", source.Skill), "Orchestrate.")
 }
 
 func TestUpdateSummaryCountsOnlyWrittenDefinitions(t *testing.T) {

@@ -3,6 +3,7 @@ package render
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -11,6 +12,18 @@ import (
 
 // Features names the optional feature areas a run enables.
 type Features map[string]bool
+
+// Names returns the enabled feature names in sorted order.
+func (f Features) Names() []string {
+	names := make([]string, 0, len(f))
+	for name, on := range f {
+		if on {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
 
 // Orchestration is the feature name for orchestration-only content.
 const Orchestration = "orchestration"

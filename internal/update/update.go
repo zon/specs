@@ -34,13 +34,31 @@ func Run(opts Options) error {
 		return err
 	}
 	defer cleanup()
-	features := render.Enabled(opts.Orchestration, opts.Process, opts.Design)
+	features, err := resolveFeatures(root, opts)
+	if err != nil {
+		return err
+	}
 	for _, p := range pairs(opts.Scope, opts.Target, opts.Agents) {
 		if err := updatePair(root, sourceDir, sourceLabel, p, features); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// resolveFeatures returns the features a run enables. It merges the
+// flags the user passed with the features the docs manifest records, so
+// a feature stays on once it records. Every feature defaults to off.
+func resolveFeatures(root string, opts Options) (render.Features, error) {
+	features := render.Enabled(opts.Orchestration, opts.Process, opts.Design)
+	recorded, err := targetdir.Features(root, source.Docs)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range recorded {
+		features[name] = true
+	}
+	return features, nil
 }
 
 // pair is one update run: the target to write to and the kinds it
@@ -94,7 +112,11 @@ func updatePair(root, sourceDir, sourceLabel string, p pair, features render.Fea
 	if err := targetdir.WriteAll(root, p.target, defs, content, owned); err != nil {
 		return err
 	}
-	if err := targetdir.SaveOwned(root, p.target, owned); err != nil {
+	if p.target == source.Docs {
+		if err := targetdir.SaveManifest(root, p.target, owned, features.Names()); err != nil {
+			return err
+		}
+	} else if err := targetdir.SaveOwned(root, p.target, owned); err != nil {
 		return err
 	}
 	return report.Summary(p.kinds, p.target, sourceLabel, len(defs))

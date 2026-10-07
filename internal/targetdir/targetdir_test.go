@@ -476,6 +476,53 @@ func TestManifestRoundTripStoresKinds(t *testing.T) {
 	require.Len(t, removed, 1)
 }
 
+func TestSaveManifestRecordsFeatures(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]ownedPath{}
+	err := Write(root, source.Docs, doc("architecture"), "# Architecture\n", owned)
+	require.NoError(t, err)
+
+	err = SaveManifest(root, source.Docs, owned, []string{"process", "orchestration", "orchestration"})
+	require.NoError(t, err)
+
+	manifest, err := os.ReadFile(filepath.Join(root, "docs", "zpecs", manifestName))
+	require.NoError(t, err)
+	require.Equal(t, "doc docs/zpecs/architecture.md\nfeature orchestration\nfeature process\n", string(manifest))
+
+	features, err := Features(root, source.Docs)
+	require.NoError(t, err)
+	require.Equal(t, []string{"orchestration", "process"}, features)
+}
+
+func TestOwnedIgnoresFeatureLines(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "docs", "zpecs")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	rel := RelPath(source.Docs, doc("architecture"))
+	content := "doc " + rel + "\nfeature orchestration\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, manifestName), []byte(content), 0o644))
+
+	owned, err := Owned(root, source.Docs)
+	require.NoError(t, err)
+	require.Equal(t, map[string]ownedPath{rel: {kind: source.Doc, known: true}}, owned)
+}
+
+func TestSaveOwnedKeepsRecordedFeatures(t *testing.T) {
+	root := t.TempDir()
+	owned := map[string]ownedPath{}
+	err := Write(root, source.Docs, doc("architecture"), "# Architecture\n", owned)
+	require.NoError(t, err)
+	err = SaveManifest(root, source.Docs, owned, []string{"design"})
+	require.NoError(t, err)
+
+	err = SaveOwned(root, source.Docs, owned)
+	require.NoError(t, err)
+
+	features, err := Features(root, source.Docs)
+	require.NoError(t, err)
+	require.Equal(t, []string{"design"}, features)
+}
+
 func TestSaveOwnedSkipsManifestWhenNothingOwned(t *testing.T) {
 	root := t.TempDir()
 

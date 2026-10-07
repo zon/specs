@@ -18,9 +18,9 @@ All four take the same flags. A full `update` skips agents unless you pass `--ag
 | Flag | Meaning |
 |---|---|
 | `--agents` | Also render agents in a full update. Off by default |
-| `--orchestration` | Also render orchestration-only content. Off by default |
-| `--process` | Also render process-only content. Off by default |
-| `--design` | Also render design-only content. Off by default |
+| `--orchestration` | Also render orchestration-only content. Off by default, on once a docs run records it |
+| `--process` | Also render process-only content. Off by default, on once a docs run records it |
+| `--design` | Also render design-only content. Off by default, on once a docs run records it |
 | `--target` | Render for `opencode` (default) or `claude` |
 | `--source` | Path to a local directory, or a repository URL to clone. Omit it to read from GitHub |
 | `--version` | Print the version and quit |
@@ -51,7 +51,9 @@ The commands must run inside a git repository, locate the repo root, and write t
 - `opencode` — `.opencode/skills/<name>/SKILL.md` and `.opencode/agents/<name>.md`
 - `docs` — `docs/zpecs/<name>.md`. Docs are target-independent
 
-The `.zpecs` manifest records which files the run wrote. It uses the same owned-file semantics as the other targets: it replaces the files it wrote before and leaves everything else alone. The manifest is removed when it would be empty, so a repo whose `docs/zpecs/` files came from a copy never accumulates one.
+The `.zpecs` manifest records which files the run wrote. The docs manifest also records the feature flags the run enabled. It uses the same owned-file semantics as the other targets: it replaces the files it wrote before and leaves everything else alone. The manifest is removed when it would be empty, so a repo whose `docs/zpecs/` files came from a copy never accumulates one.
+
+A feature the docs run enables stays on. A later run that passes no flag still selects that feature's content, so you pass `--orchestration` once. The recorded feature reaches every kind, so a later skills run gets it too.
 
 The run creates missing directories. Stale definitions stop appearing.
 

@@ -19,8 +19,12 @@ type ownedPath struct {
 }
 
 // manifestName is the file inside a target directory that records
-// ownership, one "kind path" line per written file.
+// ownership, one "kind path" line per written file, and the enabled
+// features, one "feature name" line each.
 const manifestName = ".zpecs"
+
+// featureKeyword marks a manifest line that records an enabled feature.
+const featureKeyword = "feature"
 
 // Path returns the path under root where a definition writes, keyed by
 // the source name rather than any rendered field.
@@ -53,16 +57,35 @@ func targetDir(name string) string {
 // with each path's kind. It reads the target's manifest. A target
 // without a manifest owns nothing.
 func Owned(root, name string) (map[string]ownedPath, error) {
+	owned, _, err := readManifest(root, name)
+	return owned, err
+}
+
+// Features returns the feature names a target's manifest records. A
+// target without a manifest records none.
+func Features(root, name string) ([]string, error) {
+	_, features, err := readManifest(root, name)
+	return features, err
+}
+
+// readManifest reads the owned paths and feature names from a target's
+// manifest. A target without a manifest has neither.
+func readManifest(root, name string) (map[string]ownedPath, []string, error) {
 	data, err := os.ReadFile(filepath.Join(root, targetDir(name), manifestName))
 	if os.IsNotExist(err) {
-		return map[string]ownedPath{}, nil
+		return map[string]ownedPath{}, nil, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	owned := map[string]ownedPath{}
+	var features []string
 	for _, line := range strings.Split(string(data), "\n") {
 		if line == "" {
+			continue
+		}
+		if feature, ok := featureName(line); ok {
+			features = append(features, feature)
 			continue
 		}
 		kind, path, found := strings.Cut(line, " ")
@@ -72,7 +95,17 @@ func Owned(root, name string) (map[string]ownedPath, error) {
 		}
 		owned[line] = ownedPath{}
 	}
-	return owned, nil
+	return owned, features, nil
+}
+
+// featureName returns the feature name a manifest line records. A line
+// records a feature when it is "feature" and one single-word name.
+func featureName(line string) (string, bool) {
+	keyword, name, found := strings.Cut(line, " ")
+	if !found || keyword != featureKeyword || name == "" || strings.Contains(name, " ") {
+		return "", false
+	}
+	return name, true
 }
 
 // Write stores content at the definition's path under root, creating the
@@ -112,17 +145,39 @@ func WriteAll(root, name string, defs []source.Definition, content func(source.D
 	return nil
 }
 
-// SaveOwned persists the owned paths for a target under root. When
-// nothing is owned, it removes the manifest instead of writing an empty
-// one.
+// SaveOwned persists the owned paths for a target under root, keeping
+// the features its manifest already records.
 func SaveOwned(root, name string, owned map[string]ownedPath) error {
-	if len(owned) == 0 {
+	_, features, err := readManifest(root, name)
+	if err != nil {
+		return err
+	}
+	return SaveManifest(root, name, owned, features)
+}
+
+// SaveManifest persists the owned paths and enabled features for a
+// target under root. When both are empty, it removes the manifest
+// instead of writing an empty one.
+func SaveManifest(root, name string, owned map[string]ownedPath, features []string) error {
+	lines := ownedLines(owned)
+	lines = append(lines, featureLines(features)...)
+	if len(lines) == 0 {
 		err := os.Remove(filepath.Join(root, targetDir(name), manifestName))
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
 	}
+	sort.Strings(lines)
+	dir := filepath.Join(root, targetDir(name))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, manifestName), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+}
+
+// ownedLines returns one manifest line per owned path.
+func ownedLines(owned map[string]ownedPath) []string {
 	lines := make([]string, 0, len(owned))
 	for p, op := range owned {
 		if op.known {
@@ -131,12 +186,21 @@ func SaveOwned(root, name string, owned map[string]ownedPath) error {
 			lines = append(lines, p)
 		}
 	}
-	sort.Strings(lines)
-	dir := filepath.Join(root, targetDir(name))
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
+	return lines
+}
+
+// featureLines returns one manifest line per feature name, once each.
+func featureLines(features []string) []string {
+	seen := make(map[string]bool, len(features))
+	lines := make([]string, 0, len(features))
+	for _, f := range features {
+		if f == "" || seen[f] {
+			continue
+		}
+		seen[f] = true
+		lines = append(lines, featureKeyword+" "+f)
 	}
-	return os.WriteFile(filepath.Join(dir, manifestName), []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+	return lines
 }
 
 // RemoveStale deletes the files the system wrote under root for target

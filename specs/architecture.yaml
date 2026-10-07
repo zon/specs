@@ -11,7 +11,7 @@
   description: Runs opencode to review a repository.
 
 - path: internal/targetdir
-  description: Writes definitions into a repository's target directories.
+  description: Writes definitions into a repository's target directories and records ownership and features.
 
 - path: internal/render
   description: Produces each definition's text for its target.

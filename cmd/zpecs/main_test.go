@@ -346,6 +346,24 @@ func TestDocsDocumentDesignFlag(t *testing.T) {
 	}
 }
 
+// TestDocsDocumentRecordedFeatures checks that the user-facing docs
+// describe that a docs run records the features it enables.
+func TestDocsDocumentRecordedFeatures(t *testing.T) {
+	paths := []string{
+		filepath.Join("..", "..", "README.md"),
+		filepath.Join("..", "..", "docs", "cli", "README.md"),
+	}
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			data, err := os.ReadFile(path)
+			require.NoError(t, err)
+			text := strings.ToLower(string(data))
+			require.Contains(t, text, "--orchestration")
+			require.Contains(t, text, "record")
+		})
+	}
+}
+
 func TestBinaryRejectsUnknownCommand(t *testing.T) {
 	binary := buildBinary(t, t.TempDir())
 	cmd := exec.Command(binary, "install")

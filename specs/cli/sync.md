@@ -44,6 +44,19 @@ The system SHALL write rendered definitions to the target's directories, keyed b
 ### Requirement: Missing Directories
 The system SHALL create directories it needs that do not exist.
 
+### Requirement: Manifest
+The system SHALL record the paths it wrote under a target in that target's `.zpecs` manifest. The docs manifest also records the features the run enabled, as [Feature Flags](features.md) describes.
+
+#### Scenario: Ownership recorded
+- GIVEN a run writes a definition to a target
+- WHEN the system saves the manifest
+- THEN the manifest lists the written path
+
+#### Scenario: Empty manifest removed
+- GIVEN a target with no owned paths and no recorded features
+- WHEN the system saves the manifest
+- THEN no manifest remains
+
 ### Requirement: Owned Files
 The system SHALL replace only the files it wrote before and leave other files alone.
 
