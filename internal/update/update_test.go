@@ -533,6 +533,28 @@ func TestUpdateOnThisRepositoryGatesOrchestration(t *testing.T) {
 	requireLinked(t, root, "orchestration.md")
 }
 
+// TestUpdateOnThisRepositoryGatesProcess runs an update against this
+// repository's own definitions. With the flag off, the run writes no process
+// document and no written file links to it. With the flag on, the document
+// returns and a file links to it.
+func TestUpdateOnThisRepositoryGatesProcess(t *testing.T) {
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	require.NoError(t, err)
+
+	root := testutil.GitRepo(t, nil)
+	t.Chdir(root)
+	opts := Options{Scope: source.ScopeAll, Source: repoRoot, Target: source.Opencode}
+
+	require.NoError(t, Run(opts))
+	require.NoFileExists(t, filepath.Join(root, "docs", "zpecs", "process.md"))
+	requireNotLinked(t, root, "process.md")
+
+	opts.Process = true
+	require.NoError(t, Run(opts))
+	require.FileExists(t, filepath.Join(root, "docs", "zpecs", "process.md"))
+	requireLinked(t, root, "process.md")
+}
+
 // requireNotLinked asserts no markdown file under root contains target.
 func requireNotLinked(t *testing.T, root, target string) {
 	t.Helper()

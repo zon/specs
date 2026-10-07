@@ -12,11 +12,12 @@ import (
 
 // Options selects what an update run renders: the scope of kinds to
 // read, the source they come from, the target to write to, and whether
-// a full update also renders agents and enables orchestration.
+// a full update also renders agents and enables optional features.
 type Options struct {
 	Scope         source.Scope
 	Agents        bool
 	Orchestration bool
+	Process       bool
 	Source        string
 	Target        string
 }
@@ -32,7 +33,7 @@ func Run(opts Options) error {
 		return err
 	}
 	defer cleanup()
-	features := render.Enabled(opts.Orchestration)
+	features := render.Enabled(opts.Orchestration, opts.Process)
 	for _, p := range pairs(opts.Scope, opts.Target, opts.Agents) {
 		if err := updatePair(root, sourceDir, sourceLabel, p, features); err != nil {
 			return err

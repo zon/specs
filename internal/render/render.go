@@ -15,13 +15,20 @@ type Features map[string]bool
 // Orchestration is the feature name for orchestration-only content.
 const Orchestration = "orchestration"
 
+// Process is the feature name for process-only content.
+const Process = "process"
+
 // Enabled returns the feature names a run enables. Every feature
 // defaults to off.
-func Enabled(orchestration bool) Features {
-	if !orchestration {
-		return Features{}
+func Enabled(orchestration, process bool) Features {
+	features := Features{}
+	if orchestration {
+		features[Orchestration] = true
 	}
-	return Features{Orchestration: true}
+	if process {
+		features[Process] = true
+	}
+	return features
 }
 
 // definition returns a definition's text for a target. It reads the

@@ -56,7 +56,7 @@ zpecs update agents
 zpecs update docs
 ```
 
-Optional orchestration content is off by default. Pass `--orchestration` to include it.
+Optional orchestration and process content is off by default. Pass `--orchestration` or `--process` to include it.
 
 Then point its `AGENTS.md` at the docs:
 

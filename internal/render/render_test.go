@@ -10,19 +10,22 @@ import (
 	"github.com/zon/specs/internal/source"
 )
 
-func TestEnabledMapsOrchestrationFeature(t *testing.T) {
+func TestEnabledMapsFeatures(t *testing.T) {
 	cases := []struct {
 		name          string
 		orchestration bool
+		process       bool
 		want          Features
 	}{
-		{name: "off", orchestration: false, want: Features{}},
-		{name: "on", orchestration: true, want: Features{Orchestration: true}},
+		{name: "off", want: Features{}},
+		{name: "orchestration only", orchestration: true, want: Features{Orchestration: true}},
+		{name: "process only", process: true, want: Features{Process: true}},
+		{name: "both", orchestration: true, process: true, want: Features{Orchestration: true, Process: true}},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, Enabled(tc.orchestration))
+			require.Equal(t, tc.want, Enabled(tc.orchestration, tc.process))
 		})
 	}
 }
@@ -512,6 +515,31 @@ func TestRepositoryDocsGateOrchestration(t *testing.T) {
 		require.NoError(t, err)
 		if name == "orchestration" {
 			require.Contains(t, on, "Orchestration", "the orchestration doc returns with the feature on")
+		}
+	}
+}
+
+// TestRepositoryDocsGateProcess checks this repository's own docs. With the
+// feature off, no docs/zpecs doc links to the process document and the doc
+// renders to nothing. With it on, the document returns and the README links
+// to it.
+func TestRepositoryDocsGateProcess(t *testing.T) {
+	paths, err := filepath.Glob(filepath.Join("..", "..", "docs", "zpecs", "*.md"))
+	require.NoError(t, err)
+	require.NotEmpty(t, paths)
+
+	for _, path := range paths {
+		name := strings.TrimSuffix(filepath.Base(path), ".md")
+		d := source.Definition{Kind: source.Doc, Name: name, Path: path}
+
+		off, err := definition(d, source.Opencode, Features{})
+		require.NoError(t, err)
+		require.NotContains(t, off, "process.md", "%s links to process with the feature off", name)
+
+		on, err := definition(d, source.Opencode, Features{Process: true})
+		require.NoError(t, err)
+		if name == "process" {
+			require.Contains(t, on, "Development Process", "the process doc returns with the feature on")
 		}
 	}
 }
