@@ -17,13 +17,14 @@ Apply one direct dependency update per run, so the change stays small enough to 
 
 3. **Find one update.** Use the package manager for each ecosystem to list outdated dependencies. Confirm against the package registry when the package manager cannot. For a pin outside a manifest, compare it with the registry, release page, or image tags for that project. Skip prereleases. Stop at the first direct dependency with a newer stable version. When no direct dependency has one, report that and stop, even if transitive dependencies do.
 
-4. **Read the release notes.** Read the changelog for every skipped version and note breaking changes. A breaking change, a major version, or a changed component boundary, public API, or data model is significant. Otherwise the change is small.
+4. **Read the release notes.** Read the changelog for every skipped version. Note each breaking change and check whether the repository uses what it breaks. A major version is a reason to read closely, not a verdict on its own.
 
 5. **Apply the update.**
    - Update the manifest and lockfile with the package manager, not by hand.
    - Update a pin outside a manifest in the file that sets it, and in every place that repeats it.
-   - For a small change, fix the code the update breaks.
-   - For a significant change, write a spec and project as described in [docs/zpecs/specs.md](docs/zpecs/specs.md) and [docs/zpecs/project.md](docs/zpecs/project.md), and a design under `docs/design`, before coding.
+   - Fix the code the update breaks.
+   - When that fix changes a component boundary, public API, or data model, the change is significant. Write a spec and project as described in [docs/zpecs/specs.md](docs/zpecs/specs.md) and [docs/zpecs/project.md](docs/zpecs/project.md), and a design under `docs/design`, before coding it.
+   - Otherwise the change is small. Add no design, spec, or project. An update that passes verification without a code change is small, even across a major version.
    - Follow the repository's rules for changelogs and version bumps.
 
 6. **Verify.** Run the build and tests, and fix what the update breaks before reporting. When the update changes a container image or a tool in it, build the image before reporting.
