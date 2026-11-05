@@ -32,7 +32,9 @@ Apply one direct dependency update per run, so the change stays small enough to 
 
 4. **Read the release notes.** Read the changelog for every skipped version. Note each breaking change and check whether the repository uses what it breaks. A major version is a reason to read closely, not a verdict on its own.
 
-5. **Apply the update.**
+5. **Check compatibility.** Find what the new version works with, such as runtimes, platforms, and the dependencies that run beside it or build on it. Release notes and documentation often list them. Compare each with the version the repository uses. When one does not match, skip this dependency, go back to step 3 for the next outdated one, and report the skipped dependency and the reason.
+
+6. **Apply the update.**
    - Update the manifest and lockfile with the package manager, not by hand.
    - Update a pin outside a manifest in the file that sets it, and in every place that repeats it. When copies of one pin already disagree, align every copy to the new version.
    - Fix the code the update breaks.
@@ -40,6 +42,6 @@ Apply one direct dependency update per run, so the change stays small enough to 
    - Otherwise the change is small. Add no design, spec, or project. An update that passes verification without a code change is small, even across a major version.
    - Follow the repository's rules for changelogs and version bumps.
 
-6. **Verify.** Run the build and tests, and fix what the update breaks before reporting. When the update changes a container image or a tool in it, build the image before reporting.
+7. **Verify.** Run the build and tests, and fix what the update breaks before reporting. When the update changes a container image or a tool in it, build the image before reporting.
 
-7. **Report** the dependency, the old and new versions, whether the change was small or significant, and the verification result. Also list every unpinned dependency, and every pin whose copies disagreed.
+8. **Report** the dependency, the old and new versions, whether the change was small or significant, and the verification result. Also list every unpinned dependency, every pin whose copies disagreed, and every dependency skipped as incompatible.
